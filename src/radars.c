@@ -316,14 +316,17 @@ if (polar_box->min_range_gate > polar_box->max_range_gate) {
     polar_box->max_range_gate = tmp;
 }
 
-
-    int padding_angle_deg = 2;
-    polar_box->min_angle = floor((angle - del_angle))-padding_angle_deg;
-    polar_box->max_angle = ceil((angle + del_angle)) + padding_angle_deg;
+double padding_angle = 2.0;
+    polar_box->min_angle = floor((angle - del_angle-padding_angle)/polar_box->angular_resolution);
+    polar_box->max_angle = ceil((angle + del_angle+padding_angle)/polar_box->angular_resolution);
 
     // Dynamically compute sizes
     int num_ranges = (int)lround(polar_box->max_range_gate - polar_box->min_range_gate + 1);
-    int num_angles = (int)lround((polar_box->max_angle - polar_box->min_angle + 1 + 2*padding_angle_deg)/ polar_box->angular_resolution);
+double span = polar_box->max_angle - polar_box->min_angle;
+if (span < 0) span += 360.0;
+int num_angles = (int)ceil(span);
+    //
+ //int num_angles = (int)lround((polar_box->max_angle - polar_box->min_angle + 1 + 2*padding_angle_deg)/ polar_box->angular_resolution);
 
     // Only reallocate if size changed or not allocated yet
     if (!polar_box->grid || (int)polar_box->num_ranges != num_ranges || (int)polar_box->num_angles != num_angles) {
@@ -640,11 +643,11 @@ box->num_angles = num_angles;
 
 
     for (int ri = 0; ri < num_ranges; ri++) {
-        double r1 = (box->min_range_gate + ri + 0.5) * box->range_resolution;
+        double r1 = (box->min_range_gate + ri) * box->range_resolution;
         double sample_height = calculate_height_of_beam_at_range(r1, box->other_angle, h0);
 
         for (int ai = 0; ai < num_angles; ai++) {
-            double a1 = (box->min_angle + ai + 0.5)*box->angular_resolution;
+            double a1 = (box->min_angle + ai)*box->angular_resolution;
  int sample = sample_from_relative_location_in_raincell(r1, a1, box->other_angle, pos_radar, pos_raincell, raincell);
 int idp = ri * num_angles + ai;
 int idp_min_one = idp;
@@ -973,46 +976,8 @@ grid_size = 0;
 	printf("I updated the height memory allocation\n");
 	    continue;
 	}
-/*
-        if (strstr(line, "grid.data=") && grid_size > 0 && grid_data != NULL) {
-	printf("I now start reading %d grid data points\n", grid_size);
-            // Skip "grid.data=" prefix
-            char* p = strstr(line, "grid.data=") + strlen("grid.data=");
-            int filled = 0;
-             printf("before first while loop.\n");
-            // First line of grid.data
-            while (*p && filled < grid_size) {
-                while (*p && isspace(*p)) p++;
-                if (*p) {
-                    double val;
-                    if (sscanf(p, "%lf", &val) == 1) {
-                        grid_data[filled++] = val;
-                        while (*p && !isspace(*p)) p++;
-                    }
-                }
-            }
 
-            printf("after first and before second while loop.\n");
-            // Continue reading lines if not full
-            while (filled < grid_size && fgets(line, sizeof(line), file)) {
-                p = line;
-                while (*p && filled < grid_size) {
-                    while (*p && isspace(*p)) p++;
-                    if (*p) {
-                        double val;
-                        if (sscanf(p, "%lf", &val) == 1) {
-                            grid_data[filled++] = val;
-                            while (*p && !isspace(*p)) p++;
-                        }
-                    }
-                }
-           fprintf(stderr, "DEBUG: read %d of %d grid points\n", filled, grid_size); 
-	    }
-	printf("I now finished reading the grid data\n");
-        }
-*/
-
-// before loop: allocate a scratch buffer of decent size
+	// before loop: allocate a scratch buffer of decent size
 char scratch[8192];  // can be larger; used for incremental reads
 
 // when you detect grid.data=
@@ -1033,40 +998,6 @@ if (strstr(line, "grid.data=") && grid_size > 0) {
         }
     }
 }	
-
-/*
-if (strstr(line, "height.data=") && height_size > 0 && height_data != NULL) {
-	printf("I now start reading %d height data points\n", height_size);
-    char* p = strstr(line, "height.data=") + strlen("height.data=");
-    int filled = 0;
-
-    while (*p && filled < height_size) {
-        while (*p && isspace(*p)) p++;
-        if (*p) {
-            double val;
-            if (sscanf(p, "%lf", &val) == 1) {
-                height_data[filled++] = val;
-                while (*p && !isspace(*p)) p++;
-            }
-        }
-    }
-
-    while (filled < height_size && fgets(line, sizeof(line), file)) {
-        p = line;
-        while (*p && filled < height_size) {
-            while (*p && isspace(*p)) p++;
-            if (*p) {
-                double val;
-                if (sscanf(p, "%lf", &val) == 1) {
-                    height_data[filled++] = val;
-                    while (*p && !isspace(*p)) p++;
-                }
-            }
-        }
-    }
-	printf("I now finished reading the height data\n");
-}
-*/
 
 if (strstr(line, "height.data=") && height_size > 0) {
     if (!height_data) {
@@ -1100,8 +1031,8 @@ double curvature_correction_min = cos(p_box->other_angle*DEG2RAD + atan2(rmin*co
 //double rmax = p_box->max_range_gate * p_box->range_resolution;
 double rmax = p_box->max_range_gate * p_box->range_resolution;
 double curvature_correction_max = cos(p_box->other_angle*DEG2RAD + atan2(rmax*cos(p_box->other_angle*DEG2RAD),(KEA+rmax*sin(p_box->other_angle*DEG2RAD))));
-double anglemin = p_box->min_angle * DEG2RAD;
-double anglemax = p_box->max_angle * DEG2RAD;
+double anglemin = p_box->min_angle * p_box->angular_resolution * DEG2RAD;
+double anglemax = p_box->max_angle * p_box->angular_resolution * DEG2RAD;
 double anglemid = (anglemin + anglemax) / 2;
  
 double xs[5] = {
@@ -1228,11 +1159,9 @@ double a, b, k;
     if (strcmp(radar->frequency, "X") == 0) {
         a = A_COEFF_X;
         b = B_COEFF_X;
-	k = 0.01;
     } else if (strcmp(radar->frequency, "C") == 0) {
         a = A_COEFF_C;
         b = B_COEFF_C;
-	k = 0.005;
     } else {
         // Default: assume no attenuation
         return 0.0;
@@ -1241,9 +1170,15 @@ double a, b, k;
 if (Z_lin <= 0.0 && b < 0.0) return 0.0;  
 
 double att = a * pow(Z_lin, b);
-//double att = k*Z_lin;
 if (isnan(att) || isinf(att)) return 0.0;   // Safe fallback
 
-    return (att/radar->range_resolution*0.001); // [dB/km]
+    return (att*radar->range_resolution*0.001); // [dB]
 }
+
+double normalize_angle(double angle_deg) {
+    double a = fmod(angle_deg, 360.0);
+    if (a < 0) a += 360.0;
+    return a;
+}
+
 

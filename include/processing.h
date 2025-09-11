@@ -78,11 +78,21 @@ int write_true_grid_to_file(const Vol_scan *vol, const char *filename);
 
 int classify_point_in_raincell(const Point *pt, const Point *raincell_center, const Raincell *raincell); 
 int fill_refl_ALA_grid(Vol_scan *vol, const Point *raincell_center, const Raincell *raincell, const VPR *vpr_1, const VPR *vpr_2);
-//int compute_rainfall_statistics(const Vol_scan *vol, double threshold, double *mse, double *mae, double *bias); 
-int compute_rainfall_statistics(const Vol_scan *vol, double threshold, double grid_res,
-                                double *mse, double *mae, double *bias,
-                                double *total_measured, double *total_true,
-                                double *total_measured_mm2, double *total_true_mm2);
- 
+
+// Compute radar statistics and also unmasked total true rainfall
+int compute_rainfall_statistics(const Vol_scan *vol,
+                                double threshold,
+                                double cart_grid_res,
+                                double *mse,
+                                double *mae,
+                                double *bias,
+                                double *total_measured,
+                                double *total_true_masked,
+                                double *total_measured_mm2,
+                                double *total_true_mm2,
+                                double *total_true_unmasked,
+                                double *total_true_mm2_unmasked);
+
+
 void free_cart_grid(Cart_grid *cg);
 #endif /* PROCESSING_H  */

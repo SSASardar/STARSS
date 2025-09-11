@@ -206,51 +206,55 @@ compute_display_grid_lowest_valid_height(vol,10.0);
         fprintf(stderr, "Failed to fill Refl_ALA grid\n");
     }
 
-    //calculate statistics.
-    double mse, mae, bias;
-double total_measured, total_true;
-double total_measured_mm2, total_true_mm2;
+
+double mse, mae, bias;
+double total_measured, total_true_masked, total_measured_mm2, total_true_mm2;
+double total_true_unmasked, total_true_mm2_unmasked;
 
 if (compute_rainfall_statistics(vol, 10.0, cart_grid_res,
                                 &mse, &mae, &bias,
-                                &total_measured, &total_true,
-                                &total_measured_mm2, &total_true_mm2) == 0) {
+                                &total_measured, &total_true_masked,
+                                &total_measured_mm2, &total_true_mm2,
+                                &total_true_unmasked, &total_true_mm2_unmasked) == 0) {
     stats_array[scan_idx].mse = mse;
     stats_array[scan_idx].mae = mae;
     stats_array[scan_idx].bias = bias;
     stats_array[scan_idx].total_measured = total_measured;
-    stats_array[scan_idx].total_true = total_true;
+    // store the **unmasked** true rainfall instead of masked
+    stats_array[scan_idx].total_true = total_true_unmasked;
 
-    double time_for_volume_scan = 5.0*60.0;
+    double time_for_volume_scan = 5.0 * 60.0; // seconds
 
-    stats_array[scan_idx].total_measured_mm2 = total_measured_mm2/time_for_volume_scan;
-    stats_array[scan_idx].total_true_mm2 = total_true_mm2/time_for_volume_scan;
+    stats_array[scan_idx].total_measured_mm2 = total_measured_mm2 / time_for_volume_scan;
+    stats_array[scan_idx].total_true_mm2 = total_true_mm2_unmasked / time_for_volume_scan;
 } else {
     stats_array[scan_idx].mse = stats_array[scan_idx].mae = stats_array[scan_idx].bias = NAN;
     stats_array[scan_idx].total_measured = stats_array[scan_idx].total_true = NAN;
     stats_array[scan_idx].total_measured_mm2 = stats_array[scan_idx].total_true_mm2 = NAN;
 }
 
-
 // Print stats for this scan
-printf("Scan %d stats: MSE=%.5f MAE=%.5f Bias=%.5f Total_meas=%.5f Total_true=%.5f Total_meas_mm2=%.5f Total_true_mm2=%.5f\n",
-       scan_idx, stats_array[scan_idx].mse, stats_array[scan_idx].mae, stats_array[scan_idx].bias,
+printf("Scan %d stats: MSE=%.5f MAE=%.5f Bias=%.5f "
+       "Total_meas=%.5f Total_true(unmasked)=%.5f "
+       "Total_meas_mm2=%.5f Total_true_mm2(unmasked)=%.5f\n",
+       scan_idx,
+       stats_array[scan_idx].mse, stats_array[scan_idx].mae, stats_array[scan_idx].bias,
        stats_array[scan_idx].total_measured, stats_array[scan_idx].total_true,
        stats_array[scan_idx].total_measured_mm2, stats_array[scan_idx].total_true_mm2);
 
 FILE *fp = fopen("outputs/stats.txt", "a");
 if (fp) {
-    if(scan_idx == 0) 
-        fprintf(fp, "Scan MSE MAE Bias Total_meas Total_true Total_meas_mm2 Total_true_mm2\n");
+    if (scan_idx == 0)
+        fprintf(fp, "Scan MSE MAE Bias Total_meas Total_true_unmasked Total_meas_mm2 Total_true_mm2_unmasked\n");
     fprintf(fp, "%d %.5f %.5f %.5f %.5f %.5f %.5f %.5f\n",
-            scan_idx, stats_array[scan_idx].mse, stats_array[scan_idx].mae, stats_array[scan_idx].bias,
+            scan_idx,
+            stats_array[scan_idx].mse, stats_array[scan_idx].mae, stats_array[scan_idx].bias,
             stats_array[scan_idx].total_measured, stats_array[scan_idx].total_true,
             stats_array[scan_idx].total_measured_mm2, stats_array[scan_idx].total_true_mm2);
     fclose(fp);
 } else {
-        fprintf(stderr, "Failed to open outputs/stats.txt for writing\n");
-    }
-
+    fprintf(stderr, "Failed to open outputs/stats.txt for writing\n");
+}
 
 // --- Write display_grid to file ---
 char disp_filename[256];

@@ -32,8 +32,8 @@ struct Cart_grid;
 // X-band: a ≈ ?, b ≈ ?
 // C-band: a ≈ ?, b ≈ ?
 // Source: Hitschfeld & Bordan (1954)
-#define A_COEFF_X 3.0e-5
-#define B_COEFF_X 1.6
+#define A_COEFF_X 1.5e-5
+#define B_COEFF_X 1.02
 #define A_COEFF_C 1.5e-5
 #define B_COEFF_C 0.80
 
@@ -176,7 +176,7 @@ double gaussian_noise(double mean, double stddev);
 double add_noise(const Radar* radar, double reflectivity);
 double compute_specific_attenuation(double refl_dBZ, const Radar* radar);
 
-
+double normalize_angle(double angle_deg);
 
 //FREEING STUFF
 

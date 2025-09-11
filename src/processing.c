@@ -195,25 +195,30 @@ bool getPolarBoxIndex(Point p,
     double angle = atan2(dy, dx);
     if (angle < 0) angle += 2*M_PI;
 
-    double min_angle = box->min_angle * DEG2RAD;
+    double min_angle = box->min_angle * box->angular_resolution * DEG2RAD;
     if (min_angle < 0) min_angle += 2*M_PI;
 
     double span = box->num_angles * box->angular_resolution * DEG2RAD;
-
+/*
     // Difference relative to box min angle, wrapped
     double angle_diff = angle - min_angle;
     if (angle_diff < 0) angle_diff += 2*M_PI;
 
     if (angle_diff < -eps || angle_diff > span + eps)
         return false;
+*/
+
+double angle_diff = fmod(angle - min_angle + 2*M_PI, 2*M_PI);
+if (angle_diff > span + eps)
+    return false;
 
     // --- Range index (round to nearest) ---
-    *range_idx = (int)((r - r_min) / box->range_resolution + 0.5);
+    *range_idx = (int)floor((r - r_min) / box->range_resolution + 1e-8);
     if (*range_idx < 0) *range_idx = 0;
     if (*range_idx >= (int)box->num_ranges) *range_idx = box->num_ranges - 1;
 
     // --- Angle index (round to nearest) ---
-    *angle_idx = (int)(angle_diff / (box->angular_resolution * DEG2RAD) + 0.5);
+    *angle_idx = (int)floor(angle_diff / (box->angular_resolution * DEG2RAD + 1e-8));
     if (*angle_idx < 0) *angle_idx = 0;
     if (*angle_idx >= (int)box->num_angles) *angle_idx = box->num_angles - 1;
 
@@ -619,7 +624,7 @@ int fill_refl_ALA_grid(Vol_scan *vol,
             int cls = classify_point_in_raincell(&pt, raincell_center, raincell);
 
             if (cls == 0) {
-                vol->refl_ALA[idx] = 0.0;
+                vol->refl_ALA[idx] = NAN;
             } else if (cls == 1) {
                 vol->refl_ALA[idx] = vpr_1->CB.reflectivity;
             } else if (cls == 2) {
@@ -645,56 +650,83 @@ void free_cart_grid(Cart_grid *cg) {
     free(cg);
 }
 
+static inline double dBZ_to_R(double dBZ) {
+    double Z = pow(10.0, dBZ / 10.0);
+    return pow(Z / 200.0, 1.0 / 1.6);
+}
+// Compute radar statistics and also unmasked total true rainfall
+int compute_rainfall_statistics(const Vol_scan *vol,
+                                double threshold,
+                                double cart_grid_res,
+                                double *mse,
+                                double *mae,
+                                double *bias,
+                                double *total_measured,
+                                double *total_true_masked,
+                                double *total_measured_mm2,
+                                double *total_true_mm2,
+                                double *total_true_unmasked,
+                                double *total_true_mm2_unmasked)
+{
+    if (!vol || !vol->display_grid || !vol->refl_ALA) return -1;
 
-int compute_rainfall_statistics(const Vol_scan *vol, double threshold, double grid_res,
-                                double *mse, double *mae, double *bias,
-                                double *total_measured, double *total_true,
-                                double *total_measured_mm2, double *total_true_mm2) {
-    if (!vol || !vol->display_grid || !vol->refl_ALA || !mse || !mae || !bias
-        || !total_measured || !total_true || !total_measured_mm2 || !total_true_mm2) return -1;
+    double sum_sq = 0.0, sum_abs = 0.0, sum_bias = 0.0;
+    double sum_measured = 0.0, sum_true_masked = 0.0;
+    double sum_measured_mm2_ = 0.0, sum_true_mm2_ = 0.0;
 
-    double sum_sq_error = 0.0;
-    double sum_abs_error = 0.0;
-    double sum_error = 0.0;
-    double sum_measured = 0.0;
-    double sum_true = 0.0;
-    int count = 0;
+    double sum_true_all = 0.0;      // unmasked
+    double sum_true_mm2_all = 0.0;  // unmasked
+    int count = 0, count_all = 0;
 
-    for (int i = 0; i < vol->num_elements; i++) {
+    double cell_area_km2 = cart_grid_res*0.001 * cart_grid_res*0.001;
+
+    for (int i = 0; i < vol->num_elements; ++i) {
         double dBZ_disp = vol->display_grid[i];
         double dBZ_true = vol->refl_ALA[i];
 
+        // --- Unmasked totals: include all valid refl_ALA ---
+        if (!isnan(dBZ_true)) {
+            double Rtrue = dBZ_to_R(dBZ_true);
+            sum_true_all += Rtrue;
+            sum_true_mm2_all += Rtrue * cell_area_km2;
+            count_all++;
+        }
+
+        // --- Masked stats for error metrics ---
         if (isnan(dBZ_disp) || isnan(dBZ_true)) continue;
         if (dBZ_disp < threshold) continue;
 
-        double Z_disp = pow(10.0, dBZ_disp / 10.0);
-        double Z_true = pow(10.0, dBZ_true / 10.0);
+        double Rdisp = dBZ_to_R(dBZ_disp);
+        double Rtrue = dBZ_to_R(dBZ_true);
 
-        double R_disp = pow(Z_disp / 200.0, 1.0 / 1.6);
-        double R_true = pow(Z_true / 200.0, 1.0 / 1.6);
+        double err = Rdisp - Rtrue;
 
-        sum_measured += R_disp;
-        sum_true += R_true;
+        sum_sq   += err * err;
+        sum_abs  += fabs(err);
+        sum_bias += err;
 
-        double error = R_disp - R_true;
-        sum_error += error;
-        sum_sq_error += error * error;
-        sum_abs_error += fabs(error);
+        sum_measured += Rdisp;
+        sum_true_masked += Rtrue;
+
+        sum_measured_mm2_ += Rdisp * cell_area_km2;
+        sum_true_mm2_     += Rtrue * cell_area_km2;
+
         count++;
     }
 
-    if (count == 0) return -2;
+    if (count == 0 || count_all == 0) return -1;
 
-    *mse = sum_sq_error / count;
-    *mae = sum_abs_error / count;
-    *bias = sum_error / count;
+    *mse = sum_sq / count;
+    *mae = sum_abs / count;
+    *bias = sum_bias / count;
+
     *total_measured = sum_measured;
-    *total_true = sum_true;
+    *total_true_masked = sum_true_masked;
+    *total_measured_mm2 = sum_measured_mm2_;
+    *total_true_mm2 = sum_true_mm2_;
 
-    // Convert to area-corrected total rainfall
-    double area_km2 = (grid_res / 1000.0) * (grid_res / 1000.0); // km² per grid cell
-    *total_measured_mm2 = sum_measured * area_km2;
-    *total_true_mm2 = sum_true * area_km2;
+    *total_true_unmasked = sum_true_all;
+    *total_true_mm2_unmasked = sum_true_mm2_all;
 
     return 0;
 }
