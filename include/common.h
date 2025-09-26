@@ -1,9 +1,15 @@
-// this is the .h file for the common.h file. declaring external common variables. ]
+/**
+ * @file common.h
+ * @brief collection of common structures and functions used
+ *
+ */
+
 
 #ifndef COMMON_H
 #define COMMON_H
 
 #include <math.h>
+
 
 extern double height;
 

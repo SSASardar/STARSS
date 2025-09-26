@@ -25,8 +25,8 @@
 int main() {
 
     clock_t start = clock();
-   double sim_time = 165.0; 
-   int max_vol_scans = (int)((270.0-sim_time)/5);
+   double sim_time = 60.0; 
+   int max_vol_scans = (int)((330.0-sim_time)/5);
 //   int max_vol_scans = (int)((20.0-sim_time)/5);
    // Example: generate 3 command files automatically
     for (int i = 0; i < max_vol_scans; i++) {
@@ -39,7 +39,7 @@ int main() {
     // Create raincell and spatial_raincell
     Raincell* raincell = create_raincell(1, 0.5, 10000.0, -0.5, 1000.0, 8000.0, 60.0*60.0, 180.0*60.0, 210.0*60.0, 270.0*60.0);   
    raincell_list[raincell_count] = raincell; 
-    Spatial_raincell* s_raincell = create_spatial_raincell(1, -120000.0,80000.0,6);
+    Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
 	
    s_raincell_list[raincell_count++] = s_raincell; 
 
@@ -49,7 +49,7 @@ int main() {
 VPR_params *params = malloc(sizeof(VPR_params));
 init_VPR_params(params);
 fill_VPR_params(params,
-    60.0*60, 120.0*60.0, 170.0*60.0, 200.0*60.0, 230.0*60.0,
+    120.0*60, 180.0*60.0, 230.0*60.0, 260.0*60.0, 290.0*60.0,
     10.0, 8000.0, 2000.0,        // Echo top
     50.0, 3.0, 2.0, 2.0,         // Bright band Z
     3000.0, 100.0, 50.0,         // Bright band heights
@@ -87,7 +87,7 @@ compute_average_VPR(VPR_A_d,   params, t3, t2, 60.0, VPR_dummy);
 
 	// Create radar list
     Radar* radar1 = create_radar(1, "C", "PPI", 0.0, 0.0, 100.0, 250000.0, 250.0, 1.0);
-    Radar* radar2 = create_radar(2, "X", "PPI", -50000.0, 50000.0, 25.0, 50000.0, 100.0, 0.250);
+    Radar* radar2 = create_radar(2, "X", "PPI", -50000.0, 50000.0, 25.0, 50000.0, 100.0, 0.5);
 // Assuming radar_count starts at 0
 radar_list[radar_count++] = radar1;  // Add radar1 to the list
 radar_list[radar_count++] = radar2;  // Add radar2 to the list

@@ -89,7 +89,7 @@ int main() {
     VPR_params *params = malloc(sizeof(VPR_params));
     init_VPR_params(params);
     fill_VPR_params(params,
-        60.0*60, 120.0*60.0, 170.0*60.0, 200.0*60.0, 230.0*60.0,
+        120.0*60, 180.0*60.0, 230.0*60.0, 260.0*60.0, 290.0*60.0,
         10.0, 8000.0, 2000.0,
         50.0, 3.0, 2.0, 2.0,
         3000.0, 100.0, 50.0,
@@ -117,7 +117,7 @@ int main() {
 
 
     Raincell* raincell = create_raincell(1, 0.5, 10000.0, -0.5, 1000.0, 8000.0, 60.0*60.0, 180.0*60.0, 210.0*60.0, 270.0*60.0);   
-Spatial_raincell* s_raincell = create_spatial_raincell(1, -120000.0,80000.0,6);
+Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
 
     double cart_grid_res = 25;
 
