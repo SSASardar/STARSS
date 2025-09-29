@@ -1,8 +1,8 @@
-// This is the common.c file.
-//
-//
-//
-
+/**
+ * @file common.c
+ * @brief common functions used throughout the project
+ *
+ */
 
 #include "common.h"
 #include <stdlib.h>

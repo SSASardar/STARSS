@@ -1,6 +1,6 @@
 /**
  * @file common.h
- * @brief collection of common structures and functions used
+ * @brief collection of common structures and functions prototypes used
  *
  */
 

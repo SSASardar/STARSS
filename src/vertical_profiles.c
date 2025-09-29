@@ -9,8 +9,6 @@ void init_VPR_params(VPR_params *params) {
     *params = (VPR_params){0}; // C99 compound literal zero-initialization
 }
 
-// Function to fill all fields with provided values
-// Each value must be passed explicitly to avoid uninitialized members
 void fill_VPR_params(
     VPR_params *params,
     double t_growth_start, double t_mature_start, double t_mature_end,
@@ -70,12 +68,8 @@ void fill_VPR_params(
     params->del_h_cb_growth = del_h_cb_growth;
     params->del_h_cb_mature = del_h_cb_mature;
 }
-/**
- * Allocate and initialise a new VPR on the heap.
- *
- * @return pointer to newly allocated VPR, or NULL on failure.
- *         Caller is responsible for freeing it with free().
- */
+
+
 VPR *create_VPR(void)
 {
     VPR *vpr = (VPR *)malloc(sizeof(VPR));
@@ -89,6 +83,7 @@ VPR *create_VPR(void)
 
     return vpr;
 }
+
 VPR *create_and_fill_VPR(const VPR_params *params) {
     if (!params) {printf("VPR_params is NULL\n");return NULL;}
 
