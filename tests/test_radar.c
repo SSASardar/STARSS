@@ -15,7 +15,7 @@ const Radar* radars[] = { radar1, radar2 };
     int num_radars = sizeof(radars) / sizeof(radars[0]);
 
     // Create raincell and spatial_raincell
-    Raincell* raincell = create_raincell(1, 0.5, 10000.0, -0.5, 1000.0, 8000.0, 60.0*60.0, 180.0*60.0, 210.0*60.0, 270.0*60.0);   
+    Raincell* raincell = create_raincell(1, 0.5, 10000.0, -0.5);   
     
     Spatial_raincell* s_raincell = create_spatial_raincell(1, -120000.0,80000.0, 6);
 	

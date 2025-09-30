@@ -383,7 +383,7 @@ int add_cart_grid_to_volscan(Vol_scan *vol, Cart_grid *grid, int ppi_index) {
             int vol_x = (int)floor((abs_x - vol->ref_point.x) / res);
             int vol_y = (int)floor((abs_y - vol->ref_point.y) / res);
 
-            if (vol_x < 0 || vol_x >= vol->num_x || vol_y < 0 || vol_y >= vol->num_y) continue;
+            if (vol_x < 0 || vol_x >= (int)vol->num_x || vol_y < 0 || vol_y >= (int)vol->num_y) continue;
 
             int vol_idx = vol_index(vol, vol_x, vol_y, ppi_index);
 	  //  printf("local=(%d,%d) abs=(%.2f,%.2f) -> vol=(%d,%d)\n",x, y, abs_x, abs_y, vol_x, vol_y);
@@ -424,11 +424,11 @@ int write_vol_scan_ppi_to_file(const Vol_scan *vol, int ppi_index, const char *f
     if (!f) return -3;
 
     fprintf(f, "# Vol_scan PPI slice %d\n", ppi_index);
-    fprintf(f, "# Grid size: %d x %d\n", vol->num_x, vol->num_y);
+    fprintf(f, "# Grid size: %zu x %zu\n", vol->num_x, vol->num_y);
     fprintf(f, "# Format: reflectivity height\n");
 
-        for (int x = 0; x < vol->num_x; x++) {
-    for (int y = 0; y < vol->num_y; y++) {
+        for (int x = 0; x < (int)vol->num_x; x++) {
+    for (int y = 0; y < (int)vol->num_y; y++) {
             int idx = vol_index(vol, x, y, ppi_index);
             double refl = vol->grid_refl[idx];
             double h    = vol->grid_height[idx];
@@ -447,8 +447,8 @@ int write_vol_scan_ppi_to_file(const Vol_scan *vol, int ppi_index, const char *f
 int compute_display_grid_max(Vol_scan *vol, double threshold) {
     if (!vol) return -1;
 
-        for (int x = 0; x < vol->num_x; x++) {
-    for (int y = 0; y < vol->num_y; y++) {
+        for (int x = 0; x < (int)vol->num_x; x++) {
+    for (int y = 0; y < (int)vol->num_y; y++) {
             int base_idx = x * vol->num_y + y;  // index into display_grid
             double max_val = -INFINITY;
             int found = 0;
@@ -509,11 +509,11 @@ int write_display_grid_to_file(const Vol_scan *vol, const char *filename) {
     if (!f) return -2;
 
     fprintf(f, "# Vol_scan Display Grid (max reflectivity across PPIs)\n");
-    fprintf(f, "# Grid size: %d x %d\n", vol->num_x, vol->num_y);
+    fprintf(f, "# Grid size: %zu x %zu\n", vol->num_x, vol->num_y);
     fprintf(f, "# Format: reflectivity\n");
 
-    for (int x = 0; x < vol->num_x; x++) {
-        for (int y = 0; y < vol->num_y; y++) {
+    for (int x = 0; x < (int)vol->num_x; x++) {
+        for (int y = 0; y < (int)vol->num_y; y++) {
             int idx = x * vol->num_y + y;
             double val = vol->display_grid[idx];
             if (isnan(val)) fprintf(f, "NaN ");
@@ -532,11 +532,11 @@ int write_true_grid_to_file(const Vol_scan *vol, const char *filename) {
     if (!f) return -2;
 
     fprintf(f, "# Vol_scan True Grid (RALA)\n");
-    fprintf(f, "# Grid size: %d x %d\n", vol->num_x, vol->num_y);
+    fprintf(f, "# Grid size: %zu x %zu\n", vol->num_x, vol->num_y);
     fprintf(f, "# Format: reflectivity\n");
 
-    for (int x = 0; x < vol->num_x; x++) {
-        for (int y = 0; y < vol->num_y; y++) {
+    for (int x = 0; x < (int)vol->num_x; x++) {
+        for (int y = 0; y < (int)vol->num_y; y++) {
             int idx = x * vol->num_y + y;
             double val = vol->refl_ALA[idx];
             if (isnan(val)) fprintf(f, "NaN ");
@@ -556,7 +556,7 @@ int classify_point_in_raincell(const Point *pt, const Point *raincell_center, co
     double distance_to_center = sqrt(dx*dx + dy*dy);
 
     // Compute distance to core using offset center
-    double core_center_x = raincell_center->x - raincell_get_offset_centre_core(raincell);
+    double core_center_x = raincell_center->x - raincell->offset_centre_core;
     double core_center_y = raincell_center->y; // adjust if your core offset has y component
     double dx_core = pt->x - core_center_x;
     double dy_core = pt->y - core_center_y;
@@ -564,9 +564,9 @@ int classify_point_in_raincell(const Point *pt, const Point *raincell_center, co
 
 
 
-    if (distance_to_center > raincell_get_radius_stratiform(raincell)) {
+    if (distance_to_center > raincell->radius_stratiform) {
         return 0; // outside
-    } else if (distance_to_core <= raincell_get_radius_core(raincell)) {
+    } else if (distance_to_core <= raincell->radius_core) {
         return 2; // core
     } else {
         return 1; // stratiform
@@ -613,8 +613,8 @@ int fill_refl_ALA_grid(Vol_scan *vol,
     //        raincell_center->x, raincell_center->y);
 
     // Fill grid
-    for (int x = 0; x < vol->num_x; x++) {
-        for (int y = 0; y < vol->num_y; y++) {
+    for (int x = 0; x < (int)vol->num_x; x++) {
+        for (int y = 0; y < (int)vol->num_y; y++) {
             int idx = x * vol->num_y + y;
 
             Point pt;
@@ -680,7 +680,7 @@ int compute_rainfall_statistics(const Vol_scan *vol,
 
     double cell_area_km2 = cart_grid_res*0.001 * cart_grid_res*0.001;
 
-    for (int i = 0; i < vol->num_elements; ++i) {
+    for (int i = 0; i < (int)vol->num_elements; ++i) {
         double dBZ_disp = vol->display_grid[i];
         double dBZ_true = vol->refl_ALA[i];
 
