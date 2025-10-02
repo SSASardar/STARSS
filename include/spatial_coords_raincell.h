@@ -59,8 +59,20 @@ void print_path_spatial_raincell(const Spatial_raincell* s_raincell);
  */
 void free_spatial_raincell(Spatial_raincell* s_raincell);
 
+
+/**
+ * @brief finding the location of the centre of the raincell at a given time
+ *
+ * Caller needs to free the point after use.
+ */
 Point* get_position_raincell(double time, const Spatial_raincell* cell);
 
+
+/**
+ * @brief used to store all non-zero returns with a minimal number of zero-returns.
+ *
+ * Caller needs to free bounding_box after use. 
+ */
 Bounding_box* create_BoundingBox_for_s_raincell(const Spatial_raincell* s_raincell, double time,  const Raincell* raincell);
 
 

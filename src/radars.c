@@ -21,42 +21,6 @@
 
 
 
-// Defining a radar
-/*
-struct Radar {
-	int id;
-	char frequency[2];
-	char scanning_mode[4];
-	double x;
-	double y;
-	double z;
-	double maximum_range;
-	double range_resolution;
-	double angular_resolution;
-};
-
-struct Polar_box {
-	int radar_id;
-	double min_range_gate;
-	double max_range_gate;
-	double min_angle;
-	double max_angle;
-	double num_ranges;
-	double num_angles;
-	double range_resolution;
-	double angular_resolution;
- 	double *grid;	
-	double other_angle;
-};
-
-struct RadarScan {
-	int scan_index;
-	Radar* radar;
-	Polar_box* box;
-};
-
-*/
-
 // Global registries:
 // // Global radar registry to deduplicate
 Radar* radar_list[MAX_RADARS];

@@ -1,3 +1,10 @@
+/**
+ * @file vertical_profiles.c
+ * @brief The functions describing the vertical profiles of reflectivity
+ *
+ * This is the radar-based measurements. Individual drops are not considered. 
+ */
+
 #include "vertical_profiles.h"
 #include <stdio.h>
 #include <stdlib.h>
