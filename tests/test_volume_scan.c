@@ -19,8 +19,8 @@ int main() {
 
     printf("Loaded %d radar scans:\n", scan_count);
     for (int i = 0; i < scan_count; ++i) {
-        RadarScan* s = &radar_scans[i];
-/*        printf("Scan %d: TIME in mins (%lf)  Radar ID %d, Grid[0]=%.2f\n",
+/*        RadarScan* s = &radar_scans[i];
+        printf("Scan %d: TIME in mins (%lf)  Radar ID %d, Grid[0]=%.2f\n",
                s->scan_index,s->time, s->radar->id,
                s->box->grid ? s->box->grid[65] : -1.0);
   */  }
@@ -175,7 +175,7 @@ compute_average_VPR(VPR_A_d,   params, t3, t2, 60.0, VPR_dummy);
         add_cart_grid_to_volscan(vol, cart_grids[i], i);
     }
 
-    printf("Volume scan created: %d PPIs, %d x %d grid, %d elements\n",
+    printf("Volume scan created: %d PPIs, %zu x %zu grid, %zu elements\n",
            vol->num_PPIs, vol->num_x, vol->num_y, vol->num_elements);
 
 /*
@@ -207,7 +207,7 @@ write_display_grid_to_file(vol, "outputs/disp_grid_max.txt");
 // calculate true raincell:
 double true_time_min = radar_scans[scan_count-1].time + ( radar_scans[scan_count-1].time -  radar_scans[scan_count-2].time  );
    double true_time = true_time_min * 60.0;
-    Raincell* raincell = create_raincell(1, 0.5, 10000.0, -0.5, 1000.0, 8000.0, 60.0*60.0, 180.0*60.0, 210.0*60.0, 270.0*60.0);   
+    Raincell* raincell = create_raincell(1, 0.5, 10000.0, -0.5);   
 Spatial_raincell* s_raincell = create_spatial_raincell(1, -120000.0,80000.0, 6);
 	
 

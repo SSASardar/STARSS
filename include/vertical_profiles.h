@@ -47,24 +47,29 @@ typedef struct VPR {
  */
 typedef struct VPR_params {
 	//time parameters
-	double t_growth_start;
-	double t_mature_start;
-	double t_mature_end;
-	double t_decay_mid;
-	double t_decay_end;
+	double t_growth_start;/**< starting time phase 2*/
+	double t_mature_start;/**< starting time phase 3*/
+	double t_mature_end;/**< starting time phase 4*/
+	double t_decay_mid;/**< time of peak rainfall intensity (during phase 4)*/
+	double t_decay_end;/**< starting time phase */
 
+	
+	//	rates of growth
 	double div_f_growth;
 	double div_f_mature;
 	double div_f_decay;
 	double div_f_decay1;
 	double div_f_decay2;
 
-	// Echo Top parameters
+	// Echo Top parameters: nonchanging through different phases
 	double Z_et_0;
 	double h_et_0;
 	double del_h_et;
 
-	// bright band parameters
+	// bright band parameters:
+	// 		 Everything is relative to the middle of the bright band which determines the height and the peak intensity
+	// 	The heights and reflectivities of the top and bottom of the bright band are determined by their respective width parameters.
+	// 	How the widths are distributed to the top and bottom are determined by the ratio parameters.
 	double Z_bb_0;
 	double del_Z_bb_growth;
 	double del_Z_bb_mature;
@@ -79,13 +84,13 @@ typedef struct VPR_params {
         double del_width_h_growth;
 	double del_width_h_mature;
 
-
+	//	ratio parameters:
 	double ratio_U_to_L;
 	double del_ratio_UL_growth;
 	double del_ratio_UL_mature;
 	double del_ratio_UL_decay;
 
-	// cell base parameters
+	// cell base parameters: how the heights and reflectivities change in different phases.
 	double Z_cb_0;
 	double del_Z_cb_growth;
 	double del_Z_cb_mature;
@@ -170,7 +175,7 @@ double interpolate_reflectivity(VPR_point p1, VPR_point p2, double height);
 /**
  * @brief computing the reflectivity at a given height based on the interpolation and the VPR parametrisation
  */
-double get_reflectivity_at_height(VPR *vpr, double height);
+double get_reflectivity_at_height(const VPR *vpr, double height);
 
 /**
  * @defgroup VPRArithmetic VPR arithmetic

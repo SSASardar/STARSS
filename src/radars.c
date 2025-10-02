@@ -293,7 +293,7 @@ int fill_polar_box(Polar_box* polar_box, double time,
     double diff_y = centre->y - radar_point->y;
     double dist_s = sqrt(diff_x * diff_x + diff_y * diff_y);
     double dist = sin(dist_s / kea_and_radar) * kea_and_radar / cos(polar_box->other_angle*DEG2RAD);
-    double radius_stratiform = raincell_get_radius_stratiform(raincell);
+    double radius_stratiform = raincell->radius_stratiform;
 
     polar_box->range_resolution = get_range_res_radar(radar);
     polar_box->angular_resolution = get_angular_res_radar(radar);
@@ -423,8 +423,8 @@ void print_polar_box(const Polar_box* box) {
 
     // Print polar box info directly from the box
     printf("Radar ID      : %d\n", box->radar_id);
-    printf("Num of Angles : %.0f\n", box->num_angles);
-    printf("Num of Ranges : %.0f\n", box->num_ranges);
+    printf("Num of Angles : %.0d\n", box->num_angles);
+    printf("Num of Ranges : %.0d\n", box->num_ranges);
     printf("Between angles: [%.2f, %.2f]\n", box->min_angle, box->max_angle);
     printf("Between ranges: [%.2f, %.2f]\n",
            box->min_range_gate * box->range_resolution,
@@ -606,7 +606,7 @@ int sample_from_relative_location_in_raincell(double range, double angle, double
     double rel_y = sample_y - spatial_centre->y;
 
     // 4. Apply core offset in the direction of movement (assume offset along x-axis for simplicity)
-    double core_centre_x = raincell_get_offset_centre_core(raincell);
+    double core_centre_x = raincell->offset_centre_core;
     double core_rel_x = rel_x + core_centre_x;
 
     // 5. Compute distances
@@ -614,9 +614,9 @@ int sample_from_relative_location_in_raincell(double range, double angle, double
     double distance_to_core = sqrt(core_rel_x * core_rel_x + rel_y * rel_y);
 
     // 6. Determine which region the sample lies in
-    if (distance_to_centre > raincell_get_radius_stratiform(raincell)) {
+    if (distance_to_centre > raincell->radius_stratiform) {
         return 0; // Outside the raincell
-    } else if (distance_to_core <= raincell_get_radius_core(raincell)) {
+    } else if (distance_to_core <= raincell->radius_core) {
         return 2; // Inside core region
     } else {
         return 1; // Inside stratiform region
@@ -671,6 +671,7 @@ if (sample == 0) { //raincell shape is always convex, so no strange things need 
         box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
 } else {
         refl_dBZ = get_reflectivity_at_height(vpr_conv, sample_height);
+
         att = compute_specific_attenuation(refl_dBZ, radar); 
         //att = 0.02; 
         if(idp == idp_min_one) {
@@ -1155,7 +1156,7 @@ if (isnan(refl_dBZ) || isinf(refl_dBZ)) return 0.0;  // Already partially done
 
 double Z_lin = pow(10.0, refl_dBZ / 10.0);
 
-double a, b, k;
+double a, b;
     if (strcmp(radar->frequency, "X") == 0) {
         a = A_COEFF_X;
         b = B_COEFF_X;
