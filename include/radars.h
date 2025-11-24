@@ -104,28 +104,87 @@ typedef struct RadarScan {
 } RadarScan;
 
 
-
+/**
+ * @brief Number of radar scans/slices in one volume scan
+ *
+ * This variable is defined in radar.c and is filled by reading the radar_scan_dddd.txt file
+ *
+ */
 extern RadarScan radar_scans[MAX_SCANS];
+
+/** @brief Storing the number of radars in the network
+ *
+ * This variable is defined in radar.c and needs to be filled in manually.
+ *
+ */
 extern Radar* radar_list[MAX_RADARS];           
  
+/** @ brief stores the number of radar scans/slices in the volume scan. 
+ *
+ * This is set when it is used. 
+ */
 extern int scan_count;
+
+/** @brief stores the number of radars in the network
+ *
+ * Is updated every time it is used manually.
+ */
 extern int radar_count;
 
 
 
 
-
+ /** @brief Creates and initialises a radar
+  *
+  * @param id the radar's unique id
+  * @param frequency the radar's frequency (X or C)
+  * @param scanning_mode the radar's scanning mode, choice of Plan Position Indicator (PPI) or Range Height Indicator (RHI). 
+  * @param x the x-coordinate in the global coordinates
+  * @param y the y-coordinate in the global coordinates
+  * @param z the height at which the radar is placed
+  * @param max_range the radar's maximum range
+  * @param range_res the radar's range resolution
+  * @param angular_res the radar's angular resolution (0.5, 1.0 and 2.0 degrees tested)
+  * 
+  * @return Radar struct which can be used in other functions.
+  */
 Radar* create_radar(int id, const char* frequency, const char* scanning_mode, double x, double y,double z, double max_range, double range_res, double angular_res);
 
-
+/** @brief returns an existing radar or creates and initialises a new radar. 
+ *
+ * @param id the radar's unique id
+ * @param frequency the radar's frequency (X or C)
+ * @param scanning_mode the radar's scanning mode, choice of Plan Position Indicator (PPI) or Range Height Indicator (RHI). 
+ * @param x the x-coordinate in the global coordinates
+ * @param y the y-coordinate in the global coordinates
+ * @param z the height at which the radar is placed
+ * @param max_range the radar's maximum range
+ * @param range_res the radar's range resolution
+ * @param angular_res the radar's angular resolution (0.5, 1.0 and 2.0 degrees tested)
+ * 
+ * @return Radar struct which can be used in other functions.
+ */
 Radar* get_or_create_radar(int id, const char* freq, const char* mode, double x, double y, double z, double max_range, double range_res, double angular_res);
 
-
-
-//Polar_box* create_polar_box(double time, const Spatial_raincell* s_raincell, const Radar* radar, const Raincell* raincell);
-
-//Polar_box* create_polar_box(int radar_id, double min_range_gate, double max_range_gate,double min_angle, double max_angle, double num_ranges,double num_angles, double range_res, double angular_res,int grid_size, double *grid_data);
-
+/** @brief Storing one radar scan/slice.
+ *
+ * @param radar_id which radar was scanned?
+ * @param min_range_gate Smallest range gate which captures the raincell
+ * @param max_range_gate Largest range gate which captures the raincell
+ * @param min_angle Smallest angle (in degrees) which captures the raincell
+ * @param max_angle Largest angle (in degrees) which captures the raincell
+ * @param num_ranges stores the number of used range gates
+ * @param num_angles stores the number of used angular gates
+ * @param range_res stores the range resolution of the radar
+ * @param angular_res stores the angular resolution of the radar
+ * @param grid_size stores the number of range gates across all angles used
+ * @param other_angle stores either the elevation angle or the azimuth angle depending on the scanning mode
+ * @param grid_data stores the measured reflectivity
+ * @param height_size stores the size of the storage matrix height_data
+ * @param height_data stores the heights at which the reflectivity is measured at
+ *
+ * @return Polar_box which can be written to to store information.
+ */
 Polar_box* create_polar_box(
     int radar_id,
     double min_range_gate,
@@ -143,11 +202,40 @@ Polar_box* create_polar_box(
     double *height_data
     );
 
-
+/**
+ * @brief for reuse of allocated polar box
+ *
+ * @return Polar_box to reuse
+ */
 Polar_box* init_polar_box();
+
+/** @brief used to update the other angle in an existing Polar_box
+ *
+ * Once you have a measurment loaded in a Polar_box, and you want to move to a new measurement, first change the fixed angle at which it scans, then repeat a measurement. 
+ *
+ * @param p_box an existing Polar_box to be used in the new measurements
+ * @param new_angle the new fixed angle. 
+ */
 void update_other_angle(Polar_box* p_box, double new_angle);
+
+
+/** @brief function which executes the radar measurements of the raincell. 
+ *
+ * @param polar_box the Polar_box which will store the measurement. 
+ * @param time the time of the measurement (ASSUMPTION: the whole scan is conducted at the same time.)
+ * @param s_raincell the spatial description of the raincell containing its speed and initial location in both x and y
+ * @param radar the radar which conducts the measurement
+ * @param raincell the material description of the raincell containing its vertical evolution and the location of the intense developing core
+ *
+ * @return 0 if successful, -1 if there is an error along with an error message
+ */
 int fill_polar_box(Polar_box* polar_box, double time, const struct Spatial_raincell* s_raincell, const Radar* radar, const struct Raincell* raincell);
 
+/**
+ * @brief [DEBUG] prints out the radar specifications so you can check... 
+ *
+ * @param radar the radar you want to check 
+ */ 
 void print_radar_specs(const Radar* radar);
 
 Point* get_position_radar(const Radar* radar);
