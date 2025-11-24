@@ -187,6 +187,7 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
     for (int i = 0; i < cg_count; i++)
         add_cart_grid_to_volscan(vol, cart_grids[i], i);
 
+//compute_display_grid_average(vol,10.0);
 //compute_display_grid_max(vol,10.0);
 compute_display_grid_lowest_valid_height(vol,10.0);
 //compute_display_grid_min_above_threshold(vol,10.0);

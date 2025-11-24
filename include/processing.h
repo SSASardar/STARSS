@@ -73,7 +73,7 @@ void free_vol_scan(Vol_scan *vol);
 
 int write_vol_scan_ppi_to_file(const Vol_scan *vol, int ppi_index, const char *filename);
 
-
+int compute_display_grid_average(Vol_scan *vol, double threshold);
 int compute_display_grid_max(Vol_scan *vol, double threshold);
 int compute_display_grid_lowest_valid_height(Vol_scan *vol, double threshold);
 

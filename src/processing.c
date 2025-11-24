@@ -444,6 +444,29 @@ int write_vol_scan_ppi_to_file(const Vol_scan *vol, int ppi_index, const char *f
 }
 
 
+int compute_display_grid_average(Vol_scan *vol, double threshold) {
+    if (!vol) return -1;
+        for (int x = 0; x < (int)vol->num_x; x++) {
+    for (int y = 0; y < (int)vol->num_y; y++) {
+            int base_idx = x * vol->num_y + y;  // index into display_grid	
+	    double dummy=0;
+            int found = 0;
+
+            for (int ppi = 0; ppi < vol->num_PPIs; ppi++) {
+                int idx = vol_index(vol, x, y, ppi);
+                double refl = vol->grid_refl[idx];
+                if (!isnan(refl)) {
+                        dummy = dummy + refl;
+                        found = found + 1;
+                }
+            }
+vol->display_grid[base_idx] = (dummy/(double)found < threshold) ? NAN : dummy/(double)found;
+        }
+    }
+
+    return 0;
+}
+
 int compute_display_grid_max(Vol_scan *vol, double threshold) {
     if (!vol) return -1;
 

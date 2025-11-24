@@ -196,7 +196,7 @@ ax_stats.plot(time, total_measured_mm2, marker='o', color='purple', label='Measu
 ax_stats.plot(time, total_true_mm2, marker='o', color='orange', label='True mm²')
 ax_stats.set_title("True vs Measured over time")
 ax_stats.set_xlabel("Time (min)")
-ax_stats.set_ylabel("Rainfall rate (mm^2 per sec per m^2)")
+ax_stats.set_ylabel("Rainfall rate [mm per sec per m²]")
 ax_stats.legend()
 ax_stats.grid(True)
 time_line = ax_stats.axvline(time[0], color="black", linestyle="--")
