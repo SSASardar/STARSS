@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-
+rm "outputs/"*".txt"
 echo "Running make test with input 2..."
 echo 2 | make test
 

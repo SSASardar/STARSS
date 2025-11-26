@@ -238,42 +238,160 @@ int fill_polar_box(Polar_box* polar_box, double time, const struct Spatial_rainc
  */ 
 void print_radar_specs(const Radar* radar);
 
+
+/** 
+ * @brief gets the x-y position of the radar
+ *
+ * @param radar the radar you want to check
+ */
 Point* get_position_radar(const Radar* radar);
+
+
+/** 
+ * @brief gets height of the radar
+ *
+ * @param radar the radar you want to check
+ */
 double get_height_of_radar(const Radar* radar);
+
+
+/** 
+ * @brief gets the range resolution of the radar in meters
+ *
+ * @param radar the radar you want to check
+ */
 double get_range_res_radar(const Radar* radar);
 
+
+/** 
+ * @brief gets the angular resolution of the radar (in degrees)
+ *
+ * @param radar the radar you want to check
+ */
 double get_angular_res_radar(const Radar* radar);
 
+
+/** 
+ * @brief gets the maximum range of the radar in meters
+ *
+ * @param radar the radar you want to check
+ */
 double get_max_range_radar(const Radar* radar);
 
+
+/** 
+ * @brief gets the unique identifier of the radar
+ *
+ * @param radar the radar you want to check
+ */
 int get_radar_id(const Radar* radar);
 
+
+/** 
+ * @brief gets the frequency band of the radar in letters
+ *
+ * @param radar the radar you want to check
+ */
 const char* get_frequency(const Radar* r);
 
+
+/** 
+ * @brief gets the scanning mode of the radar (PPI or RHI)
+ *
+ * @param radar the radar you want to check
+ */
 const char* get_scanning_mode(const Radar*);
 
-
-
-/*void print_polar_grid(const Polar_box* polar_box, const Radar** radars, int num_radars);
-*/
-
+/**
+ * @brief [DEBUG] prints the corners of the polar box
+ *
+ * @param box the Polar_box being checked.
+ */
 void print_polar_box(const Polar_box* box);
 
 
 // Getter function declarations
+
+/** 
+ * @brief retrieving the radar id a polar box has saved data from. 
+ *
+ * @param box the Polar_box being checked.
+ */
 int get_radar_id_for_polar_box(const struct Polar_box* box);
+
+/** 
+ * @brief retrieving the minimum range gate of the polar box. 
+ *
+ * @param box the Polar_box being checked.
+ */
 double get_min_range_gate(const struct Polar_box* box);
+
+/** 
+ * @brief retrieving the maximum range gate of the polar box. 
+ *
+ * @param box the Polar_box being checked.
+ */
 double get_max_range_gate(const struct Polar_box* box);
+
+/** 
+ * @brief retrieving the minimum angle of the polar box. 
+ *
+ * @param box the Polar_box being checked.
+ */
 double get_min_angle(const struct Polar_box* box);
+
+/** 
+ * @brief retrieving the maximum angle of the polar box. 
+ *
+ * @param box the Polar_box being checked.
+ */
 double get_max_angle(const struct Polar_box* box);
+
+/** 
+ * @brief how many range gates per angle are saved in the polar box?. 
+ *
+ * @param box the Polar_box being checked.
+ */
 double get_num_ranges(const struct Polar_box* box);
+
+/** 
+ * @brief How many angles are included in the polar box?. 
+ *
+ * @param box the Polar_box being checked.
+ */
 double get_num_angles(const struct Polar_box* box);
+
+/** 
+ * @brief What is the range resolution in the polar box?. 
+ *
+ * @param box the Polar_box being checked.
+ */
 double get_range_res_polar_box(const struct Polar_box* box);
+
+/** 
+ * @brief What is the angular resolution of the polar box? 
+ *
+ * @param box the Polar_box being checked.
+ */
 double get_angular_res_polar_box(const struct Polar_box* box);
 
-
+/**
+ * @brief query the radar which the polar box saved data from.
+ *
+ * @param box the Polar_box
+ * @param radars an array of all radars in the system
+ * @param num_radars the number of radars in the whole system
+ */
 const Radar* find_radar_by_id(const Polar_box* box, const Radar** radars, int num_radars);
+
+/**
+ * @brief querying a radar with only it's unique identifier.
+ *
+ * @param idA the id of the radar you want to find.
+ */
 const Radar* find_radar_by_id_ONLY(int idA);
+
+
 Bounding_box* create_bounding_box_for_polar_box(const Polar_box* p_box, const Radar** radars, int num_radars);
 Bounding_box* create_bounding_box_for_polar_box_EZ(const Polar_box* p_box);
 
