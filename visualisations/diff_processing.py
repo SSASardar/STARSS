@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Load the two files (skip header row)
-max_data = np.loadtxt("outputs/stats_max.txt", skiprows=1)
-rala_data = np.loadtxt("outputs/stats_RALA.txt", skiprows=1)
+max_data = np.loadtxt("outputs/stats_RALA_X.txt", skiprows=1)
+rala_data = np.loadtxt("outputs/stats_RALA_C.txt", skiprows=1)
 
 # Columns (based on your format):
 # 0=Scan, 1=MSE, 2=MAE, 3=Bias,
@@ -24,9 +24,9 @@ true_mm2 = max_data[:, 7]  # same across rows
 
 # Plot
 plt.figure(figsize=(10, 6))
-plt.plot(time, meas_max, label="Measured max mm²", marker="o", color="purple", linestyle="dotted")
-plt.plot(time, meas_rala, label="Measured RALA mm²", marker="o", color="blue", linestyle="dashed")
-plt.plot(time, true_mm2, label="True mm²", color="orange", linestyle="solid")
+plt.plot(time, meas_max, label="RALA X-band", marker="o", color="purple", linestyle="dotted")
+plt.plot(time, meas_rala, label="RALA C-band", marker="o", color="blue", linestyle="dashed")
+plt.plot(time, true_mm2, label="True rate", color="orange", linestyle="solid")
 
 
 # Compute absolute differences
@@ -41,14 +41,14 @@ total_diff_rala = np.sum(diff_rala)
 relative_improvement = (total_diff_max - total_diff_rala) / total_diff_max * 100
 
 # Print results
-print(f"Total error (Max):   {total_diff_max:.4f}")
-print(f"Total error (RALA):  {total_diff_rala:.4f}")
-print(f"Relative improvement of RALA over Max: {relative_improvement:.2f}%")
+print(f"Total error (RALA X-band):   {total_diff_max:.4f}")
+print(f"Total error (RALA C-band):  {total_diff_rala:.4f}")
+print(f"Relative improvement of X-band over C-band: {relative_improvement:.2f}%")
 
 
 plt.xlabel("Time (mins)")
-plt.ylabel("Measured mm² per sec per m²")
-plt.title("Effects of processing chain on measured rainfall rate")
+plt.ylabel("Rainfall rate [mm per sec per m²]")
+plt.title("Effects of radar on measured rainfall rate")
 plt.legend()
 plt.grid(True, linestyle="--", alpha=0.6)
 plt.tight_layout()

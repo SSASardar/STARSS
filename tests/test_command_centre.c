@@ -24,7 +24,7 @@
 
 int main() {
 
-    clock_t start = clock();
+    //clock_t start = clock();
    double sim_time = 60.0; 
    int max_vol_scans = (int)((330.0-sim_time)/5);
 //   int max_vol_scans = (int)((20.0-sim_time)/5);
@@ -37,7 +37,7 @@ int main() {
 
 	// Setting up rainfall
     // Create raincell and spatial_raincell
-    Raincell* raincell = create_raincell(1, 0.5, 10000.0, -0.5, 1000.0, 8000.0, 60.0*60.0, 180.0*60.0, 210.0*60.0, 270.0*60.0);   
+    Raincell* raincell = create_raincell(1, 0.5, 10000.0, -0.5);   
    raincell_list[raincell_count] = raincell; 
     Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
 	
@@ -71,7 +71,7 @@ VPR *VPR_strat   = create_and_fill_VPR(params);
 
     VPR *VPR_dummy = create_VPR();
     
-    double t1,t2, t3, timeB;
+    double t1,t2, t3;// timeB;
     t1 = params->t_growth_start;
     t2 = params->t_decay_end;
     t3 = params->t_mature_end;

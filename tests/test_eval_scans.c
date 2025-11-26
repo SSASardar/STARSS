@@ -116,7 +116,7 @@ int main() {
     compute_average_VPR(VPR_A_d, params, t3, t2, 60.0, VPR_dummy);
 
 
-    Raincell* raincell = create_raincell(1, 0.5, 10000.0, -0.5, 1000.0, 8000.0, 60.0*60.0, 180.0*60.0, 210.0*60.0, 270.0*60.0);   
+    Raincell* raincell = create_raincell(1, 0.5, 10000.0, -0.5);   
 Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
 
     double cart_grid_res = 25;
@@ -187,6 +187,7 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
     for (int i = 0; i < cg_count; i++)
         add_cart_grid_to_volscan(vol, cart_grids[i], i);
 
+//compute_display_grid_average(vol,10.0);
 //compute_display_grid_max(vol,10.0);
 compute_display_grid_lowest_valid_height(vol,10.0);
 //compute_display_grid_min_above_threshold(vol,10.0);

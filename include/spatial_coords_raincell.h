@@ -1,5 +1,7 @@
-// This is the header file for the spatial_coords_raincell.c file
-
+/**
+ * @file spatial_coords_raincell.h
+ * @brief structures and functions for spatial/eulerian description of raincell
+ */
 
 
 
@@ -10,7 +12,11 @@
 #include "common.h"
 #include "material_coords_raincell.h"
 
-// Opaque defintiion of spatial raincell coordinates.
+
+/**
+ * @struct Spatial_raincell
+ * @brief Holds the unique identifier, the initial positions and the velocity split in components
+ */
 typedef struct Spatial_raincell {
 	int id;
 	double initial_x;
@@ -22,28 +28,51 @@ typedef struct Spatial_raincell {
 
 
 //global registries:
-
+/**
+ * @brief Global list of spatial raincells for easy access
+ */
 extern Spatial_raincell* s_raincell_list[MAX_RAINCELLS];
 
 
 
 
 
-// function declarations
+/**
+ * @brief setting the initial positions and the velocity of a specific raincell.
+ * 
+ * Now all the volecity goes to the x component.
+ */
 Spatial_raincell* create_spatial_raincell(int d, double intial_x, double intial_y, double velocity);
 
-// Finder function
+/**
+ * @brief retrieving a Spatial_raincell from the global list using its id.
+ */
 const Spatial_raincell* find_spatial_raincell_by_id_ONLY(int idA);
 
-
-void print_spatial_raincell(const Spatial_raincell* s_raincell, double time, const Raincell* raincell);
-
+/**
+ * @brief [DEBUG] printing the path of the raincell through the simulation domain in Cartesian coordinates.
+ */
 void print_path_spatial_raincell(const Spatial_raincell* s_raincell);
 
+/**
+ * @brief Freeing memory
+ */
 void free_spatial_raincell(Spatial_raincell* s_raincell);
 
+
+/**
+ * @brief finding the location of the centre of the raincell at a given time
+ *
+ * Caller needs to free the point after use.
+ */
 Point* get_position_raincell(double time, const Spatial_raincell* cell);
 
+
+/**
+ * @brief used to store all non-zero returns with a minimal number of zero-returns.
+ *
+ * Caller needs to free bounding_box after use. 
+ */
 Bounding_box* create_BoundingBox_for_s_raincell(const Spatial_raincell* s_raincell, double time,  const Raincell* raincell);
 
 

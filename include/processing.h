@@ -9,36 +9,42 @@
 #include "spatial_coords_raincell.h"
 #include "vertical_profiles.h"
 
-
+/**
+ * @struct Cart_grid
+ * @brief Storing a 2-D cartesian grid with squares. 
+ *
+ *
+ */
 typedef struct Cart_grid {
-	double resolution;
-	double *grid;
-	double *height_grid;
-	double *attenuation_grid;
-	int num_elements;
-	int num_x;
-	int num_y;
-	Point ref_point;
+	double resolution;/**< resolution of the square dx=dy */
+	double *grid;/**< pointer storing the measured reflectivity values*/
+	double *height_grid;/**< pointer storing the heights of the measured reflectivity*/
+	double *attenuation_grid;/**< pointer storing the path-integrated attenuation*/
+	int num_elements;/**<storing number of gridpoints*/
+	int num_x;/**< storing the number in axis 1 (x)*/
+	int num_y;/**< storing the number in axis 2 (y or z)*/
+	Point ref_point;/**< storing the left bottom corner of the cartesian box*/
 } Cart_grid;
 
 
+/**
+ * @struct Vol_scan
+ * @brief Storing a set of PPI's as 1 volume scan.
+ */
 typedef struct Vol_scan {
-    int num_PPIs;
-    size_t num_elements;
-    size_t num_x;
-    size_t num_y;
-    Point ref_point;
-    double resolution;
+    int num_PPIs;/**< storing the number of PPI's in the volume scan*/
+    size_t num_elements;/**< storing the total number of elements in one PPI.*/
+    size_t num_x;/**< storing the number of elements in axis 1 (x) in one PPI*/
+    size_t num_y;/**< storing the number of elements in axis 2 (y) in one PPI*/
+    Point ref_point;/**< storing the most left bottom corner of all the PPI's*/
+    double resolution;/**< storing the resolution of the PPI's/Volume scan. This should be the same*/
 
-    double *grid_refl;      // size = num_elements * num_PPIs
-    double *grid_height;    // optional
-    double *grid_att;       // optional
-    double *display_grid;   // optional, size = num_elements
-double *refl_ALA;       // new field, same size as display_grid
+    double *grid_refl;/**< storing the reflectivity measurements in a pointer of size = num_elements * num_PPIs*/
+    double *grid_height; /**< storing the heights of the reflectivity measurements in a pointer*/
+    double *grid_att; /**< storing the the path-integrated attenuation of the reflectivity measurements in a pointer*/
+    double *display_grid;/**< storing the projected data (of size = num_elements in PPI) in a pointer.*/
+double *refl_ALA;       /**<storing the reflectivity at lowest altitude*/
 } Vol_scan;
-
-
-
 
 Cart_grid* Cart_grid_init(double resolution, int num_x, int num_y, Point ref_point);
 
@@ -67,7 +73,7 @@ void free_vol_scan(Vol_scan *vol);
 
 int write_vol_scan_ppi_to_file(const Vol_scan *vol, int ppi_index, const char *filename);
 
-
+int compute_display_grid_average(Vol_scan *vol, double threshold);
 int compute_display_grid_max(Vol_scan *vol, double threshold);
 int compute_display_grid_lowest_valid_height(Vol_scan *vol, double threshold);
 
