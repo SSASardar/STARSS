@@ -67,10 +67,12 @@ void generate_commands_file(int file_index, double start_time) {
         Command cmd;
         cmd.time = start_time + i * interval;
         cmd.radar_id = 1;
-        snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
+      // snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
+	 snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
         cmd.raincell_id = 1;
 	cmd.other_angle = counter_A * (24.0 / (SCANS_PER_FILE+1)); // Exampe: 0–12 degrees.
-        counter_A++;
+        //cmd.other_angle = 0;
+	counter_A++;
 								 //
 	if (counter_A == 8) counter_A =0;
         fprintf(file, "%.2f %d %s %d %.5f\n",
@@ -197,13 +199,14 @@ void execute_command(const Command *cmd, Polar_box *box, const char *filename, c
 double time_in_min = cmd->time;
 double time_in_sec = cmd->time * 60.0;
     // Fill and compute polar box
-    if (fill_polar_box(box, time_in_sec, s_rc, radar, rc) != 0) {
+    if (fill_polar_box(box, time_in_sec, s_rc, radar, rc, params) != 0) {
         log_message("Failed to fill polar box for command ID %d\n", cmd->command_id);
         return;
     }
 
 
-	update_other_angle(box, cmd->other_angle);
+if(strcmp(get_scanning_mode(radar), "PPI")==0)update_other_angle(box, cmd->other_angle);
+
 
 
     Point* pos_raincell = get_position_raincell(time_in_sec, s_rc);

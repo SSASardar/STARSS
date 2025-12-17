@@ -206,7 +206,8 @@ def plot_frequency_nonzero(values):
 
 
 if __name__ == "__main__":
-    path = "outputs/C_RALA/radar_scan_0039.txt"
+   # path = "outputs/C_RALA/radar_scan_0039.txt"
+    path = "outputs/zprevious/X-band stuff/radar_scan_0039.txt"
     #grid_values = extract_first_grid_data(path)
     grid_values = extract_grid_data_from_scan(path, n=2)
     #plot_frequency(grid_values)

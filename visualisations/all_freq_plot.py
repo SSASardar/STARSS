@@ -82,7 +82,7 @@ def plot_all_scans_overlaid_nonzero_with_stats(all_scan_values):
 
 
 if __name__ == "__main__":
-    path = "outputs/radar_scan_0039.txt"
+    path = "outputs/zprevious/X-band stuff/radar_scan_0039.txt"
 
     all_scan_values = extract_all_scans(path)
 

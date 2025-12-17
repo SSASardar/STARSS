@@ -223,7 +223,8 @@ Polar_box* init_polar_box() {
     polar_box->num_angles = 0;
     polar_box->radar_id = -1; // or any invalid default
 polar_box->other_angle = 0;
-    return polar_box;
+strcpy(polar_box->scanning_mode, "");
+return polar_box;
 }
 
 void update_other_angle(Polar_box* p_box, double new_angle){
@@ -234,14 +235,12 @@ void update_other_angle(Polar_box* p_box, double new_angle){
 }
 int fill_polar_box(Polar_box* polar_box, double time,
                    const Spatial_raincell* s_raincell,
-                   const Radar* radar, const Raincell* raincell) {
+                   const Radar* radar, const Raincell* raincell, const VPR_params *params) {
     if (!polar_box || !radar || !s_raincell || !raincell) return -1;
 
-    if (strcmp(get_scanning_mode(radar), "PPI") != 0) {
-        printf("fill_polar_box: Unsupported scan mode %s\n", get_scanning_mode(radar));
-        return -1;
-    }
 
+        if (strcmp(get_scanning_mode(radar), "PPI") == 0) {
+	strcmp(polar_box->scanning_mode,"PPI");
     if (cos(polar_box->other_angle*DEG2RAD) <= 0.0) {
     fprintf(stderr,
             "fill_polar_box: Unsupported elevation angle %.2f rad (cos<=0)\n",
@@ -311,11 +310,146 @@ int num_angles = (int)ceil(span);
 
     polar_box->num_ranges = num_ranges;
     polar_box->num_angles = num_angles;
+    
+
 
     free(centre);
     free(radar_point);
+    }
 
-    return 0;
+
+
+    if (strcmp(get_scanning_mode(radar), "RHI") == 0) {
+
+	strcmp(polar_box->scanning_mode,"RHI");
+   // double kea_and_radar = KEA + radar->z;
+
+    Point* centre = get_position_raincell(time, s_raincell);//time in seconds.
+    Point* radar_point = get_position_radar(radar);
+
+   //double offset_core_in_absolute = raincell->offset_centre_core * raincell->radius_stratiform;
+    //double diff_x = centre->x + offset_core_in_absolute - radar_point->x; 
+    
+    double diff_x = centre->x + raincell->offset_centre_core - radar_point->x;
+    
+    double diff_y = centre->y - radar_point->y;
+    //double dist_s = sqrt(diff_x * diff_x + diff_y * diff_y);
+  //  double dist = sin(dist_s / kea_and_radar) * kea_and_radar / cos(polar_box->other_angle*DEG2RAD);
+    //double radius_stratiform = raincell->radius_stratiform;
+
+    polar_box->range_resolution = get_range_res_radar(radar);
+    polar_box->angular_resolution = get_angular_res_radar(radar);
+
+    double other_angle = atan2(diff_y, diff_x);
+    //if (other_angle < 0) other_angle += 2 * M_PI;
+    other_angle = other_angle * RAD2DEG;
+
+    polar_box->other_angle = other_angle;
+
+    double m = diff_y/diff_x;
+double c = radar_point->y - m * radar_point->x;
+
+//double A = 1 + (m * m);
+//double B = -2*centre->x + 2 * radar_point->y * m - 2 * centre->x * m * m - 2 * centre->y * m;
+//double C = centre->x * centre->x + radar_point->y * radar_point->y - 2 * radar_point->x * radar_point->y * m + radar_point->x * radar_point->x * m * m - 2 * radar_point->y * centre->y + 2 * radar_point->x * centre->y * m + centre->y * centre->y -  raincell->radius_stratiform * raincell->radius_stratiform;
+
+double A = 1 + (m*m);
+double B = (-2*centre->x + 2 * c * m - 2 * m * centre->y);
+double C = (centre->x * centre->x) + (c*c) - (2 * c * centre->y) + (centre->y * centre->y) - (raincell->radius_stratiform * raincell->radius_stratiform);
+
+double x_1 = (-B + sqrt(B * B - 4 * A * C))/ (2 * A);
+double x_2 = (-B - sqrt(B * B - 4 * A * C))/ (2 * A);
+
+//double y_1 = sqrt(raincell->radius_stratiform - (x_1 - centre->x) * (x_1 - centre->x)) + centre->y;
+//double y_2 = sqrt(raincell->radius_stratiform - (x_2 - centre->x) * (x_2 - centre->x)) + centre->y;
+double y_1 = m*x_1+c;
+double y_2 = m*x_2+c;
+
+double x_min, x_max, y_min, y_max;
+/*
+    FILE *fpz = fopen("outputs/quads.txt", "a");   // open file for writing
+    if (!fpz) {
+        perror("fopen");
+        return 1;
+    }
+
+    fprintf(fpz, "%.2e, %.2e, %.2e  ||  %.2e, %.2e || x_1 = %.2e, x_2 = %.2e || y_1 = %.2e, y_2 = %.2e\n", A,B,C, B*B-(4*A*C), sqrt( B*B-(4*A*C)), x_1, x_2, y_1, y_2);
+
+    fclose(fpz);
+*/
+
+
+if(fabs(x_1)>fabs(x_2)){x_min = x_2;x_max = x_1;} else {x_min = x_1; x_max = x_2;}
+
+if(fabs(y_1)>fabs(y_2)){y_min = y_2;y_max = y_1;} else {y_min = y_1; y_max = y_2;}
+
+
+double r_min, r_a, r_max;
+
+r_min = sqrt((x_min - radar_point->x)*(x_min - radar_point->x) + (y_min - radar_point->y)*(y_max - radar_point->y));
+
+r_a = sqrt((x_max - radar_point->x)*(x_max - radar_point->x) + (y_max - radar_point->y)*(y_max - radar_point->y));
+
+r_max = r_a + params->h_et_0;
+
+//printf("min and max ranges are %.2lf, %.2lf\n", r_min, r_max);
+
+    polar_box->radar_id = get_radar_id(radar);
+
+    // Compute min/max gates and angles
+    polar_box->min_range_gate = floor(r_min / polar_box->range_resolution);
+    polar_box->max_range_gate = ceil(r_max / polar_box->range_resolution);
+
+if (polar_box->min_range_gate > polar_box->max_range_gate) {
+    int tmp = polar_box->min_range_gate;
+    polar_box->min_range_gate = polar_box->max_range_gate;
+    polar_box->max_range_gate = tmp;
+}
+
+//double padding_angle = 2.0;
+    double a_1 = 0;
+    double a_2 = atan2(params->h_cb_0, r_min);
+    double a_3 = atan2(params->h_et_0, r_min);
+    double a_4 = atan2(params->h_et_0, r_min);
+
+    if(a_1<a_2){ polar_box->min_angle = floor(a_1*RAD2DEG/polar_box->angular_resolution);} else { polar_box->min_angle = floor(a_2*RAD2DEG/polar_box->angular_resolution);}
+    if(a_3<a_4){polar_box->max_angle = ceil(a_4*RAD2DEG/polar_box->angular_resolution);} else { polar_box->max_angle = ceil(a_3*RAD2DEG/polar_box->angular_resolution);}
+
+//printf("minimum angles... %.2lf, %.2lf\n", a_1*RAD2DEG/polar_box->angular_resolution, a_2*RAD2DEG/polar_box->angular_resolution);
+    // Dynamically compute sizes
+    int num_ranges = (int)lround(polar_box->max_range_gate - polar_box->min_range_gate + 1);
+double span = polar_box->max_angle - polar_box->min_angle;
+if (span < 0) span += 360.0;
+int num_angles = (int)ceil(span);
+    //
+
+    // Only reallocate if size changed or not allocated yet
+    if (!polar_box->grid || (int)polar_box->num_ranges != num_ranges || (int)polar_box->num_angles != num_angles) {
+        free(polar_box->grid);
+        free(polar_box->height_grid);
+	free(polar_box->attenuation_grid);
+
+        polar_box->grid = malloc(sizeof(double) * num_ranges * num_angles);
+        polar_box->height_grid = malloc(sizeof(double) * num_ranges * num_angles);
+    	polar_box->attenuation_grid = malloc(sizeof(double) * num_ranges * num_angles);
+    	if (!polar_box->grid || !polar_box->height_grid || !polar_box->attenuation_grid) {
+            perror("Failed to allocate polar box grids");
+            free(centre);
+            free(radar_point);
+            return -1;
+        }
+    }
+
+    polar_box->num_ranges = num_ranges;
+    polar_box->num_angles = num_angles;
+    
+
+
+    free(centre);
+    free(radar_point);
+    }
+
+return 0;
 }
 int get_radar_id_for_polar_box(const struct Polar_box* box) {
     return box->radar_id;
@@ -404,8 +538,10 @@ void print_polar_box(const Polar_box* box) {
 Bounding_box* create_bounding_box_for_polar_box(const Polar_box* p_box, const Radar** radars, int num_radars){
 if(p_box==NULL){printf("create_bounding+box_for_polar_plot\n You are trying to create a bounding box for a polar box which is not defined (points to NULL)\n The bounding box will be assigned NULL\n\n");return NULL;}
 	
+Bounding_box* bbox = malloc(sizeof(Bounding_box));
 	const Radar* found_radar = find_radar_by_id(p_box, radars, num_radars);
 
+	if(strcmp(get_scanning_mode(found_radar), "PPI")==0){
 double rmin = get_min_range_gate(p_box) * get_range_res_radar(found_radar);
 double curvature_correction_min = cos(p_box->other_angle*DEG2RAD + atan2(rmin*cos(p_box->other_angle*DEG2RAD),(KEA+rmin*sin(p_box->other_angle*DEG2RAD))));
 double rmax = get_max_range_gate(p_box) * get_range_res_radar(found_radar);
@@ -445,7 +581,6 @@ Point* pos_radar = get_position_radar(found_radar);
 
 
 // Allocate and fill the bounding box
-Bounding_box* bbox = malloc(sizeof(Bounding_box));
 bbox->topLeft.x = xmin+pos_radar->x;
 bbox->topLeft.y = ymax+pos_radar->y;
 
@@ -457,13 +592,42 @@ bbox->bottomLeft.y = ymin+pos_radar->y;
 
 bbox->bottomRight.x = xmax+pos_radar->x;
 bbox->bottomRight.y = ymin+pos_radar->y;
+}
 
+if(strcmp(get_scanning_mode(found_radar), "RHI") == 0){
+	double rmin = get_min_range_gate(p_box) * get_range_res_radar(found_radar);
+	double rmax = get_max_range_gate(p_box) * get_range_res_radar(found_radar);
+	double angleMin = get_min_angle(p_box) * DEG2RAD * get_angular_res_polar_box(p_box);
+	double angleMax = get_max_angle(p_box) * DEG2RAD * get_angular_res_polar_box(p_box);
+	
+	double h_min = calculate_height_of_beam_at_range(rmin, angleMin, found_radar->z);
+	double h_max = calculate_height_of_beam_at_range(rmax, angleMax, found_radar->z);
+	double h_mid = calculate_height_of_beam_at_range(rmin, angleMax, found_radar->z);
+	double h_midd = calculate_height_of_beam_at_range(rmax, angleMin, found_radar->z);
+
+	double smin = KEA*asin((rmin*cos(angleMax))/(KEA+h_mid));
+	double smax = KEA*asin((rmax*cos(angleMin))/(KEA+h_midd));
+
+	double radar_dist_from_origin = sqrt(found_radar->x * found_radar->x + found_radar->y * found_radar->y);
+
+	bbox->topLeft.x = radar_dist_from_origin + smin;
+	bbox->topLeft.y /*height or z coord */ = h_max;
+	
+	bbox->topRight.x = radar_dist_from_origin + smax;
+	bbox->topRight.y /* height or z coord */= h_max;
+
+	bbox->bottomLeft.x = radar_dist_from_origin + smin;
+	bbox->bottomLeft.y /* height or z coord */ = h_min;
+
+	bbox->bottomRight.x = radar_dist_from_origin + smax;
+	bbox->bottomRight.y /* height or z coord */ = h_min;
+}
 return bbox;
 
 
 }
 
-
+/*
 Bounding_box* create_bounding_box_for_polar_box_EZ(const Polar_box* p_box) {
     if (p_box == NULL) {
         printf("create_bounding_box_for_polar_box_GLOBAL()\n"
@@ -542,7 +706,7 @@ Bounding_box* create_bounding_box_for_polar_box_EZ(const Polar_box* p_box) {
 
     return bbox;
 }
-
+*/
 
 
 
@@ -593,7 +757,8 @@ void fill_polar_box_grid(Polar_box* box, const Radar* radar,
 
     int num_ranges = (int)box->num_ranges;
     int num_angles = (int)box->num_angles;
-// Ensure the struct matches actual allocated sizes
+
+    // Ensure the struct matches actual allocated sizes
 box->num_ranges = num_ranges;
 box->num_angles = num_angles;
     Point* pos_radar = get_position_radar(radar);
@@ -606,6 +771,7 @@ box->num_angles = num_angles;
 
 
 
+if(strcmp(get_scanning_mode(radar), "PPI") == 0){
     for (int ri = 0; ri < num_ranges; ri++) {
         double r1 = (box->min_range_gate + ri) * box->range_resolution;
         double sample_height = calculate_height_of_beam_at_range(r1, box->other_angle, h0);
@@ -650,7 +816,48 @@ if (sample == 0) { //raincell shape is always convex, so no strange things need 
             box->height_grid[idp] = sample_height;
         }
     }
+}
 
+if(strcmp(get_scanning_mode(radar), "RHI") == 0){
+for (int ri = 0; ri <num_ranges;ri++){
+	double r1 = (box->min_range_gate+ri)*box->range_resolution;
+	double azimuth_angle = box->other_angle;
+	for (int ai = 0; ai < num_angles;ai++){
+		double a1 = (box->min_angle + ai) * box->angular_resolution;
+		double sample_height = calculate_height_of_beam_at_range(r1, a1, h0);
+		int sample = sample_from_relative_location_in_raincell(r1,azimuth_angle, a1, pos_radar, pos_raincell, raincell);
+		int idp = ri * num_angles + ai;
+		int idp_min_one = idp;
+		if (ri !=0){
+			idp_min_one = (ri-1) * num_angles+ai;
+		}	
+		if (sample == 0) {
+			box->grid[idp] = 0.0;
+			box->attenuation_grid[idp] = 0.0;
+		} else if (sample == 1) {
+        		refl_dBZ = get_reflectivity_at_height(vpr_strat, sample_height);
+		        att = compute_specific_attenuation(refl_dBZ, radar); 
+        		if(idp == idp_min_one) {
+               			box->attenuation_grid[idp] = att;
+        		} else {
+                		box->attenuation_grid[idp] = att + box->attenuation_grid[idp_min_one];
+        		}
+        		box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+		} else {
+        		refl_dBZ = get_reflectivity_at_height(vpr_conv, sample_height);
+
+        		att = compute_specific_attenuation(refl_dBZ, radar); 
+        		if(idp == idp_min_one) {
+                		box->attenuation_grid[idp] = att;
+        		} else {
+                		box->attenuation_grid[idp] = att + box->attenuation_grid[idp_min_one];
+        		}
+        		box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+		}
+		box->height_grid[idp] = sample_height;
+	}
+}
+}
     free(pos_radar);
     free(pos_raincell);
 }
