@@ -38,6 +38,8 @@ with open(filename, "r") as f:
 # reshape into (angles × ranges)
 #grid = grid_data.reshape((n_ranges, n_angles), order = "F")
 grid = grid_data.reshape((n_ranges,n_angles), order = "C")
+#grid = np.fliplr(np.flipud(grid))
+grid = np.transpose(grid)
 
 # plot
 plt.figure(figsize=(10, 6))

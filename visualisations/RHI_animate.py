@@ -39,7 +39,9 @@ def load_scan(filename):
 
     # reshape to 2D
     grid = grid_data.reshape((n_ranges, n_angles), order="C")
-    grid1 = np.rot90(grid,k=-1)
+    #grid = np.transpose(np.fliplr(np.flipud(grid)));
+    grid = np.transpose(grid);
+    #grid1 = np.rot90(grid,k=-1)
     return grid
 
 
@@ -52,22 +54,101 @@ print(f"Found {len(files)} scan files.")
 grids = [load_scan(f) for f in files]
 num_frames = len(grids)
 
+## ---------------------------------------------------------
+## Setup animation figure
+## ---------------------------------------------------------
+#fig, ax = plt.subplots(figsize=(10, 6))
+#im = ax.imshow(grids[0], aspect="auto", origin="lower", cmap="turbo")
+#cbar = plt.colorbar(im, ax=ax, label="Reflectivity dBZ")
+#
+#ax.set_title("Radar Scan 0")
+#
+## ---------------------------------------------------------
+## Update function for animation
+## ---------------------------------------------------------
+#def update(frame):
+#    im.set_data(grids[frame])
+#    ax.set_title(f"Radar Scan {frame:04d}")
+#    return [im]
+#
+#
+#
+#
+#
+
+
+
+
+
 # ---------------------------------------------------------
-# Setup animation figure
+# Setup animation figure WITH correct axes
 # ---------------------------------------------------------
 fig, ax = plt.subplots(figsize=(10, 6))
-im = ax.imshow(grids[0], aspect="auto", origin="lower", cmap="turbo")
-cbar = plt.colorbar(im, ax=ax, label="Reflectivity dBZ")
 
-ax.set_title("Radar Scan 0")
+# Grid dimensions
+n_ranges, n_angles = grids[0].shape
+
+im = ax.imshow(
+    grids[0],
+    origin="lower",
+    aspect="auto",
+    cmap="turbo",
+    extent=(0, n_angles - 1, 0, n_ranges - 1)
+)
+
+cbar = plt.colorbar(im, ax=ax, label="Reflectivity (dBZ)")
+
+ax.set_xlabel("Range Gate Index")
+ax.set_ylabel("Angle Index")
+ax.set_xlim(0, n_ranges - 1)
+ax.set_ylim(0, n_angles - 1)
+ax.set_title("Radar Scan 0000")
 
 # ---------------------------------------------------------
-# Update function for animation
+# Update function for animation WITH axis enforcement
 # ---------------------------------------------------------
 def update(frame):
     im.set_data(grids[frame])
+    ax.set_xlim(0, n_angles - 1)
+    ax.set_ylim(0, n_ranges - 1)
     ax.set_title(f"Radar Scan {frame:04d}")
     return [im]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ---------------------------------------------------------

@@ -330,7 +330,7 @@ int num_angles = (int)ceil(span);
    //double offset_core_in_absolute = raincell->offset_centre_core * raincell->radius_stratiform;
     //double diff_x = centre->x + offset_core_in_absolute - radar_point->x; 
     
-    double diff_x = centre->x + raincell->offset_centre_core - radar_point->x;
+    double diff_x = centre->x - raincell->offset_centre_core - radar_point->x;
     
     double diff_y = centre->y - radar_point->y;
     //double dist_s = sqrt(diff_x * diff_x + diff_y * diff_y);
@@ -341,10 +341,17 @@ int num_angles = (int)ceil(span);
     polar_box->angular_resolution = get_angular_res_radar(radar);
 
     double other_angle = atan2(diff_y, diff_x);
+   //double other_angle = atan2(diff_x, diff_y);
     //if (other_angle < 0) other_angle += 2 * M_PI;
-    other_angle = other_angle * RAD2DEG;
 
-    polar_box->other_angle = other_angle;
+    polar_box->other_angle = other_angle * RAD2DEG;
+
+/*
+ FILE *debug = fopen("outputs/aDEBUG.txt", "a");
+ fprintf(debug, "%.2lf, %.2lf, %.2lf, %.2lf, %.2lf, %.2lf, %.2lf, %.2lf, %.2lf\n", time, radar_point->x, radar_point->y, centre->x, centre->y, diff_x, diff_y, other_angle, polar_box->other_angle);
+fclose(debug);
+*/
+
 
     double m = diff_y/diff_x;
 double c = radar_point->y - m * radar_point->x;
@@ -364,33 +371,54 @@ double x_2 = (-B - sqrt(B * B - 4 * A * C))/ (2 * A);
 //double y_2 = sqrt(raincell->radius_stratiform - (x_2 - centre->x) * (x_2 - centre->x)) + centre->y;
 double y_1 = m*x_1+c;
 double y_2 = m*x_2+c;
-
-double x_min, x_max, y_min, y_max;
 /*
-    FILE *fpz = fopen("outputs/quads.txt", "a");   // open file for writing
-    if (!fpz) {
-        perror("fopen");
-        return 1;
-    }
+double x_rmin, x_rmax, y_rmin, y_rmax;
 
-    fprintf(fpz, "%.2e, %.2e, %.2e  ||  %.2e, %.2e || x_1 = %.2e, x_2 = %.2e || y_1 = %.2e, y_2 = %.2e\n", A,B,C, B*B-(4*A*C), sqrt( B*B-(4*A*C)), x_1, x_2, y_1, y_2);
+//    FILE *fpz = fopen("outputs/quads.txt", "a");   // open file for writing
+//    if (!fpz) {
+//        perror("fopen");
+//        return 1;
+//    }
 
-    fclose(fpz);
+  //  fprintf(fpz, "%.2e, %.2e, %.2e  ||  %.2e, %.2e || x_1 = %.2e, x_2 = %.2e || y_1 = %.2e, y_2 = %.2e\n", A,B,C, B*B-(4*A*C), sqrt( B*B-(4*A*C)), x_1, x_2, y_1, y_2);
+
+    //fclose(fpz);
+
+//double checking_angle = fmod(polar_box->other_angle,360);
+//if(checking_angle>270 && checking_angle<=90){x_rmin = x_2; x_rmax = x_1; y_rmin = y_2; y_rmax = y_1;} else {x_rmin = x_1; x_rmax = x_2; y_rmin = y_1; y_rmax = y_2;}
+if(fabs(x_1)>fabs(x_2)){x_rmin = x_2;x_rmax = x_1;} else {x_rmin = x_1; x_rmax = x_2;}
+//if((x_1)<(x_2)){x_min = x_2;x_max = x_1;} else {x_min = x_1; x_max = x_2;}
+
+//if(fabs(y_1)>fabs(y_2)){y_rmin = y_2;y_rmax = y_1;} else {y_rmin = y_1; y_rmax = y_2;}
+//if((y_1)<(y_2)){y_min = y_2;y_max = y_1;} else {y_min = y_1; y_max = y_2;}
+
+y_rmin = x_rmin*m + c;
+y_rmax = x_rmax*m + c;
+
 */
-
-
-if(fabs(x_1)>fabs(x_2)){x_min = x_2;x_max = x_1;} else {x_min = x_1; x_max = x_2;}
-
-if(fabs(y_1)>fabs(y_2)){y_min = y_2;y_max = y_1;} else {y_min = y_1; y_max = y_2;}
 
 
 double r_min, r_a, r_max;
 
-r_min = sqrt((x_min - radar_point->x)*(x_min - radar_point->x) + (y_min - radar_point->y)*(y_max - radar_point->y));
+/*
+r_min = sqrt((x_rmin - radar_point->x)*(x_rmin - radar_point->x) + (y_rmin - radar_point->y)*(y_rmin - radar_point->y));
 
-r_a = sqrt((x_max - radar_point->x)*(x_max - radar_point->x) + (y_max - radar_point->y)*(y_max - radar_point->y));
+r_a = sqrt((x_rmax - radar_point->x)*(x_rmax - radar_point->x) + (y_rmax - radar_point->y)*(y_rmax - radar_point->y));
 
 r_max = r_a + params->h_et_0;
+
+//r_min = 0.0;
+//r_max = radar->maximum_range;
+*/
+
+double r1, r2;
+
+r1 = hypot(x_1 - radar_point->x, y_1 - radar_point->y);
+r2 = hypot(x_2 - radar_point->x, y_2 - radar_point->y);
+r_min = fmin(r1, r2);
+r_max = fmax(r1, r2) + params->h_et_0;
+
+
 
 //printf("min and max ranges are %.2lf, %.2lf\n", r_min, r_max);
 
@@ -414,6 +442,8 @@ if (polar_box->min_range_gate > polar_box->max_range_gate) {
 
     if(a_1<a_2){ polar_box->min_angle = floor(a_1*RAD2DEG/polar_box->angular_resolution);} else { polar_box->min_angle = floor(a_2*RAD2DEG/polar_box->angular_resolution);}
     if(a_3<a_4){polar_box->max_angle = ceil(a_4*RAD2DEG/polar_box->angular_resolution);} else { polar_box->max_angle = ceil(a_3*RAD2DEG/polar_box->angular_resolution);}
+
+if(polar_box->max_angle * polar_box->angular_resolution > 90) polar_box->max_angle = 90/polar_box->angular_resolution;
 
 //printf("minimum angles... %.2lf, %.2lf\n", a_1*RAD2DEG/polar_box->angular_resolution, a_2*RAD2DEG/polar_box->angular_resolution);
     // Dynamically compute sizes
@@ -750,6 +780,7 @@ int sample_from_relative_location_in_raincell(double range, double angle, double
         return 1; // Inside stratiform region
     }
 }
+
 void fill_polar_box_grid(Polar_box* box, const Radar* radar,
                          const Spatial_raincell* s_raincell, const Raincell* raincell,
                          double time, const VPR *vpr_strat, const VPR *vpr_conv) {
@@ -833,26 +864,31 @@ for (int ri = 0; ri <num_ranges;ri++){
 		}	
 		if (sample == 0) {
 			box->grid[idp] = 0.0;
+			//box->grid[idp] = sample;
 			box->attenuation_grid[idp] = 0.0;
 		} else if (sample == 1) {
         		refl_dBZ = get_reflectivity_at_height(vpr_strat, sample_height);
-		        att = compute_specific_attenuation(refl_dBZ, radar); 
+		        att = compute_specific_attenuation(refl_dBZ, radar);
         		if(idp == idp_min_one) {
                			box->attenuation_grid[idp] = att;
         		} else {
                 		box->attenuation_grid[idp] = att + box->attenuation_grid[idp_min_one];
         		}
         		box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+        		//box->grid[idp] = sample;
+        		//box->grid[idp] = refl_dBZ;
 		} else {
         		refl_dBZ = get_reflectivity_at_height(vpr_conv, sample_height);
 
         		att = compute_specific_attenuation(refl_dBZ, radar); 
-        		if(idp == idp_min_one) {
+			if(idp == idp_min_one) {
                 		box->attenuation_grid[idp] = att;
         		} else {
                 		box->attenuation_grid[idp] = att + box->attenuation_grid[idp_min_one];
         		}
         		box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+        		//box->grid[idp] = sample;
+        		//box->grid[idp] = refl_dBZ;
 		}
 		box->height_grid[idp] = sample_height;
 	}
@@ -1197,6 +1233,7 @@ if(p_box==NULL){printf("create_bounding+box_for_polar_plot\n You are trying to c
 
 
 
+	if(strcmp(p_box->scanning_mode, "PPI")==0){
 //double rmin = p_box->min_range_gate * p_box->range_resolution;
 double rmin = (p_box->min_range_gate * p_box->range_resolution);
 double curvature_correction_min = cos(p_box->other_angle*DEG2RAD + atan2(rmin*cos(p_box->other_angle*DEG2RAD),(KEA+rmin*sin(p_box->other_angle*DEG2RAD))));
@@ -1253,7 +1290,38 @@ bbox->bottomLeft.y = ymin+pos_radar->y;
                                    
 bbox->bottomRight.x = xmax+pos_radar->x;
 bbox->bottomRight.y = ymin+pos_radar->y;
-                                   
+}
+
+if(strcmp(p_box->scanning_mode,"RHI")== 0){
+
+	double rmin = get_min_range_gate(p_box) * get_range_res_radar(radar);
+	double rmax = get_max_range_gate(p_box) * get_range_res_radar(radar);
+	double angleMin = get_min_angle(p_box) * DEG2RAD * get_angular_res_polar_box(p_box);
+	double angleMax = get_max_angle(p_box) * DEG2RAD * get_angular_res_polar_box(p_box);
+	
+	double h_min = calculate_height_of_beam_at_range(rmin, angleMin, radar->z);
+	double h_max = calculate_height_of_beam_at_range(rmax, angleMax, radar->z);
+	double h_mid = calculate_height_of_beam_at_range(rmin, angleMax, radar->z);
+	double h_midd = calculate_height_of_beam_at_range(rmax, angleMin,radar->z);
+
+	double smin = KEA*asin((rmin*cos(angleMax))/(KEA+h_mid));
+	double smax = KEA*asin((rmax*cos(angleMin))/(KEA+h_midd));
+
+	double radar_dist_from_origin = sqrt(radar->x * radar->x + radar->y * radar->y);
+
+	bbox->topLeft.x = radar_dist_from_origin + smin;
+	bbox->topLeft.y /*height or z coord */ = h_max;
+	
+	bbox->topRight.x = radar_dist_from_origin + smax;
+	bbox->topRight.y /* height or z coord */= h_max;
+
+	bbox->bottomLeft.x = radar_dist_from_origin + smin;
+	bbox->bottomLeft.y /* height or z coord */ = h_min;
+
+	bbox->bottomRight.x = radar_dist_from_origin + smax;
+	bbox->bottomRight.y /* height or z coord */ = h_min;
+
+}
 return bbox;                       
                                    
                                    

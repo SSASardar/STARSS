@@ -47,7 +47,7 @@ static void log_message(const char *format, ...) {
 }
 
 // ---------------------- Command Generation ----------------------
-#define SCANS_PER_FILE 16
+#define SCANS_PER_FILE 5
 // #define FIVE_MINUTES 300.0  // seconds
 #define FIVE_MINUTES 5.0  // minutes
 
@@ -66,7 +66,7 @@ void generate_commands_file(int file_index, double start_time) {
     for (int i = 0; i < SCANS_PER_FILE; i++) {
         Command cmd;
         cmd.time = start_time + i * interval;
-        cmd.radar_id = 1;
+        cmd.radar_id = 2;
       // snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
 	 snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
         cmd.raincell_id = 1;
