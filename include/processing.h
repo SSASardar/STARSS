@@ -55,6 +55,24 @@ bool isAngleBetween(double angle, double minAngle, double maxAngle);
 
 bool isPointInSectorAnnulus(Point p, Point center, double minAngle, double maxAngle, double minRange, double maxRange); 
 
+
+double f(double x, double radar_height, double surface_range, double height_above_radar);
+double df(double x, double radar_height, double surface_range, double height_above_radar);
+
+int newton_bisection(
+    double a,
+    double b,
+    double x0,
+    double tol,
+    int max_iter,
+    double *root,
+    double radar_height,
+    double surface_range,
+    double height_above_radar
+    );
+
+
+
 bool getPolarBoxIndex(Point p, double c_x, double c_y,const Polar_box* box, int *range_idx, int *angle_idx);
 
 

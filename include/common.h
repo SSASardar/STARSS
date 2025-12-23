@@ -26,6 +26,7 @@
 typedef struct Point {
 	double x;/**< X-coordinate in space */
 	double y;/**< Y-coordinate in horizontal OR Z-coordinate in vertical */
+//	double z;/**< Z-coordinate in vertical */
 
 } Point;
 

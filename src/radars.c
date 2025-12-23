@@ -741,9 +741,12 @@ Bounding_box* create_bounding_box_for_polar_box_EZ(const Polar_box* p_box) {
 
 
 double calculate_height_of_beam_at_range(double range, double elevation, double height_of_radar){
-	double height_from_earth_centre = (KEA+height_of_radar);
-	double corrected_elevation = elevation*DEG2RAD + atan2(range*cos(elevation*DEG2RAD), KEA+range*sin(elevation*DEG2RAD));
-	return sqrt(range*range + height_from_earth_centre*height_from_earth_centre + 2*range*height_from_earth_centre*sin(corrected_elevation))-KEA;
+	double height_from_earth_centre = (KEA+1.33333333*height_of_radar);
+	//double corrected_elevation = elevation*DEG2RAD + atan2(range*cos(elevation*DEG2RAD), KEA+range*sin(elevation*DEG2RAD));
+	
+	double corrected_elevation = elevation*DEG2RAD;
+	// Something is wrong here... is this return equation (4) or equation (5c) in A Comparison of the radar ray path euqations and approximations for use in radar data assimilation, bu Jidong Gao, Keith brewster and Ming Xue. I changed this to equation 4.... so then the corrected elevation angle makes no sense anymore. Just regular elevation angle is fine. 
+	return sqrt(range*range + height_from_earth_centre*height_from_earth_centre + 2*range*height_from_earth_centre*sin(corrected_elevation))-height_from_earth_centre;
 }
 
 
@@ -1231,6 +1234,7 @@ Bounding_box* bounding_box_from_textfile(const Polar_box* p_box, const Radar* ra
 if(p_box==NULL){printf("create_bounding+box_for_polar_plot\n You are trying to create a bounding box for a polar box which is not defined (points to NULL)\n The bounding box will be assigned NULL\n\n");return NULL;}	
  
 
+	Bounding_box* bbox = malloc(sizeof(Bounding_box));
 
 
 	if(strcmp(p_box->scanning_mode, "PPI")==0){
@@ -1278,7 +1282,7 @@ Point* pos_radar = get_position_radar(radar);
                                    
                                    
 // Allocate and fill the bounding box
-Bounding_box* bbox = malloc(sizeof(Bounding_box));
+//Bounding_box* bbox = malloc(sizeof(Bounding_box));
 bbox->topLeft.x = xmin+pos_radar->x;
 bbox->topLeft.y = ymax+pos_radar->y;
                                    
@@ -1309,6 +1313,8 @@ if(strcmp(p_box->scanning_mode,"RHI")== 0){
 
 	double radar_dist_from_origin = sqrt(radar->x * radar->x + radar->y * radar->y);
 
+
+//	Bounding_box* bbox = malloc(sizeof(Bounding_box));
 	bbox->topLeft.x = radar_dist_from_origin + smin;
 	bbox->topLeft.y /*height or z coord */ = h_max;
 	
@@ -1323,7 +1329,6 @@ if(strcmp(p_box->scanning_mode,"RHI")== 0){
 
 }
 return bbox;                       
-                                   
                                    
 }                                  
 

@@ -22,3 +22,4 @@ inputs/
 
 # Swap files
 *.swp
+*.sw?

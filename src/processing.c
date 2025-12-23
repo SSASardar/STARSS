@@ -18,6 +18,13 @@
 
 #define MAX_ALLOWED_CELLS ((size_t)1e9)  // ~1 billion doubles = ~8 GB
 
+
+#ifndef KEA
+#define KEA = 1.333333333 * 6371000.0
+#endif
+
+
+
 Cart_grid* Cart_grid_init(double resolution, int num_x, int num_y, Point ref_point) {
     Cart_grid *cg = (Cart_grid *)malloc(sizeof(Cart_grid));
     if (!cg) return NULL;
@@ -167,6 +174,133 @@ if (angle_diff > span) return false;
 
 */
 
+
+
+double f(double x, double radar_height, double surface_range, double height_above_radar) {
+    /* f as the radius, x as the elevation angle.  */
+	double kea_and_height = KEA + radar_height;
+
+	return -1*(kea_and_height*sin(x)) + sqrt((kea_and_height*sin(x))*(kea_and_height*sin(x))+ height_above_radar*height_above_radar + 2*height_above_radar*kea_and_height) - (sin(surface_range/kea_and_height)/cos(x));
+}
+
+double df(double x, double radar_height, double surface_range, double height_above_radar) {
+    /* analytical derivative */
+	double kea_and_height = KEA + radar_height;
+
+	return (kea_and_height*cos(x) + 0.5*(sqrt(kea_and_height*sin(x)*kea_and_height*sin(x)+height_above_radar*height_above_radar+2*height_above_radar*kea_and_height))*kea_and_height*kea_and_height*sin(2*x)) - sin(surface_range/kea_and_height)*(kea_and_height + height_above_radar)*sin(x)*(1/cos(x)*cos(x));
+}
+
+
+int newton_bisection(
+    double a,
+    double b,
+    double x0,
+    double tol,
+    int max_iter,
+    double *root,
+    double radar_height,
+    double surface_range,
+    double height_above_radar
+) {
+    double fa = f(a, radar_height, surface_range, height_above_radar);
+    double fb = f(b, radar_height, surface_range, height_above_radar);
+
+    /* Root must be bracketed */
+    if (fa * fb > 0.0) {
+        return -1;  /* no guarantee of root */
+    }
+
+    double x = x0;
+    if (x <= a || x >= b) {
+        x = 0.5 * (a + b);  /* enforce domain */
+    }
+
+
+FILE *fp = fopen("outputs/elevation_angles.txt", "a");
+if (!fp) {
+    perror("Failed to open output file");
+    return -3;
+}
+
+fprintf(fp, "# iter    x               f(x)            method\n");
+fprintf(fp, "# ------------------------------------------------\n");
+
+
+
+    for (int iter = 0; iter < max_iter; ++iter) {
+        double fx  = f(x, radar_height, surface_range, height_above_radar);
+        double dfx = df(x, radar_height, surface_range, height_above_radar);
+
+        /* Convergence check */
+        if (fabs(fx) < tol) {
+            *root = x;
+            return 0;
+        }
+
+        double x_new;
+        int use_newton = 1;
+
+        /* Reject Newton step if derivative too small */
+        if (fabs(dfx) < 1e-12) {
+            use_newton = 0;
+        } else {
+            x_new = x - fx / dfx;
+
+            /* Reject Newton step if it leaves the domain */
+            if (x_new <= a || x_new >= b) {
+                use_newton = 0;
+            }
+
+            /* Reject excessively large steps */
+            if (fabs(x_new - x) > 0.5 * (b - a)) {
+                use_newton = 0;
+            }
+        }
+
+        /* Fallback to bisection */
+        if (!use_newton) {
+            x_new = 0.5 * (a + b);
+        }
+
+fprintf(fp,
+        "%4d  % .15e  % .15e  %s\n",
+        iter,
+        x,
+        fx,
+        use_newton ? "Newton" : "Bisection"
+    );
+
+
+        double f_new = f(x_new, radar_height, surface_range, height_above_radar);
+
+        /* Maintain the bracket */
+        if (fa * f_new < 0.0) {
+            b  = x_new;
+            fb = f_new;
+        } else {
+            a  = x_new;
+            fa = f_new;
+        }
+
+        x = x_new;
+
+        /* Interval-based stopping criterion */
+        if (fabs(b - a) < tol) {
+            *root = x;
+            return 0;
+        }
+    }
+fclose(fp);
+    return -2;  /* did not converge */
+}
+
+
+
+
+
+
+
+
 bool getPolarBoxIndex(Point p,
                       double c_x,
                       double c_y,
@@ -178,11 +312,12 @@ bool getPolarBoxIndex(Point p,
 
     const double eps = 1e-8; // small tolerance for floating point errors
 
+	if(strcmp(box->scanning_mode, "PPI")==0){
     // --- Vector from radar to point ---
     double dx = p.x - c_x;
     double dy = p.y - c_y;
 
-    // --- Slant range ---
+    // --- Slant range --- THERE IS A MISTAKE WITH THE SLANT RANGE AND THE SURFACE RANGE... 
     double r = sqrt(dx*dx + dy*dy);
 
     double r_min = box->min_range_gate * box->range_resolution;
@@ -199,16 +334,8 @@ bool getPolarBoxIndex(Point p,
     if (min_angle < 0) min_angle += 2*M_PI;
 
     double span = box->num_angles * box->angular_resolution * DEG2RAD;
-/*
-    // Difference relative to box min angle, wrapped
-    double angle_diff = angle - min_angle;
-    if (angle_diff < 0) angle_diff += 2*M_PI;
 
-    if (angle_diff < -eps || angle_diff > span + eps)
-        return false;
-*/
-
-double angle_diff = fmod(angle - min_angle + 2*M_PI, 2*M_PI);
+    double angle_diff = fmod(angle - min_angle + 2*M_PI, 2*M_PI);
 if (angle_diff > span + eps)
     return false;
 
@@ -222,11 +349,70 @@ if (angle_diff > span + eps)
     if (*angle_idx < 0) *angle_idx = 0;
     if (*angle_idx >= (int)box->num_angles) *angle_idx = box->num_angles - 1;
 
+	
     return true;
+}
+	if(strcmp(box->scanning_mode, "RHI")==0){
+
+ double r_min = box->min_range_gate * box->range_resolution;
+    double r_max = box->max_range_gate * box->range_resolution;
+
+double eps = 1e-8;
+
+	double h = p.y-c_y;
+	double s = (p.x-c_x)/cos(box->other_angle*DEG2RAD);
+	if( s>1e7) return false;
+	double angle_elevation;
+	//angle_elevation = acos(sin*(s/KEA) * (KEA + h)/r;	
+
+int status = newton_bisection(0, M_PI_2, M_PI_4, 1e-10, 100, &angle_elevation, c_y, s, h);
+
+FILE *fp = fopen("outputs/resultsMaybe.txt", "a");
+if (!fp) {
+    perror("Failed to open output file");
+    return false;
 }
 
 
+if (status == 0) {
+  double range_solved = sin(s/(KEA+c_y))*(KEA+h-c_y)/cos(angle_elevation);
 
+  fprintf(fp," a_zero = %.3e, r_solved = %.3e\n", angle_elevation, range_solved);
+	 *range_idx = (int)floor((range_solved - r_min) / box->range_resolution + 1e-8);
+    if (*range_idx < 0) *range_idx = 0;
+    if (*range_idx >= (int)box->num_ranges) *range_idx = box->num_ranges - 1;
+    
+    if (range_solved < r_min - eps || range_solved > r_max + eps)
+        return false;
+
+    double min_angle = box->min_angle * box->angular_resolution * DEG2RAD;
+    if (min_angle < 0) min_angle += 2*M_PI;
+
+    double span = box->num_angles * box->angular_resolution * DEG2RAD;
+
+    double angle_diff = fmod(angle_elevation - min_angle + 2*M_PI, 2*M_PI);
+if (angle_diff > span + eps)
+    return false;
+
+
+    // --- Angle index (round to nearest) ---
+    *angle_idx = (int)floor(angle_diff / (box->angular_resolution * DEG2RAD + 1e-8));
+    if (*angle_idx < 0) *angle_idx = 0;
+    if (*angle_idx >= (int)box->num_angles) *angle_idx = box->num_angles - 1;
+
+
+    return true;
+} else {
+    fprintf(fp,"Root finding failed (code %d)\n", status);
+
+fclose(fp);
+    return false;
+}
+
+	}
+
+    return true;
+}
 
 
 void writeCartGridToFile(Cart_grid* cg, int scan_id, int what_to_print) {
