@@ -67,8 +67,8 @@ void generate_commands_file(int file_index, double start_time) {
         Command cmd;
         cmd.time = start_time + i * interval;
         cmd.radar_id = 2;
-      // snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
-	 snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
+       snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
+//	 snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
         cmd.raincell_id = 1;
 	cmd.other_angle = counter_A * (24.0 / (SCANS_PER_FILE+1)); // Exampe: 0–12 degrees.
         //cmd.other_angle = 0;
