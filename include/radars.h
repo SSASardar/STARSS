@@ -189,6 +189,7 @@ Radar* get_or_create_radar(int id, const char* freq, const char* mode, double x,
  */
 Polar_box* create_polar_box(
     int radar_id,
+    const char* scanning_mode,
     double min_range_gate,
     double max_range_gate,
     double min_angle,

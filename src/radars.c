@@ -129,6 +129,7 @@ const char* get_scanning_mode(const Radar* r) {
 
 Polar_box* create_polar_box(
     int radar_id,
+    const char* scanning_mode,
     double min_range_gate,
     double max_range_gate,
     double min_angle,
@@ -156,6 +157,7 @@ Polar_box* create_polar_box(
 
     // Set scalar values
     box->radar_id = radar_id;
+    strcpy(box->scanning_mode,scanning_mode);
     box->min_range_gate = min_range_gate;
     box->max_range_gate = max_range_gate;
     box->min_angle = min_angle;
@@ -1120,7 +1122,7 @@ void read_radar_scans(const char* filename) {
 
             Radar* radar = get_or_create_radar(radar_id, freq, mode, x, y, z,
                                                max_range, range_res, angular_res);
-            Polar_box* box = create_polar_box(radar_id, min_gate, max_gate,
+            Polar_box* box = create_polar_box(radar_id,mode, min_gate, max_gate,
                                               min_angle, max_angle, num_ranges,
                                               num_angles, range_res, angular_res,
                                               grid_size, other_angle, grid_data,height_size,height_data);
@@ -1151,8 +1153,10 @@ grid_size = 0;
         if (sscanf(line, "radar.z=%lf", &z)) continue;
         if (sscanf(line, "radar.maximum_range=%lf", &max_range)) continue;
         if (sscanf(line, "radar.range_resolution=%lf", &range_res)) continue;
-        if (sscanf(line, "radar.angular_resolution=%lf", &angular_res)) continue;
-        if (sscanf(line, "box.min_range_gate=%lf", &min_gate)) continue;
+        if (sscanf(line, "radar.angular_resolution=%lf", &angular_res)) continue; 
+	//if (sscanf(line, "box.radar_id=%d", &radar_id)) continue;
+        //if (sscanf(line, "box.scanning_mode=%3s", mode)) continue;
+	if (sscanf(line, "box.min_range_gate=%lf", &min_gate)) continue;
         if (sscanf(line, "box.max_range_gate=%lf", &max_gate)) continue;
         if (sscanf(line, "box.min_angle=%lf", &min_angle)) continue;
         if (sscanf(line, "box.max_angle=%lf", &max_angle)) continue;
@@ -1294,6 +1298,7 @@ bbox->bottomLeft.y = ymin+pos_radar->y;
                                    
 bbox->bottomRight.x = xmax+pos_radar->x;
 bbox->bottomRight.y = ymin+pos_radar->y;
+
 }
 
 if(strcmp(p_box->scanning_mode,"RHI")== 0){
@@ -1316,7 +1321,7 @@ if(strcmp(p_box->scanning_mode,"RHI")== 0){
 
 //	Bounding_box* bbox = malloc(sizeof(Bounding_box));
 	bbox->topLeft.x = radar_dist_from_origin + smin;
-	bbox->topLeft.y /*height or z coord */ = h_max;
+bbox->topLeft.y /*height or z coord */ = h_max;
 	
 	bbox->topRight.x = radar_dist_from_origin + smax;
 	bbox->topRight.y /* height or z coord */= h_max;

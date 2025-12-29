@@ -47,7 +47,7 @@ static void log_message(const char *format, ...) {
 }
 
 // ---------------------- Command Generation ----------------------
-#define SCANS_PER_FILE 5
+#define SCANS_PER_FILE 16
 // #define FIVE_MINUTES 300.0  // seconds
 #define FIVE_MINUTES 5.0  // minutes
 

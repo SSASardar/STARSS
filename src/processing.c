@@ -352,7 +352,9 @@ if (angle_diff > span + eps)
 	
     return true;
 }
-	if(strcmp(box->scanning_mode, "RHI")==0){
+
+
+    if(strcmp(box->scanning_mode, "RHI")==0){
 
  double r_min = box->min_range_gate * box->range_resolution;
     double r_max = box->max_range_gate * box->range_resolution;
@@ -408,10 +410,10 @@ if (angle_diff > span + eps)
 fclose(fp);
     return false;
 }
-
+return true;
 	}
 
-    return true;
+    return false;
 }
 
 
@@ -485,17 +487,17 @@ Vol_scan *init_vol_scan(Cart_grid **cart_grids, int num_PPIs) {
     size_t nx = (size_t)ceil((max_x - min_x) / res) + 1;
     size_t ny = (size_t)ceil((max_y - min_y) / res) + 1;
     size_t num_elements = nx * ny;
-/*
+
     // Debug logging of grid calculation
     fprintf(stderr,
         "[DEBUG] init_vol_scan:\n"
-        "  min_x=%.2f, max_x=%.2f, min_y=%.2f, max_y=%.2f\n"
+        "  min_x=%.2f, max_x%.2f, min_y=%.2f, max_y=%.2f\n"
         "  resolution=%.4f → nx=%zu, ny=%zu → total=%zu cells\n"
         "  num_PPIs=%d → total_cells=%zu\n",
         min_x, max_x, min_y, max_y,
         res, nx, ny, num_elements,
         num_PPIs, num_elements * (size_t)num_PPIs);
-*/
+
     // Sanity check
     if (num_elements > MAX_ALLOWED_CELLS || num_elements * (size_t)num_PPIs > MAX_ALLOWED_CELLS) {
         fprintf(stderr,
