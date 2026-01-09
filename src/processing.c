@@ -295,7 +295,137 @@ fclose(fp);
 }
 
 
+int brent_root(
+    double a,
+    double b,
+    double tol,
+    int max_iter,
+    double *root,
+    double radar_height,
+    double surface_range,
+    double height_above_radar,
+    FILE *fp
+) {
+    //FILE *fp = fopen("outputs/elevation_angles.txt", "a");
+    if (!fp) {
+        perror("Failed to open debug output file");
+        return -3;
+    }
 
+    fprintf(fp, "\n# ---- Brent root solve start ----\n");
+    fprintf(fp, "# a=%.15e  b=%.15e  tol=%.1e\n", a, b, tol);
+    fprintf(fp, "# iter  a           b           c           "
+                "fa          fb          fc          "
+                "step        |b-c|\n");
+    fprintf(fp, "# ---------------------------------------------------------------------------\n");
+
+    double fa = f(a, radar_height, surface_range, height_above_radar);
+    double fb = f(b, radar_height, surface_range, height_above_radar);
+
+    if (fa * fb > 0.0) {
+        fprintf(fp, "# ERROR: root not bracketed (fa*fb > 0)\n");
+        fclose(fp);
+        return -1;
+    }
+
+    if (fabs(fa) < fabs(fb)) {
+        double tmp;
+        tmp = a; a = b; b = tmp;
+        tmp = fa; fa = fb; fb = tmp;
+    }
+
+    double c  = a;
+    double fc = fa;
+    double d  = b - a;
+    double e  = d;
+
+    for (int iter = 0; iter < max_iter; ++iter) {
+
+        if (fabs(fc) < fabs(fb)) {
+            double tmp;
+            tmp = a;  a = b;  b = c;  c = tmp;
+            tmp = fa; fa = fb; fb = fc; fc = tmp;
+        }
+
+        double tol_act = 2.0 * DBL_EPSILON * fabs(b) + tol * 0.5;
+        double m = 0.5 * (c - b);
+
+        fprintf(fp,
+            "%4d  % .6e  % .6e  % .6e  "
+            "% .3e  % .3e  % .3e  ",
+            iter, a, b, c, fa, fb, fc
+        );
+
+        /* Convergence test */
+        if (fabs(m) <= tol_act || fb == 0.0) {
+            fprintf(fp, "CONVERGED   %.3e\n", fabs(m));
+            *root = b;
+            fclose(fp);
+            return 0;
+        }
+
+        double p = 0.0, q = 1.0;
+        const char *step_type = "Bisection";
+
+        if (fabs(e) >= tol_act && fabs(fa) > fabs(fb)) {
+
+            double s = fb / fa;
+
+            if (a == c) {
+                /* Secant */
+                p = 2.0 * m * s;
+                q = 1.0 - s;
+                step_type = "Secant";
+            } else {
+                /* Inverse quadratic interpolation */
+                double r = fb / fc;
+                double t = fa / fc;
+                p = s * (2.0 * m * t * (t - r) - (b - a) * (r - 1.0));
+                q = (t - 1.0) * (r - 1.0) * (s - 1.0);
+                step_type = "IQI";
+            }
+
+            if (p > 0.0) q = -q;
+            p = fabs(p);
+
+            if (2.0 * p < fmin(3.0 * m * q - fabs(tol_act * q),
+                               fabs(e * q))) {
+                e = d;
+                d = p / q;
+            } else {
+                d = m;
+                e = m;
+                step_type = "Bisection";
+            }
+        } else {
+            d = m;
+            e = m;
+        }
+
+        fprintf(fp, "%-9s  %.3e\n", step_type, fabs(c - b));
+
+        a = b;
+        fa = fb;
+
+        if (fabs(d) > tol_act)
+            b += d;
+        else
+            b += (m > 0 ? tol_act : -tol_act);
+
+        fb = f(b, radar_height, surface_range, height_above_radar);
+
+        if ((fb > 0.0 && fc > 0.0) || (fb < 0.0 && fc < 0.0)) {
+            c = a;
+            fc = fa;
+            d = b - a;
+            e = d;
+        }
+    }
+
+    fprintf(fp, "# ERROR: did not converge in %d iterations\n", max_iter);
+    //fclose(fp);
+    return -2;
+}
 
 
 
@@ -367,24 +497,26 @@ double eps = 1e-8;
 	double angle_elevation;
 	//angle_elevation = acos(sin*(s/KEA) * (KEA + h)/r;	
 
-int status = newton_bisection(0, M_PI_2, M_PI_4, 1e-10, 100, &angle_elevation, c_y, s, h);
-
-FILE *fp = fopen("outputs/resultsMaybe.txt", "a");
+FILE *fp = fopen("outputs/elevation_angles.txt", "a");
 if (!fp) {
     perror("Failed to open output file");
     return false;
 }
 
 
+//int status = newton_bisection(0,3*M_PI_4/3, atan2(h,s), 1e-10, 100, &angle_elevation, c_y, s, h);
+int status = brent_root(0,3*M_PI_4/4,1e-10, 100,&angle_elevation,c_y, s, h,fp);
+
 if (status == 0) {
   double range_solved = sin(s/(KEA+c_y))*(KEA+h-c_y)/cos(angle_elevation);
-
-  fprintf(fp," a_zero = %.3e, r_solved = %.3e\n", angle_elevation, range_solved);
-	 *range_idx = (int)floor((range_solved - r_min) / box->range_resolution + 1e-8);
+  double range_solved_1 = -1*(KEA*sin(angle_elevation))+sqrt((KEA*sin(angle_elevation)*KEA*sin(angle_elevation))+h*h + 2*KEA*h);
+  //fprintf(fp," a_zero = %.3e, r_solved = %.3e\n", angle_elevation, range_solved);
+   *range_idx = (int)floor((range_solved_1 - r_min) / box->range_resolution + 1e-8);
+   int range_id_other = (int)floor((range_solved - r_min) / box->range_resolution + 1e-8);
     if (*range_idx < 0) *range_idx = 0;
     if (*range_idx >= (int)box->num_ranges) *range_idx = box->num_ranges - 1;
     
-    if (range_solved < r_min - eps || range_solved > r_max + eps)
+    if (range_solved_1 < r_min - eps || range_solved_1 > r_max + eps)
         return false;
 
     double min_angle = box->min_angle * box->angular_resolution * DEG2RAD;
@@ -403,13 +535,19 @@ if (angle_diff > span + eps)
     if (*angle_idx >= (int)box->num_angles) *angle_idx = box->num_angles - 1;
 
 
+
+fprintf(fp,"+++++++++++++++++++++++++ RESULT ++++++++++++++++++++++++++\n");
+fprintf(fp,"++ angle_id = %d ++ range_id = %d ++ other range_id = %d ++\n", &angle_idx, &range_idx, range_id_other);
+fprintf(fp,"___________________________________________________________\n");
+fclose(fp);
     return true;
 } else {
     fprintf(fp,"Root finding failed (code %d)\n", status);
-
+fprintf(fp,"___________________________________________________________\n");
 fclose(fp);
     return false;
 }
+fclose(fp);
 return true;
 	}
 

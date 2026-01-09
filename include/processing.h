@@ -71,7 +71,17 @@ int newton_bisection(
     double height_above_radar
     );
 
-
+int brent_root(
+    double a,
+    double b,
+    double tol,
+    int max_iter,
+    double *root,
+    double radar_height,
+    double surface_range,
+    double height_above_radar,
+    FILE *fp
+);
 
 bool getPolarBoxIndex(Point p, double c_x, double c_y,const Polar_box* box, int *range_idx, int *angle_idx);
 

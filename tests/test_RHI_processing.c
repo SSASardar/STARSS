@@ -24,7 +24,7 @@ typedef struct {
     double total_measured_mm2;    // area-corrected total in mm*h per km²
     double total_true_mm2;        // area-corrected total in mm*h per km²
 } RainfallStats;
-
+/*
 int write_heights_for_point(Vol_scan *vol, int xi, int yi, const char *filename) {
     if (!vol || !vol->grid_height || !vol->grid_refl) return -1;
 
@@ -49,8 +49,9 @@ int write_heights_for_point(Vol_scan *vol, int xi, int yi, const char *filename)
     fclose(fp);
     return 0;
 }
+*/
 
-
+/*
 int write_VPR_to_file(const VPR *vpr, const char *label, int scan_idx) {
     if (!vpr || !label) return -1;
 
@@ -75,7 +76,7 @@ int write_VPR_to_file(const VPR *vpr, const char *label, int scan_idx) {
     fclose(fp);
     return 0;
 }
-
+*/
 
 
 
@@ -187,9 +188,9 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
     for (int i = 0; i < cg_count; i++)
         add_cart_grid_to_volscan(vol, cart_grids[i], i);
 
-//compute_display_grid_average(vol,10.0);
+compute_display_grid_average(vol,10.0);
 //compute_display_grid_max(vol,10.0);
-compute_display_grid_lowest_valid_height(vol,10.0);
+//compute_display_grid_lowest_valid_height(vol,10.0);
 //compute_display_grid_min_above_threshold(vol,10.0);
     double true_time_min = radar_scans[scan_count-1].time +
                            (radar_scans[scan_count-1].time - radar_scans[scan_count-2].time);
@@ -203,11 +204,12 @@ compute_display_grid_lowest_valid_height(vol,10.0);
         exit(EXIT_FAILURE);
     }
 
+    /*
     if (fill_refl_ALA_grid(vol, raincell_pos, raincell, VPR_strat, VPR_conv) != 0) {
         fprintf(stderr, "Failed to fill Refl_ALA grid\n");
     }
-
-
+*/
+/*
 double mse, mae, bias;
 double total_measured, total_true_masked, total_measured_mm2, total_true_mm2;
 double total_true_unmasked, total_true_mm2_unmasked;
@@ -256,14 +258,14 @@ if (fp) {
 } else {
     fprintf(stderr, "Failed to open outputs/stats.txt for writing\n");
 }
-
+*/
 // --- Write display_grid to file ---
 char disp_filename[256];
 snprintf(disp_filename, sizeof(disp_filename), "outputs/disp_g_%04d.txt", scan_idx);
 if (write_display_grid_to_file(vol, disp_filename) != 0) {
     fprintf(stderr, "Failed to write display grid to %s\n", disp_filename);
 }
-
+/*
 // --- Write true_grid to file ---
 char true_filename[256];
 snprintf(true_filename, sizeof(true_filename), "outputs/true_g_%04d.txt", scan_idx);
@@ -286,7 +288,7 @@ if (write_heights_for_point(vol, xA, yA, point_height_file) != 0) {
 
 if(scan_idx == 0) write_VPR_to_file(VPR_strat, "strat", scan_idx);
 write_VPR_to_file(VPR_conv,  "conv",  scan_idx);
-
+*/
     // Free memory
     for (int i = 0; i < cg_count; i++)
         free_cart_grid(cart_grids[i]);
