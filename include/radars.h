@@ -78,6 +78,8 @@ typedef struct Polar_box {
 int radar_id;/**< iD of the radar making the measurement */
 char scanning_mode[4];/**< Specifies either a Plan Position Indicator (PPI) or a Range Height Indicator (RHI) as a measurement type*/
 double x; /**< Location of the radar, x coordinate in Cartesian space.*/
+double y; /**< Location of the radar, y coordinate in Cartesian space.*/
+double z; /**< Location of the radar, z coordinate in Cartesian space.*/
 double min_range_gate;/**< the closest possible range-gate to the nearest point of the raincell from the radar. from 0 to max number of range gates.*/
 double max_range_gate;/**< the closest possible range-gate to the farthest point of the raincell as seen from the radar. from 0 to max number of range gates.*/
 double min_angle;/**< the smallest angle which captures the edge of the raincell from 0 to max number of angles it is the index in the range-angle data matrix.*/

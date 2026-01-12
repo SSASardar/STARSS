@@ -222,8 +222,8 @@ if (!fp) {
     return -3;
 }
 
-fprintf(fp, "# iter    x               f(x)            method\n");
-fprintf(fp, "# ------------------------------------------------\n");
+//fprintf(fp, "# iter    x               f(x)            method\n");
+//fprintf(fp, "# ------------------------------------------------\n");
 
 
 
@@ -261,7 +261,7 @@ fprintf(fp, "# ------------------------------------------------\n");
         if (!use_newton) {
             x_new = 0.5 * (a + b);
         }
-
+if(iter == 99){
 fprintf(fp,
         "%4d  % .15e  % .15e  %s\n",
         iter,
@@ -269,7 +269,7 @@ fprintf(fp,
         fx,
         use_newton ? "Newton" : "Bisection"
     );
-
+}
 
         double f_new = f(x_new, radar_height, surface_range, height_above_radar);
 
@@ -493,6 +493,7 @@ double eps = 1e-8;
 
 	double h = p.y-c_y;
 	double s = (p.x-c_x)/cos(box->other_angle*DEG2RAD);
+	//double s = sqrt((p.x-c_x)*(p.x-c_x) + (p.)*());
 	if( s>1e7) return false;
 	double angle_elevation;
 	//angle_elevation = acos(sin*(s/KEA) * (KEA + h)/r;	
@@ -504,15 +505,15 @@ if (!fp) {
 }
 
 
-//int status = newton_bisection(0,3*M_PI_4/3, atan2(h,s), 1e-10, 100, &angle_elevation, c_y, s, h);
-int status = brent_root(0,3*M_PI_4/4,1e-10, 100,&angle_elevation,c_y, s, h,fp);
+int status = newton_bisection(0,3*M_PI_4/3, atan2(h,s), 1e-10, 100, &angle_elevation, c_y, s, h);
+//int status = brent_root(0,3*M_PI_4/4,1e-10, 100,&angle_elevation,c_y, s, h,fp);
 
 if (status == 0) {
-  double range_solved = sin(s/(KEA+c_y))*(KEA+h-c_y)/cos(angle_elevation);
-  double range_solved_1 = -1*(KEA*sin(angle_elevation))+sqrt((KEA*sin(angle_elevation)*KEA*sin(angle_elevation))+h*h + 2*KEA*h);
-  //fprintf(fp," a_zero = %.3e, r_solved = %.3e\n", angle_elevation, range_solved);
-   *range_idx = (int)floor((range_solved_1 - r_min) / box->range_resolution + 1e-8);
-   int range_id_other = (int)floor((range_solved - r_min) / box->range_resolution + 1e-8);
+    double range_solved = sin(s/(KEA+c_y))*(KEA+h-c_y)/cos(angle_elevation);
+    double range_solved_1 = -1*(KEA*sin(angle_elevation))+sqrt((KEA*sin(angle_elevation)*KEA*sin(angle_elevation))+h*h + 2*KEA*h);
+    //fprintf(fp," a_zero = %.3e, r_solved = %.3e\n", angle_elevation, range_solved);
+    *range_idx = (int)floor((range_solved_1 - r_min) / box->range_resolution + 1e-8);
+    int range_id_other = (int)floor((range_solved - r_min) / box->range_resolution + 1e-8);
     if (*range_idx < 0) *range_idx = 0;
     if (*range_idx >= (int)box->num_ranges) *range_idx = box->num_ranges - 1;
     
@@ -525,7 +526,7 @@ if (status == 0) {
     double span = box->num_angles * box->angular_resolution * DEG2RAD;
 
     double angle_diff = fmod(angle_elevation - min_angle + 2*M_PI, 2*M_PI);
-if (angle_diff > span + eps)
+    if (angle_diff > span + eps)
     return false;
 
 
@@ -542,7 +543,7 @@ fprintf(fp,"___________________________________________________________\n");
 fclose(fp);
     return true;
 } else {
-    fprintf(fp,"Root finding failed (code %d)\n", status);
+   // fprintf(fp,"Root finding failed (code %d)\n", status);
 fprintf(fp,"___________________________________________________________\n");
 fclose(fp);
     return false;

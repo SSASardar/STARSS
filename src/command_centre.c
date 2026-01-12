@@ -47,7 +47,8 @@ static void log_message(const char *format, ...) {
 }
 
 // ---------------------- Command Generation ----------------------
-#define SCANS_PER_FILE 16
+#define SCANS_PER_FILE 5 //RHI stuff
+//#define SCANS_PER_FILE 16
 // #define FIVE_MINUTES 300.0  // seconds
 #define FIVE_MINUTES 5.0  // minutes
 
@@ -67,11 +68,11 @@ void generate_commands_file(int file_index, double start_time) {
         Command cmd;
         cmd.time = start_time + i * interval;
         cmd.radar_id = 2;
-      snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
-//	 snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
-       cmd.raincell_id = 1;
-	cmd.other_angle = counter_A * (24.0 / (SCANS_PER_FILE+1)); // Exampe: 0–12 degrees.
-        //cmd.other_angle = 0;
+//      snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
+	snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
+        cmd.raincell_id = 1;
+//	cmd.other_angle = counter_A * (24.0 / (SCANS_PER_FILE+1)); // Exampe: 0–12 degrees.
+        cmd.other_angle = 0;
 	counter_A++;
 								 //
 	if (counter_A == 8) counter_A =0;
