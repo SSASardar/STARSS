@@ -32,11 +32,11 @@ void print_progress() {
             "Model of radar",
             {
                 {"Radar geometry (PPI)", 75},
-		{"Radar geometry (RHI)", 10},
+		{"Radar geometry (RHI)", 60},
 		{"Noise model", 80},
 		{"Attenuation model",80},
 		{"Clutter model",5},
-		{"Getting lowest Z",50},
+		{"What to measure",40},
 		{"Measurement outputs",90}
             },
             7
@@ -44,12 +44,12 @@ void print_progress() {
 	{
 		"Radar config. & contr.",
 		{
-			{"Reading in commands",50},
-			{"Validating commands",30},
+			{"Reading in commands",90},
+			{"Validating commands",20},
 			{"Executing commands", 80},
 			{"Checking for new files",60},
 			{"Saving radar outputs",90},
-			{"Generating command list",0},
+			{"Generating command list",75},
 			{"Processing instructions",30},
 		},
 		6
@@ -58,7 +58,7 @@ void print_progress() {
 		"Processing unit",
 		{
 			{"Reading the radar_scan file", 100},
-			{"Cartesian spatial interpolation", 90},
+			{"Cartesian spatial interpolation", 65},
 			{"Temporal interpolation", 5},
 			{"Reconstruction of VPR",5},
 			{"PPI/vol scan to rainfall rate", 65},
@@ -79,7 +79,7 @@ void print_progress() {
             3
         },
         {
-            "Hydrological product",
+            "Hydrological product??",
             {
 		{"Entry rate of water into river",10},
 		{"True rainfall accumulation",5},
@@ -88,7 +88,7 @@ void print_progress() {
             4
         },
         {
-            "Comparative measures",
+            "Comparative measures??",
             {
                 {"Rainfall acc. map + MSE/Bias", 15},
                 {"Entry rate curve + MSE/Bias", 0}

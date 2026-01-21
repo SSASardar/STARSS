@@ -655,8 +655,6 @@ if(strcmp(get_scanning_mode(found_radar), "RHI") == 0){
 	bbox->bottomRight.y /* height or z coord */ = h_min;
 }
 return bbox;
-
-
 }
 
 /*

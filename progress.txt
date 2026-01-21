@@ -8,22 +8,22 @@
 |                        | What is the ground truth?        | ##############...... |
 +------------------------+----------------------------------+----------------------+
 | Model of radar         | Radar geometry (PPI)             | ###############..... |
-|                        | Radar geometry (RHI)             | ##.................. |
+|                        | Radar geometry (RHI)             | ############........ |
 |                        | Noise model                      | ################.... |
 |                        | Attenuation model                | ################.... |
 |                        | Clutter model                    | #................... |
-|                        | Getting lowest Z                 | ##########.......... |
+|                        | What to measure                  | ########............ |
 |                        | Measurement outputs              | ##################.. |
 +------------------------+----------------------------------+----------------------+
-| Radar config. & contr. | Reading in commands              | ##########.......... |
-|                        | Validating commands              | ######.............. |
+| Radar config. & contr. | Reading in commands              | ##################.. |
+|                        | Validating commands              | ####................ |
 |                        | Executing commands               | ################.... |
 |                        | Checking for new files           | ############........ |
 |                        | Saving radar outputs             | ##################.. |
-|                        | Generating command list          | .................... |
+|                        | Generating command list          | ###############..... |
 +------------------------+----------------------------------+----------------------+
 | Processing unit        | Reading the radar_scan file      | #################### |
-|                        | Cartesian spatial interpolation  | ##################.. |
+|                        | Cartesian spatial interpolation  | #############....... |
 |                        | Temporal interpolation           | #................... |
 |                        | Reconstruction of VPR            | #................... |
 |                        | PPI/vol scan to rainfall rate    | #############....... |
@@ -35,12 +35,12 @@
 |                        | True rainfall accumulation       | ######.............. |
 |                        | (opt) Forecast                   | .................... |
 +------------------------+----------------------------------+----------------------+
-| Hydrological product   | Entry rate of water into river   | ##.................. |
+| Hydrological product?? | Entry rate of water into river   | ##.................. |
 |                        | True rainfall accumulation       | #................... |
 |                        | (opt) Forecast                   | .................... |
 |                        | (null)                           | .................... |
 +------------------------+----------------------------------+----------------------+
-| Comparative measures   | Rainfall acc. map + MSE/Bias     | ###................. |
+| Comparative measures?? | Rainfall acc. map + MSE/Bias     | ###................. |
 |                        | Entry rate curve + MSE/Bias      | .................... |
 +------------------------+----------------------------------+----------------------+
 +------------------------+----------------------------------+----------------------+
@@ -54,7 +54,7 @@
 
 
 
-Next 5 tasks to prioritise (as of 2025-09-04 12:58:00):
+Next 5 tasks to prioritise (as of 2026-01-14 13:52:54):
   1.  implement quality metric on heights
   2.  correcting for bright band if melting layer height known
   3.  reconstructed VPR based on the measurement? 

@@ -175,21 +175,116 @@ if (angle_diff > span) return false;
 */
 
 
-
+/*
 double f(double x, double radar_height, double surface_range, double height_above_radar) {
-    /* f as the radius, x as the elevation angle.  */
+    // f as the radius, x as the elevation angle.  
 	double kea_and_height = KEA + radar_height;
 
 	return -1*(kea_and_height*sin(x)) + sqrt((kea_and_height*sin(x))*(kea_and_height*sin(x))+ height_above_radar*height_above_radar + 2*height_above_radar*kea_and_height) - (sin(surface_range/kea_and_height)/cos(x));
 }
-
+*/
+/*
 double df(double x, double radar_height, double surface_range, double height_above_radar) {
-    /* analytical derivative */
+    // analytical derivative 
 	double kea_and_height = KEA + radar_height;
 
 	return (kea_and_height*cos(x) + 0.5*(sqrt(kea_and_height*sin(x)*kea_and_height*sin(x)+height_above_radar*height_above_radar+2*height_above_radar*kea_and_height))*kea_and_height*kea_and_height*sin(2*x)) - sin(surface_range/kea_and_height)*(kea_and_height + height_above_radar)*sin(x)*(1/cos(x)*cos(x));
 }
 
+
+double f(
+    double x,
+    double radar_height,
+    double surface_range,
+    double height_above_radar,
+    FILE *fp
+) {
+    //FILE *fp = fopen("outputs/elevation_angles.txt", "a");
+    if (!fp) {
+        perror("Failed to open debug output file");
+        return -3;
+    }
+
+    const double K = KEA + radar_height;
+
+    // Basic input sanity 
+    if (!isfinite(x) ||
+        !isfinite(K) ||
+        !isfinite(surface_range) ||
+        !isfinite(height_above_radar)) {
+
+        fprintf(fp,
+            "[f] ERROR: non-finite input\n"
+            "    x=%g  KEA=%g  radar_height=%g\n"
+            "    surface_range=%g  height_above_radar=%g\n",
+            x, KEA, radar_height,
+            surface_range, height_above_radar
+        );
+        return NAN;
+    }
+
+    const double sinx = sin(x);
+    const double cosx = cos(x);
+
+     Warn if we are approaching an unphysical elevation
+    if (fabs(cosx) < 1e-8) {
+        fprintf(fp,
+            "[f] WARNING: cos(x) near zero\n"
+            "    x=%.15e  cos(x)=%.3e\n",
+            x, cosx
+        );
+    }
+
+    Radicand of geometric term 
+    const double radicand =
+        (K * sinx) * (K * sinx)
+        + height_above_radar * height_above_radar
+        + 2.0 * height_above_radar * K;
+
+    if (radicand < 0.0) {
+        fprintf(fp,
+            "[f] ERROR: negative radicand\n"
+            "    x=%.15e\n"
+            "    radicand=%.15e\n"
+            "    K=%.15e  h=%.15e\n",
+            x, radicand, K, height_above_radar
+        );
+        return NAN;
+    }
+
+    const double geom = sqrt(radicand);
+
+    const double trig_term = sin(surface_range / K);
+
+    if (!isfinite(trig_term)) {
+        fprintf(fp,
+            "[f] ERROR: sin(surface_range / K) not finite\n"
+            "    surface_range=%.15e  K=%.15e\n",
+            surface_range, K
+        );
+        return NAN;
+    }
+
+    Final function value (cos(x) * original f(x))
+    const double value =
+        -K * sinx * cosx
+        + cosx * geom
+        - trig_term;
+
+    if (!isfinite(value)) {
+        fprintf(fp,
+            "[f] ERROR: f(x) evaluated to NaN/Inf\n"
+            "    x=%.15e\n"
+            "    sinx=%.15e  cosx=%.15e\n"
+            "    geom=%.15e\n"
+            "    value=%.15e\n",
+            x, sinx, cosx, geom, value
+        );
+        return NAN;
+    }
+
+    return value;
+}
 
 int newton_bisection(
     double a,
@@ -202,25 +297,25 @@ int newton_bisection(
     double surface_range,
     double height_above_radar
 ) {
-    double fa = f(a, radar_height, surface_range, height_above_radar);
-    double fb = f(b, radar_height, surface_range, height_above_radar);
-
-    /* Root must be bracketed */
-    if (fa * fb > 0.0) {
-        return -1;  /* no guarantee of root */
-    }
-
-    double x = x0;
-    if (x <= a || x >= b) {
-        x = 0.5 * (a + b);  /* enforce domain */
-    }
-
-
+ 
 FILE *fp = fopen("outputs/elevation_angles.txt", "a");
 if (!fp) {
     perror("Failed to open output file");
     return -3;
 }
+   double fa = f(a, radar_height, surface_range, height_above_radar,fp);
+    double fb = f(b, radar_height, surface_range, height_above_radar,fp);
+
+    // Root must be bracketed
+    if (fa * fb > 0.0) {
+        return -1; // no guarantee of root
+    }
+
+    double x = x0;
+    if (x <= a || x >= b) {
+        x = 0.5 * (a + b);  // enforce domain 
+    }
+
 
 //fprintf(fp, "# iter    x               f(x)            method\n");
 //fprintf(fp, "# ------------------------------------------------\n");
@@ -228,10 +323,10 @@ if (!fp) {
 
 
     for (int iter = 0; iter < max_iter; ++iter) {
-        double fx  = f(x, radar_height, surface_range, height_above_radar);
+        double fx  = f(x, radar_height, surface_range, height_above_radar,fp);
         double dfx = df(x, radar_height, surface_range, height_above_radar);
 
-        /* Convergence check */
+        // Convergence check
         if (fabs(fx) < tol) {
             *root = x;
             return 0;
@@ -240,24 +335,24 @@ if (!fp) {
         double x_new;
         int use_newton = 1;
 
-        /* Reject Newton step if derivative too small */
+        // Reject Newton step if derivative too small
         if (fabs(dfx) < 1e-12) {
             use_newton = 0;
         } else {
             x_new = x - fx / dfx;
 
-            /* Reject Newton step if it leaves the domain */
+            // Reject Newton step if it leaves the domain
             if (x_new <= a || x_new >= b) {
                 use_newton = 0;
             }
 
-            /* Reject excessively large steps */
+            // Reject excessively large steps
             if (fabs(x_new - x) > 0.5 * (b - a)) {
                 use_newton = 0;
             }
         }
 
-        /* Fallback to bisection */
+        // Fallback to bisection
         if (!use_newton) {
             x_new = 0.5 * (a + b);
         }
@@ -271,9 +366,9 @@ fprintf(fp,
     );
 }
 
-        double f_new = f(x_new, radar_height, surface_range, height_above_radar);
+        double f_new = f(x_new, radar_height, surface_range, height_above_radar,fp);
 
-        /* Maintain the bracket */
+        // Maintain the bracket
         if (fa * f_new < 0.0) {
             b  = x_new;
             fb = f_new;
@@ -284,14 +379,14 @@ fprintf(fp,
 
         x = x_new;
 
-        /* Interval-based stopping criterion */
+        // Interval-based stopping criterion
         if (fabs(b - a) < tol) {
             *root = x;
             return 0;
         }
     }
 fclose(fp);
-    return -2;  /* did not converge */
+    return -2;  // did not converge
 }
 
 
@@ -319,8 +414,14 @@ int brent_root(
                 "step        |b-c|\n");
     fprintf(fp, "# ---------------------------------------------------------------------------\n");
 
-    double fa = f(a, radar_height, surface_range, height_above_radar);
-    double fb = f(b, radar_height, surface_range, height_above_radar);
+    double fa = f(a, radar_height, surface_range, height_above_radar,fp);
+    double fb = f(b, radar_height, surface_range, height_above_radar,fp);
+
+if (!isfinite(fa) || !isfinite(fb)) {
+    fprintf(fp, "# ERROR: f(a) or f(b) is not finite (fa=%g, fb=%g)\n", fa, fb);
+    fclose(fp);
+    return -4;
+}
 
     if (fa * fb > 0.0) {
         fprintf(fp, "# ERROR: root not bracketed (fa*fb > 0)\n");
@@ -356,7 +457,7 @@ int brent_root(
             iter, a, b, c, fa, fb, fc
         );
 
-        /* Convergence test */
+         //Convergence test
         if (fabs(m) <= tol_act || fb == 0.0) {
             fprintf(fp, "CONVERGED   %.3e\n", fabs(m));
             *root = b;
@@ -372,12 +473,12 @@ int brent_root(
             double s = fb / fa;
 
             if (a == c) {
-                /* Secant */
+                //Secant
                 p = 2.0 * m * s;
                 q = 1.0 - s;
                 step_type = "Secant";
             } else {
-                /* Inverse quadratic interpolation */
+                //Inverse quadratic interpolation
                 double r = fb / fc;
                 double t = fa / fc;
                 p = s * (2.0 * m * t * (t - r) - (b - a) * (r - 1.0));
@@ -412,7 +513,7 @@ int brent_root(
         else
             b += (m > 0 ? tol_act : -tol_act);
 
-        fb = f(b, radar_height, surface_range, height_above_radar);
+        fb = f(b, radar_height, surface_range, height_above_radar,fp);
 
         if ((fb > 0.0 && fc > 0.0) || (fb < 0.0 && fc < 0.0)) {
             c = a;
@@ -427,7 +528,7 @@ int brent_root(
     return -2;
 }
 
-
+*/
 
 
 
@@ -466,7 +567,7 @@ bool getPolarBoxIndex(Point p,
     double span = box->num_angles * box->angular_resolution * DEG2RAD;
 
     double angle_diff = fmod(angle - min_angle + 2*M_PI, 2*M_PI);
-if (angle_diff > span + eps)
+    if (angle_diff > span + eps)
     return false;
 
     // --- Range index (round to nearest) ---
@@ -491,24 +592,56 @@ if (angle_diff > span + eps)
 
 double eps = 1e-8;
 
-	double h = p.y-c_y;
-	double s = (p.x-c_x)/cos(box->other_angle*DEG2RAD);
-	//double s = sqrt((p.x-c_x)*(p.x-c_x) + (p.)*());
+	double h = sqrt((p.y-c_y)*(p.y-c_y));
+	//double s = (p.x-c_x)/cos(box->other_angle*DEG2RAD);
+	double s = sqrt((p.x-c_x)*(p.x-c_x));
 	if( s>1e7) return false;
 	double angle_elevation;
-	//angle_elevation = acos(sin*(s/KEA) * (KEA + h)/r;	
+	angle_elevation = acos(sin(s/KEA) * (KEA + h)/(box->min_range_gate*box->range_resolution));	
 
-FILE *fp = fopen("outputs/elevation_angles.txt", "a");
-if (!fp) {
-    perror("Failed to open output file");
-    return false;
+//FILE *fp = fopen("outputs/elevation_angles.txt", "a");
+//if (!fp) {
+//    perror("Failed to open output file");
+//    return false;
+//}
+
+double x_min = 0.0;
+double x_max = 3.0 * M_PI_4 / 4.0;
+double dx    = 1e-3;
+/*
+double a = x_min;
+double fa = f(a, c_y, s, h,fp);
+
+int found = 0;
+double b, fb;
+
+for (double x = x_min + dx; x <= x_max; x += dx) {
+
+    double fx = f(x, c_y, s, h,fp);
+    if (!isfinite(fx)) {
+        continue;
+    }
+
+    if (fa * fx < 0.0) {
+        b = x;
+        fb = fx;
+        found = 1;
+        break;
+    }
+
+    a  = x;
+    fa = fx;
 }
 
-
-int status = newton_bisection(0,3*M_PI_4/3, atan2(h,s), 1e-10, 100, &angle_elevation, c_y, s, h);
+//int status = newton_bisection(0,3*M_PI_4/3, atan2(h,s), 1e-10, 100, &angle_elevation, c_y, s, h);
 //int status = brent_root(0,3*M_PI_4/4,1e-10, 100,&angle_elevation,c_y, s, h,fp);
-
-if (status == 0) {
+int status = -1;
+if(found) {
+	status = brent_root(a,b,1e-10,100,&angle_elevation,c_y,s,h,fp);
+} else {
+	return false;
+}*/
+//if (status == 0) {
     double range_solved = sin(s/(KEA+c_y))*(KEA+h-c_y)/cos(angle_elevation);
     double range_solved_1 = -1*(KEA*sin(angle_elevation))+sqrt((KEA*sin(angle_elevation)*KEA*sin(angle_elevation))+h*h + 2*KEA*h);
     //fprintf(fp," a_zero = %.3e, r_solved = %.3e\n", angle_elevation, range_solved);
@@ -536,19 +669,18 @@ if (status == 0) {
     if (*angle_idx >= (int)box->num_angles) *angle_idx = box->num_angles - 1;
 
 
-
-fprintf(fp,"+++++++++++++++++++++++++ RESULT ++++++++++++++++++++++++++\n");
-fprintf(fp,"++ angle_id = %d ++ range_id = %d ++ other range_id = %d ++\n", &angle_idx, &range_idx, range_id_other);
-fprintf(fp,"___________________________________________________________\n");
-fclose(fp);
-    return true;
-} else {
-   // fprintf(fp,"Root finding failed (code %d)\n", status);
-fprintf(fp,"___________________________________________________________\n");
-fclose(fp);
-    return false;
-}
-fclose(fp);
+//fprintf(fp,"+++++++++++++++++++++++++ RESULT ++++++++++++++++++++++++++\n");
+//fprintf(fp,"++ angle_id = %d ++ range_id = %d ++ other range_id = %d ++\n", &angle_idx, &range_idx, range_id_other);
+//fprintf(fp,"___________________________________________________________\n");
+//fclose(fp);
+//    return true;
+//} else {
+//fprintf(fp,"Root finding failed (code %d)\n", status);
+//fprintf(fp,"___________________________________________________________\n");
+//fclose(fp);
+//    return false;
+//}
+//fclose(fp);
 return true;
 	}
 

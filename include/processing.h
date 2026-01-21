@@ -56,7 +56,7 @@ bool isAngleBetween(double angle, double minAngle, double maxAngle);
 bool isPointInSectorAnnulus(Point p, Point center, double minAngle, double maxAngle, double minRange, double maxRange); 
 
 
-double f(double x, double radar_height, double surface_range, double height_above_radar);
+double f(double x, double radar_height, double surface_range, double height_above_radar,FILE *fp);
 double df(double x, double radar_height, double surface_range, double height_above_radar);
 
 int newton_bisection(
