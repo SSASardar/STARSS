@@ -530,6 +530,113 @@ if (!isfinite(fa) || !isfinite(fb)) {
 
 */
 
+/* r1(theta) */
+double r1(double theta, double s, double k_eA, double h)
+{
+    return sin(s / k_eA) * (k_eA + h) / cos(theta);
+}
+
+/* r2(theta) */
+double r2(double theta, double k_eA, double h)
+{
+    double term = k_eA * sin(theta);
+    return -term + sqrt(term * term + h * h + 2.0 * h * k_eA);
+}
+
+/* r2(theta) - r1(theta) */
+double r_diff(double theta, double s, double k_eA, double h)
+{
+    return r2(theta, k_eA, h) - r1(theta, s, k_eA, h);
+}
+
+/*
+ * Brent's method root finder
+ * Solves r_diff(theta) = 0 on [theta_min, theta_max]
+ */
+double solve_theta(double s, double k_eA, double h,
+                   double theta_min, double theta_max)
+{
+    const int max_iter = 100;
+    const double tol = 1e-12;
+
+    double a = theta_min;
+    double b = theta_max;
+    double c = b;
+    double fa = r_diff(a, s, k_eA, h);
+    double fb = r_diff(b, s, k_eA, h);
+    double fc = fb;
+
+    if (fa * fb >= 0.0) {
+        fprintf(stderr, "Root not bracketed\n");
+       	exit(EXIT_FAILURE);
+    }
+
+    double d = 0.0, e = 0.0;
+
+    for (int iter = 0; iter < max_iter; iter++) {
+
+        if ((fb > 0 && fc > 0) || (fb < 0 && fc < 0)) {
+            c = a;
+            fc = fa;
+            d = e = b - a;
+        }
+
+        if (fabs(fc) < fabs(fb)) {
+            a = b;  b = c;  c = a;
+            fa = fb; fb = fc; fc = fa;
+        }
+
+        double tol1 = 2.0 * tol * fabs(b) + 0.5 * tol;
+        double xm = 0.5 * (c - b);
+
+        if (fabs(xm) <= tol1 || fb == 0.0) {
+            return b;
+        }
+
+        if (fabs(e) >= tol1 && fabs(fa) > fabs(fb)) {
+            double s1 = fb / fa;
+            double p, q;
+
+            if (a == c) {
+                p = 2.0 * xm * s1;
+                q = 1.0 - s1;
+            } else {
+                double q1 = fa / fc;
+                double r1 = fb / fc;
+                p = s1 * (2.0 * xm * q1 * (q1 - r1) - (b - a) * (r1 - 1.0));
+                q = (q1 - 1.0) * (r1 - 1.0) * (s1 - 1.0);
+            }
+
+            if (p > 0.0) q = -q;
+            p = fabs(p);
+
+            if (2.0 * p < fmin(3.0 * xm * q - fabs(tol1 * q), fabs(e * q))) {
+                e = d;
+                d = p / q;
+            } else {
+                d = xm;
+                e = d;
+            }
+        } else {
+            d = xm;
+            e = d;
+        }
+
+        a = b;
+        fa = fb;
+
+        if (fabs(d) > tol1)
+            b += d;
+        else
+            b += (xm > 0 ? tol1 : -tol1);
+
+        fb = r_diff(b, s, k_eA, h);
+    }
+
+    fprintf(stderr, "Maximum iterations exceeded\n");
+    exit(EXIT_FAILURE);
+}
+
 
 
 bool getPolarBoxIndex(Point p,
@@ -586,7 +693,6 @@ bool getPolarBoxIndex(Point p,
 
 
     if(strcmp(box->scanning_mode, "RHI")==0){
-
  double r_min = box->min_range_gate * box->range_resolution;
     double r_max = box->max_range_gate * box->range_resolution;
 
@@ -595,15 +701,19 @@ double eps = 1e-8;
 	double h = sqrt((p.y-c_y)*(p.y-c_y));
 	//double s = (p.x-c_x)/cos(box->other_angle*DEG2RAD);
 	double s = sqrt((p.x-c_x)*(p.x-c_x));
-	if( s>1e7) return false;
-	double angle_elevation;
-	angle_elevation = acos(sin(s/KEA) * (KEA + h)/(box->min_range_gate*box->range_resolution));	
+	if(s>1e7) return false;
+	double angle_elevation = solve_theta(s,KEA,h,-1.4,1.4);
+
+	//angle_elevation = acos(sin(s/KEA) * (KEA + h)/(box->min_range_gate*box->range_resolution));	
 
 //FILE *fp = fopen("outputs/elevation_angles.txt", "a");
 //if (!fp) {
 //    perror("Failed to open output file");
 //    return false;
 //}
+
+
+
 
 double x_min = 0.0;
 double x_max = 3.0 * M_PI_4 / 4.0;
@@ -642,32 +752,58 @@ if(found) {
 	return false;
 }*/
 //if (status == 0) {
+    
+    
+
     double range_solved = sin(s/(KEA+c_y))*(KEA+h-c_y)/cos(angle_elevation);
     double range_solved_1 = -1*(KEA*sin(angle_elevation))+sqrt((KEA*sin(angle_elevation)*KEA*sin(angle_elevation))+h*h + 2*KEA*h);
     //fprintf(fp," a_zero = %.3e, r_solved = %.3e\n", angle_elevation, range_solved);
-    *range_idx = (int)floor((range_solved_1 - r_min) / box->range_resolution + 1e-8);
-    int range_id_other = (int)floor((range_solved - r_min) / box->range_resolution + 1e-8);
-    if (*range_idx < 0) *range_idx = 0;
-    if (*range_idx >= (int)box->num_ranges) *range_idx = box->num_ranges - 1;
-    
-    if (range_solved_1 < r_min - eps || range_solved_1 > r_max + eps)
-        return false;
+    *range_idx = (int)floor((range_solved - r_min) / box->range_resolution + 1e-8);
+    //int range_id_other = (int)floor((range_solved - r_min) / box->range_resolution + 1e-8);
 
-    double min_angle = box->min_angle * box->angular_resolution * DEG2RAD;
+
+
+   // if (*range_idx < 0) *range_idx = 0;
+    if (*range_idx < 0) {printf("1");return false;}
+    if (*range_idx > (int)box->num_ranges) {printf("2"); return false;}
+   // if (*range_idx >= (int)box->num_ranges) *range_idx = box->num_ranges - 1;
+    
+/*
+double x_rThresh_a = box->x + cos(box->other_angle*DEG2RAD)*r_min;
+double x_rThresh_b = box->x + cos(box->other_angle*DEG2RAD)*r_max;
+
+double y_rThresh_a = box->y + sin(box->other_angle*DEG2RAD)*r_min;
+double y_rThresh_b = box->y + sin(box->other_angle*DEG2RAD)*r_max;
+
+double dist_a = sqrt((x_rThresh_a*x_rThresh_a)+(y_rThresh_a*y_rThresh_a));
+double dist_b = sqrt((x_rThresh_b*x_rThresh_b)+(y_rThresh_b*y_rThresh_b));
+
+double dist_min, dist_max;
+if (dist_a <= dist_b) { dist_min = dist_a; dist_max = dist_b; } else {dist_min = dist_b; dist_max = dist_a;}
+
+    if (range_solved < dist_min  || range_solved > dist_max){
+	return false;
+	} else {
+	printf("(range in [rmin, rmax] --> %lf in [%lf, %lf]\n", range_solved, dist_min, dist_max);}
+	printf("height = %.2lf, slant range = %.2lf, elevation_angle = %.2lf, range = %.2lf\n", h, s, angle_elevation,range_solved);	
+  
+*/      
+	double min_angle = box->min_angle * box->angular_resolution;
     if (min_angle < 0) min_angle += 2*M_PI;
 
-    double span = box->num_angles * box->angular_resolution * DEG2RAD;
+    double span = box->num_angles * box->angular_resolution;
 
-    double angle_diff = fmod(angle_elevation - min_angle + 2*M_PI, 2*M_PI);
-    if (angle_diff > span + eps)
-    return false;
+    double angle_diff = fmod(angle_elevation - min_angle, 2*M_PI);
+    if (angle_diff > span + eps){
+    	printf("angle_diff = %lf\n", angle_diff);
+    	return false;
+    }
 
 
     // --- Angle index (round to nearest) ---
-    *angle_idx = (int)floor(angle_diff / (box->angular_resolution * DEG2RAD + 1e-8));
+    *angle_idx = (int)floor(angle_diff / (box->angular_resolution + 1e-8));
     if (*angle_idx < 0) *angle_idx = 0;
     if (*angle_idx >= (int)box->num_angles) *angle_idx = box->num_angles - 1;
-
 
 //fprintf(fp,"+++++++++++++++++++++++++ RESULT ++++++++++++++++++++++++++\n");
 //fprintf(fp,"++ angle_id = %d ++ range_id = %d ++ other range_id = %d ++\n", &angle_idx, &range_idx, range_id_other);

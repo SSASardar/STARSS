@@ -83,6 +83,13 @@ int brent_root(
     FILE *fp
 );
 
+
+double r1(double theta, double s, double k_eA, double h);
+double r2(double theta, double k_eA, double h);
+double r_diff(double theta, double s, double k_eA, double h);
+double solve_theta(double s, double k_eA, double h,
+                   double theta_min, double theta_max);
+
 bool getPolarBoxIndex(Point p, double c_x, double c_y,const Polar_box* box, int *range_idx, int *angle_idx);
 
 

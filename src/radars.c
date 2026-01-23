@@ -96,6 +96,7 @@ Point* get_position_radar(const Radar* radar){
 	if (radar) {
 		point->x = radar->x;
 		point->y = radar->y;
+		point->z = radar->z;
 	}	
 	return point;
 }
@@ -1303,8 +1304,8 @@ if(strcmp(p_box->scanning_mode,"RHI")== 0){
 
 	double rmin = get_min_range_gate(p_box) * get_range_res_radar(radar);
 	double rmax = get_max_range_gate(p_box) * get_range_res_radar(radar);
-	double angleMin = get_min_angle(p_box) * DEG2RAD * get_angular_res_polar_box(p_box);
-	double angleMax = get_max_angle(p_box) * DEG2RAD * get_angular_res_polar_box(p_box);
+	double angleMin = get_min_angle(p_box) * get_angular_res_polar_box(p_box);
+	double angleMax = get_max_angle(p_box) * get_angular_res_polar_box(p_box);
 	
 	double h_min = calculate_height_of_beam_at_range(rmin, angleMin, radar->z);
 	double h_max = calculate_height_of_beam_at_range(rmax, angleMax, radar->z);
@@ -1319,7 +1320,7 @@ if(strcmp(p_box->scanning_mode,"RHI")== 0){
 
 //	Bounding_box* bbox = malloc(sizeof(Bounding_box));
 	bbox->topLeft.x = radar_dist_from_origin + smin;
-bbox->topLeft.y /*height or z coord */ = h_max;
+	bbox->topLeft.y /*height or z coord */ = h_max;
 	
 	bbox->topRight.x = radar_dist_from_origin + smax;
 	bbox->topRight.y /* height or z coord */= h_max;
@@ -1330,9 +1331,11 @@ bbox->topLeft.y /*height or z coord */ = h_max;
 	bbox->bottomRight.x = radar_dist_from_origin + smax;
 	bbox->bottomRight.y /* height or z coord */ = h_min;
 
+	printf("*(%.1lf,%.1lf)________*(%.1lf,%.1lf)\n",bbox->topLeft.x,bbox->topLeft.y,bbox->topRight.x,bbox->topRight.y);
+	printf("|      |\n|      |\n|      |\n|      |\n|      |\n|      |\n");
+	printf("*(%.1lf,%.1lf)________*(%.1lf,%.1lf)\n",bbox->bottomLeft.x,bbox->bottomLeft.y,bbox->bottomRight.x,bbox->bottomRight.y);
 }
 return bbox;                       
-                                   
 }                                  
 
 void free_polar_box(Polar_box *box) {
@@ -1353,7 +1356,7 @@ void free_polar_box(Polar_box *box) {
         box->attenuation_grid = NULL;
     }
 
-    free(box);  // Finally, free the struct itself
+    free(box);  // Finally, free the struct 
 }
 
 // Function to generate Gaussian noise
