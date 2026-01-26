@@ -693,16 +693,17 @@ bool getPolarBoxIndex(Point p,
 
 
     if(strcmp(box->scanning_mode, "RHI")==0){
- double r_min = box->min_range_gate * box->range_resolution;
+    double r_min = box->min_range_gate * box->range_resolution;
     double r_max = box->max_range_gate * box->range_resolution;
 
-double eps = 1e-8;
+    double eps = 1e-8;
 
 	double h = sqrt((p.y-c_y)*(p.y-c_y));
-	//double s = (p.x-c_x)/cos(box->other_angle*DEG2RAD);
-	double s = sqrt((p.x-c_x)*(p.x-c_x));
-	if(s>1e7) return false;
-	double angle_elevation = solve_theta(s,KEA,h,-1.4,1.4);
+	//double s = p.x-sqrt((box->x*box->x)+(box->y*box->y));
+	double s = p.x;
+//	printf("(s,h) = (%.2lf, %.2lf)\n", s,h);
+	if(s>1e6) return false;
+	double angle_elevation = solve_theta(s,KEA,h,-1.5,1.5);
 
 	//angle_elevation = acos(sin(s/KEA) * (KEA + h)/(box->min_range_gate*box->range_resolution));	
 
@@ -714,58 +715,21 @@ double eps = 1e-8;
 
 
 
-
-double x_min = 0.0;
-double x_max = 3.0 * M_PI_4 / 4.0;
-double dx    = 1e-3;
-/*
-double a = x_min;
-double fa = f(a, c_y, s, h,fp);
-
-int found = 0;
-double b, fb;
-
-for (double x = x_min + dx; x <= x_max; x += dx) {
-
-    double fx = f(x, c_y, s, h,fp);
-    if (!isfinite(fx)) {
-        continue;
-    }
-
-    if (fa * fx < 0.0) {
-        b = x;
-        fb = fx;
-        found = 1;
-        break;
-    }
-
-    a  = x;
-    fa = fx;
-}
-
-//int status = newton_bisection(0,3*M_PI_4/3, atan2(h,s), 1e-10, 100, &angle_elevation, c_y, s, h);
-//int status = brent_root(0,3*M_PI_4/4,1e-10, 100,&angle_elevation,c_y, s, h,fp);
-int status = -1;
-if(found) {
-	status = brent_root(a,b,1e-10,100,&angle_elevation,c_y,s,h,fp);
-} else {
-	return false;
-}*/
-//if (status == 0) {
-    
-    
-
-    double range_solved = sin(s/(KEA+c_y))*(KEA+h-c_y)/cos(angle_elevation);
+    double range_solved = sin(s/(KEA))*(KEA+h)/cos(angle_elevation);
     double range_solved_1 = -1*(KEA*sin(angle_elevation))+sqrt((KEA*sin(angle_elevation)*KEA*sin(angle_elevation))+h*h + 2*KEA*h);
     //fprintf(fp," a_zero = %.3e, r_solved = %.3e\n", angle_elevation, range_solved);
-    *range_idx = (int)floor((range_solved - r_min) / box->range_resolution + 1e-8);
+    *range_idx = (int)floor((range_solved) / box->range_resolution + 1e-8);
     //int range_id_other = (int)floor((range_solved - r_min) / box->range_resolution + 1e-8);
 
 
 
    // if (*range_idx < 0) *range_idx = 0;
-    if (*range_idx < 0) {printf("1");return false;}
-    if (*range_idx > (int)box->num_ranges) {printf("2"); return false;}
+    if (*range_idx < (int)box->min_range_gate) {
+	   // printf("1");
+	    return false;}
+    if (*range_idx > (int)box->max_range_gate) {
+//	    printf("(s,h) = (%.2lf,%.2lf), angle = %.2lf, range = %.2lf, %d,in [%d, %d]\n\n",s,h,angle_elevation, range_solved, *range_idx, (int)box->min_range_gate, (int)box->max_range_gate);
+	    return false;}
    // if (*range_idx >= (int)box->num_ranges) *range_idx = box->num_ranges - 1;
     
 /*
@@ -805,6 +769,12 @@ if (dist_a <= dist_b) { dist_min = dist_a; dist_max = dist_b; } else {dist_min =
     if (*angle_idx < 0) *angle_idx = 0;
     if (*angle_idx >= (int)box->num_angles) *angle_idx = box->num_angles - 1;
 
+//Normalising to [0,max_idx] for both angle and range: 
+
+*angle_idx = *angle_idx-(int)box->min_angle;
+*range_idx = *range_idx-(int)box->min_range_gate;
+
+
 //fprintf(fp,"+++++++++++++++++++++++++ RESULT ++++++++++++++++++++++++++\n");
 //fprintf(fp,"++ angle_id = %d ++ range_id = %d ++ other range_id = %d ++\n", &angle_idx, &range_idx, range_id_other);
 //fprintf(fp,"___________________________________________________________\n");
@@ -817,6 +787,7 @@ if (dist_a <= dist_b) { dist_min = dist_a; dist_max = dist_b; } else {dist_min =
 //    return false;
 //}
 //fclose(fp);
+//printf("+++++1++++++++\n");
 return true;
 	}
 

@@ -878,9 +878,10 @@ for (int ri = 0; ri <num_ranges;ri++){
         		} else {
                 		box->attenuation_grid[idp] = att + box->attenuation_grid[idp_min_one];
         		}
-        		box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+        		//box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+        		//box->grid[idp] = add_noise(radar, refl_dBZ);
         		//box->grid[idp] = sample;
-        		//box->grid[idp] = refl_dBZ;
+        		box->grid[idp] = refl_dBZ;
 		} else {
         		refl_dBZ = get_reflectivity_at_height(vpr_conv, sample_height);
 
@@ -890,9 +891,9 @@ for (int ri = 0; ri <num_ranges;ri++){
         		} else {
                 		box->attenuation_grid[idp] = att + box->attenuation_grid[idp_min_one];
         		}
-        		box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
-        		//box->grid[idp] = sample;
-        		//box->grid[idp] = refl_dBZ;
+        		//box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+        		//box->grid[idp] = add_noise(radar, refl_dBZ);
+        		box->grid[idp] = refl_dBZ;
 		}
 		box->height_grid[idp] = sample_height;
 	}
@@ -1312,23 +1313,27 @@ if(strcmp(p_box->scanning_mode,"RHI")== 0){
 	double h_mid = calculate_height_of_beam_at_range(rmin, angleMax, radar->z);
 	double h_midd = calculate_height_of_beam_at_range(rmax, angleMin,radar->z);
 
-	double smin = KEA*asin((rmin*cos(angleMax))/(KEA+h_mid));
-	double smax = KEA*asin((rmax*cos(angleMin))/(KEA+h_midd));
+	double smin = fabs(KEA*asin((rmin*cos(angleMax))/(KEA+h_mid)));
+	double smax = fabs(KEA*asin((rmax*cos(angleMin))/(KEA+h_midd)));
 
 	double radar_dist_from_origin = sqrt(radar->x * radar->x + radar->y * radar->y);
 
 
 //	Bounding_box* bbox = malloc(sizeof(Bounding_box));
-	bbox->topLeft.x = radar_dist_from_origin + smin;
+	//bbox->topLeft.x = radar_dist_from_origin + smin;
+	bbox->topLeft.x = smin;
 	bbox->topLeft.y /*height or z coord */ = h_max;
 	
-	bbox->topRight.x = radar_dist_from_origin + smax;
+	//bbox->topRight.x = radar_dist_from_origin + smax;
+	bbox->topRight.x = smax;
 	bbox->topRight.y /* height or z coord */= h_max;
 
-	bbox->bottomLeft.x = radar_dist_from_origin + smin;
+	//bbox->bottomLeft.x = radar_dist_from_origin + smin;
+	bbox->bottomLeft.x = smin;
 	bbox->bottomLeft.y /* height or z coord */ = h_min;
 
-	bbox->bottomRight.x = radar_dist_from_origin + smax;
+	//bbox->bottomRight.x = radar_dist_from_origin + smax;
+	bbox->bottomRight.x = smax;
 	bbox->bottomRight.y /* height or z coord */ = h_min;
 
 	printf("*(%.1lf,%.1lf)________*(%.1lf,%.1lf)\n",bbox->topLeft.x,bbox->topLeft.y,bbox->topRight.x,bbox->topRight.y);

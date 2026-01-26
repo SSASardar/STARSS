@@ -126,6 +126,7 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
     char filename[256];
     snprintf(filename, sizeof(filename), "outputs/radar_scan_%04d.txt", scan_idx);
 
+
     read_radar_scans(filename);
     if (scan_count == 0) {
         fprintf(stderr, "No radar scans loaded from %s\n", filename);
@@ -158,26 +159,31 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
             ceil(bbox->bottomLeft.x / cart_grid_res) * cart_grid_res,
             ceil(bbox->bottomLeft.y / cart_grid_res) * cart_grid_res
         };
-
+	printf("====================\n==================\n");
+	printf("reference point (x,z)= (%.2lf,%.2lf)\n",ref_point.x,ref_point.y);
         Cart_grid *cg = Cart_grid_init(cart_grid_res, num_x, num_y, ref_point);
         if (!cg) continue;
 	int cactus = 0;
+	int total_cactus = 0;
 	printf("cactus:\n");
         for (int xi = 0; xi < num_x; xi++) {
             for (int yi = 0; yi < num_y; yi++) {
-                int idA = xi * num_y + yi;
+                total_cactus++;
+		    int idA = xi * num_y + yi;
                 Point p = {ref_point.x + xi*cart_grid_res, ref_point.y + yi*cart_grid_res};
                 int range_idx, angle_idx;
 		//if (idA%10000 == 0) printf("%d ... ",cactus);
                 
-                    cactus++;
 		if (getPolarBoxIndex(p, radar->x, radar->z, p_box, &range_idx, &angle_idx)) {
 		    int p_grid_idx = range_idx * (int)p_box->num_angles + angle_idx;
+//                    printf("range_id %d, angle_id %d, min_max ids range: %d, %d || angle: %d, %d\n", range_idx, angle_idx, (int)p_box->min_range_gate, (int)p_box->max_range_gate, (int)p_box->min_angle, (int)p_box->max_angle);
+//		    printf("p_grid_idx = %d, idA = %d", p_grid_idx, idA);
+		    cactus++;
                     //cactus++;
                     cg->height_grid[idA] = p_box->height_grid[p_grid_idx];
                     cg->grid[idA] = p_box->grid[p_grid_idx];
                     cg->attenuation_grid[idA] = p_box->attenuation_grid[p_grid_idx];
-            	    if (cactus % 100 == 0) printf("(x,y = %d,%d), (r_id,theta = %d,%d), reflectivity %.2lf\n",xi,yi,range_idx,angle_idx,cg->grid[idA]);
+  //          	    if (cactus % 100 == 0) printf("(x,y = %d,%d), (r_id,theta = %d,%d), reflectivity %.2lf\n",xi,yi,range_idx,angle_idx,cg->grid[idA]);
 	    	} else {
                     cg->grid[idA] = NAN;
                     cg->height_grid[idA] = NAN;
@@ -185,9 +191,10 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
                 }
             }
         }
-printf("\n%d cactus end\n\n", cactus);
+printf("\n%d cactus, %d total cactus, %.2lf percentage cactus\n\n", cactus, total_cactus, (double)cactus/(double)total_cactus);
         cart_grids[cg_count++] = cg;
     }
+	writeCartGridToFile(cart_grids[cg_count-1],scan_idx,1);
 
     //Vol_scan *vol = init_vol_scan(cart_grids, cg_count);
     //for (int i = 0; i < cg_count; i++)

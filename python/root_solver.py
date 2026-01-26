@@ -28,12 +28,14 @@ def solve_theta(s, k_eA, h, theta_min=-1.4, theta_max=1.4):
 # -------------------------
 # Example usage
 # -------------------------
-#if __name__ == "__main__":
-#    s = 400*100
-#    print("s = ", s)
-#    k_eA  = 1.3333333*6371000
-#    h = 100 + 1900
-#
-#    theta_solution = solve_theta(s, k_eA, h)
-#    print("theta =", theta_solution*180/3.14)
+if __name__ == "__main__":
+    s = 113950
+    k_eA  = 1.3333333*6371000
+    h = 8550
+
+    theta_solution = solve_theta(s, k_eA, h)
+    print("theta(rad) =", theta_solution)
+    print("theta(deg) =", theta_solution*180/3.14)
+    print("range_1 =", r1(theta_solution,s,k_eA,h))
+    print("range_2 =", r2(theta_solution,k_eA,h))
 
