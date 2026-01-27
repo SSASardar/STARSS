@@ -165,6 +165,7 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
         if (!cg) continue;
 	int cactus = 0;
 	int total_cactus = 0;
+	int prickly_cactus = 0;
 	printf("cactus:\n");
         for (int xi = 0; xi < num_x; xi++) {
             for (int yi = 0; yi < num_y; yi++) {
@@ -175,26 +176,28 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
 		//if (idA%10000 == 0) printf("%d ... ",cactus);
                 
 		if (getPolarBoxIndex(p, radar->x, radar->z, p_box, &range_idx, &angle_idx)) {
-		    int p_grid_idx = range_idx * (int)p_box->num_angles + angle_idx;
-//                    printf("range_id %d, angle_id %d, min_max ids range: %d, %d || angle: %d, %d\n", range_idx, angle_idx, (int)p_box->min_range_gate, (int)p_box->max_range_gate, (int)p_box->min_angle, (int)p_box->max_angle);
+		    int p_grid_idx = range_idx * p_box->num_angles + angle_idx;
+		    //int p_grid_idx = angle_idx * (int)p_box->num_ranges + range_idx;
+                    //printf("range_id %d, angle_id %d, min_max ids range: %d, %d || angle: %d, %d\n", range_idx, angle_idx, (int)p_box->min_range_gate, (int)p_box->max_range_gate, (int)p_box->min_angle, (int)p_box->max_angle);
 //		    printf("p_grid_idx = %d, idA = %d", p_grid_idx, idA);
 		    cactus++;
                     //cactus++;
                     cg->height_grid[idA] = p_box->height_grid[p_grid_idx];
                     cg->grid[idA] = p_box->grid[p_grid_idx];
                     cg->attenuation_grid[idA] = p_box->attenuation_grid[p_grid_idx];
-  //          	    if (cactus % 100 == 0) printf("(x,y = %d,%d), (r_id,theta = %d,%d), reflectivity %.2lf\n",xi,yi,range_idx,angle_idx,cg->grid[idA]);
-	    	} else {
+           	    if (cactus % 100 == 0) printf("(x,y = %d,%d), (r_id,theta = %d,%d), reflectivity %.2lf\n",xi,yi,range_idx,angle_idx,cg->grid[idA]);
+	    	    prickly_cactus = prickly_cactus + cg->grid[idA];
+		} else {
                     cg->grid[idA] = NAN;
                     cg->height_grid[idA] = NAN;
 	            cg->attenuation_grid[idA] = NAN;
                 }
             }
         }
-printf("\n%d cactus, %d total cactus, %.2lf percentage cactus\n\n", cactus, total_cactus, (double)cactus/(double)total_cactus);
+printf("\n%d cactus, %d total cactus, %.2lf percentage cactus, %.2lf average prickly cactus\n\n", cactus, total_cactus, (double)cactus/(double)total_cactus, (double)prickly_cactus/(double)cactus);
         cart_grids[cg_count++] = cg;
     }
-	writeCartGridToFile(cart_grids[cg_count-1],scan_idx,1);
+	writeCartGridToFile(cart_grids[cg_count-1],scan_idx,0);
 
     //Vol_scan *vol = init_vol_scan(cart_grids, cg_count);
     //for (int i = 0; i < cg_count; i++)
