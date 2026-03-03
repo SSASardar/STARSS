@@ -730,7 +730,7 @@ bool getPolarBoxIndex(Point p,
     //if (*range_idx > (int)box->max_range_gate) {
 //	    printf("(s,h) = (%.2lf,%.2lf), angle = %.2lf, range = %.2lf, %d,in [%d, %d]\n\n",s,h,angle_elevation, range_solved, *range_idx, (int)box->min_range_gate, (int)box->max_range_gate);
 //	    return false;}
-    if (*range_idx >= (int)box->num_ranges) *range_idx = box->num_ranges - 1;
+    if (*range_idx >= (int)box->num_ranges){ *range_idx = box->num_ranges - 1; return false;}
     
 /*
 double x_rThresh_a = box->x + cos(box->other_angle*DEG2RAD)*r_min;
@@ -758,7 +758,7 @@ if (dist_a <= dist_b) { dist_min = dist_a; dist_max = dist_b; } else {dist_min =
     double span = box->num_angles * box->angular_resolution;
 
     double angle_diff = fmod(angle_elevation - min_angle, 2*M_PI);
-    if (angle_diff > span + eps){
+    if (angle_diff > span){
     	printf("angle_diff = %lf\n", angle_diff);
     	return false;
     }
@@ -766,8 +766,8 @@ if (dist_a <= dist_b) { dist_min = dist_a; dist_max = dist_b; } else {dist_min =
 
     // --- Angle index (round to nearest) ---
     *angle_idx = (int)floor(angle_diff / (box->angular_resolution*DEG2RAD + 1e-8));
-    if (*angle_idx < 0) *angle_idx = 0;
-    if (*angle_idx >= (int)box->num_angles) *angle_idx = box->num_angles - 1;
+    if (*angle_idx < 0){ *angle_idx = 0; return false;}
+    if (*angle_idx > (int)box->num_angles){ *angle_idx = box->num_angles - 1; return false;}
 
 //Normalising to [0,max_idx] for both angle and range: 
 

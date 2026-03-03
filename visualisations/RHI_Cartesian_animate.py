@@ -76,25 +76,39 @@ if __name__ == "__main__":
     ])
 
     # ---- Global color scale ----
-    vmin = np.nanmin(grids)
-    vmax = np.nanmax(grids)
+    #vmin = np.nanmin(grids)
+    #vmax = np.nanmax(grids)
+    vmin = 0
+    vmax = 90
+
 
     # ---- Figure setup ----
-    fig, ax = plt.subplots(figsize=(10, 10))
+    fig, ax = plt.subplots(figsize=(8, 5))
 
+
+    # Physical grid spacing (meters)
+    dx = 0.025
+    dz = 0.025
+
+    nx = canvas_shape[1]   # number of x columns
+    nz = canvas_shape[0]   # number of z rows
+    
+    extent = [0, nx * dx, 0, nz * dz]
+    
     im = ax.imshow(
         grids[0].T,
         origin="lower",
         cmap="viridis",
         vmin=vmin,
-        vmax=vmax
+        vmax=vmax,
+        extent=extent,
+        aspect='auto'
     )
-
     cbar = plt.colorbar(im, ax=ax)
-    cbar.set_label("Value")
+    cbar.set_label("Reflectivity (dBZ)")
 
-    ax.set_xlabel("X index (resolution of 25m)")
-    ax.set_ylabel("Z index (resolution of 25m)")
+    ax.set_xlabel("X (km from origin)")
+    ax.set_ylabel("Z (km from origin)")
     title = ax.set_title(f"Step: {indices[0]}")
 
     plt.tight_layout()
