@@ -46,6 +46,6 @@ def plot_display_grid(infile, out_ext="png"):
 
 if __name__ == "__main__":
     # Process all files matching pattern
-    for infile in glob.glob("outputs/disp_grid*.txt"):
+    for infile in glob.glob("outputs/zprevious/X-bandstuff/disp_grid*.txt"):
         plot_display_grid(infile, out_ext="png")
 

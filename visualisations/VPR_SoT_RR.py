@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, FFMpegWriter
 from matplotlib.gridspec import GridSpec
 
 # -------------------------
@@ -63,7 +63,7 @@ gs = GridSpec(3, 4, height_ratios=[1, 2, 1], figure=fig)
 # Top row: 4 small subplots
 # -------------------------
 profiles = [vpr_strat, vpr_growth, vpr_mature, vpr_decay]
-titles = ['VPR_strat', 'VPR_growth', 'VPR_mature', 'VPR_decay']
+titles = ['VPR_1', 'VPR_2', 'VPR_3', 'VPR_4']
 colors = ['blue', 'green', 'orange', 'red']
 
 axes_top = []
@@ -155,5 +155,6 @@ def update(frame):
 # Run animation
 # -------------------------
 ani = FuncAnimation(fig, update, frames=n_times, interval=200, blit=True)
-ani.save('my_animation.gif', writer='pillow', fps=5)
+writer = FFMpegWriter(fps=5, codec='h264', bitrate=2000)
+ani.save('my_animation.mp4', writer=writer)
 plt.show()
