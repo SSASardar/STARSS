@@ -219,6 +219,42 @@ GRAPHS FOR TRUE VS MEASURED COMPARISON (folders F),
 		The plots can be found in the plots folder in the repository. 				
 
 
+
+HOW TO MAKE THE OPERATIONAL VOLUME SCAN DASHBOARD
+
+Make the the test tests/test_command_centre.c
+	ensure that you have the PPI parameters correctly in src/command_centre.c as well as the corerct radar at the correct frequency and the correct raincell.(based on the id's of the objects). 
+	you make 16 scans every 5 minutes. ensure the VCP is correctly implemented in the elevation angle scans. 
+
+Run the python visualisations/testB.py
+
+then you get the visual dashboard.
+
+
+HOW TO MAKE RHI VISUALISATION: 
+
+Make the test tests/test_command_centre.c
+	ensure that you have the RHI parameters correctly in src/command_centre.c and the correct radar at the correct frequency and the correct raincell. (based on the id's of the objects)
+	You make 1 scan every minute for 5 minutes, and that is one radar_scans_XXXX.txt file.
+
+Make the test tests/test_RHI_processing.c
+	This gives you *_measurements_*.txt files. 
+
+Run the python visualisations/RHI_Cartesian_animate.py
+
+then you get the visual.  
+
+
+
+
+
+
+
+
+
+
+
+
 RUNNING TESTS:
 			
 	Ensure you are in the base folder (Repo).

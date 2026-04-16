@@ -878,10 +878,10 @@ for (int ri = 0; ri <num_ranges;ri++){
         		} else {
                 		box->attenuation_grid[idp] = att + box->attenuation_grid[idp_min_one];
         		}
-        		//box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+        		box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
         		//box->grid[idp] = add_noise(radar, refl_dBZ);
         		//box->grid[idp] = sample;
-        		box->grid[idp] = refl_dBZ;
+        		//box->grid[idp] = refl_dBZ;
 		} else {
         		refl_dBZ = get_reflectivity_at_height(vpr_conv, sample_height);
 
@@ -891,9 +891,9 @@ for (int ri = 0; ri <num_ranges;ri++){
         		} else {
                 		box->attenuation_grid[idp] = att + box->attenuation_grid[idp_min_one];
         		}
-        		//box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+        		box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
         		//box->grid[idp] = add_noise(radar, refl_dBZ);
-        		box->grid[idp] = refl_dBZ;
+        		//box->grid[idp] = refl_dBZ;
 		}
 		box->height_grid[idp] = sample_height;
 	}

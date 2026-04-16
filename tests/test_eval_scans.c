@@ -88,17 +88,26 @@ int main() {
     // Step 0: setup VPR structures once
     VPR_params *params = malloc(sizeof(VPR_params));
     init_VPR_params(params);
-    fill_VPR_params(params,
-        120.0*60, 180.0*60.0, 230.0*60.0, 260.0*60.0, 290.0*60.0,
-        10.0, 8000.0, 2000.0,
-        50.0, 3.0, 2.0, 2.0,
-        3000.0, 100.0, 50.0,
-        25.0, 4.0, 3.0,
-        1000.0, 4500.0, 750.0,
-        0.4, -0.2, -0.15, -0.05,
-        35, -3.0, 2.0, 20.0,
-        500.0, 150.0, 25.0
+    
+
+      fill_VPR_params(params,
+        60.0*60, 120.0*60.0, 170.0*60.0, 200.0*60.0, 230.0*60.0,
+        7.0, //8000.0,
+	     2000.0, 3000.0,        // Echo top
+        45.0, 1.0, 1.0, 2.0,         // Bright band Z
+        3000.0, 100.0, 50.0,       // Bright band heights
+        15.0, 2.0, 1.0,              // Width Z
+        750.0, 500.0, 250.0,       // Width H
+        0.65,-0.4, -0.15,-0.1,           // Ratio
+        35, -3.0, 2.0, 14.0,         // Cell base Z
+        500.0, 150.0, 25.0,           // Cell base heights
+	0.0005			     // gradient in dB /m.... 
     );
+
+
+
+
+
 
     VPR *VPR_strat   = create_and_fill_VPR(params);
     VPR *VPR_conv    = create_VPR();
