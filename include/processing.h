@@ -56,7 +56,7 @@ bool isAngleBetween(double angle, double minAngle, double maxAngle);
 bool isPointInSectorAnnulus(Point p, Point center, double minAngle, double maxAngle, double minRange, double maxRange); 
 
 
-double f(double x, double radar_height, double surface_range, double height_above_radar);
+double f(double x, double radar_height, double surface_range, double height_above_radar,FILE *fp);
 double df(double x, double radar_height, double surface_range, double height_above_radar);
 
 int newton_bisection(
@@ -82,6 +82,13 @@ int brent_root(
     double height_above_radar,
     FILE *fp
 );
+
+
+double r1(double theta, double s, double k_eA, double h);
+double r2(double theta, double k_eA, double h);
+double r_diff(double theta, double s, double k_eA, double h);
+double solve_theta(double s, double k_eA, double h,
+                   double theta_min, double theta_max);
 
 bool getPolarBoxIndex(Point p, double c_x, double c_y,const Polar_box* box, int *range_idx, int *angle_idx);
 

@@ -89,17 +89,21 @@ int main() {
     // Step 0: setup VPR structures once
     VPR_params *params = malloc(sizeof(VPR_params));
     init_VPR_params(params);
-    fill_VPR_params(params,
-        120.0*60, 180.0*60.0, 230.0*60.0, 260.0*60.0, 290.0*60.0,
-        10.0, 8000.0, 2000.0,
-        50.0, 3.0, 2.0, 2.0,
-        3000.0, 100.0, 50.0,
-        25.0, 4.0, 3.0,
-        1000.0, 4500.0, 750.0,
-        0.4, -0.2, -0.15, -0.05,
-        35, -3.0, 2.0, 20.0,
-        500.0, 150.0, 25.0
+    
+      fill_VPR_params(params,
+        60.0*60, 120.0*60.0, 170.0*60.0, 200.0*60.0, 230.0*60.0,
+        7.0, //8000.0,
+	     2000.0, 3000.0,        // Echo top
+        45.0, 1.0, 1.0, 2.0,         // Bright band Z
+        3000.0, 100.0, 50.0,       // Bright band heights
+        15.0, 2.0, 1.0,              // Width Z
+        750.0, 500.0, 250.0,       // Width H
+        0.65,-0.4, -0.15,-0.1,           // Ratio
+        35, -3.0, 2.0, 14.0,         // Cell base Z
+        500.0, 150.0, 25.0,           // Cell base heights
+	0.0005			     // gradient in dB /m.... 
     );
+
 
     VPR *VPR_strat   = create_and_fill_VPR(params);
     VPR *VPR_conv    = create_VPR();
@@ -126,6 +130,7 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
     char filename[256];
     snprintf(filename, sizeof(filename), "outputs/radar_scan_%04d.txt", scan_idx);
 
+
     read_radar_scans(filename);
     if (scan_count == 0) {
         fprintf(stderr, "No radar scans loaded from %s\n", filename);
@@ -140,7 +145,7 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
 
     int cg_count = 0;
 
-    for (int i = 0; i < scan_count; i++) {
+    for (int i = 0; i < 1; i++) {
         Polar_box* p_box = radar_scans[i].box;
         Radar* radar = radar_scans[i].radar;
         double time = radar_scans[i].time;
@@ -158,40 +163,55 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
             ceil(bbox->bottomLeft.x / cart_grid_res) * cart_grid_res,
             ceil(bbox->bottomLeft.y / cart_grid_res) * cart_grid_res
         };
-
+	printf("====================\n==================\n");
+	printf("reference point (x,z)= (%.2lf,%.2lf)\n",ref_point.x,ref_point.y);
         Cart_grid *cg = Cart_grid_init(cart_grid_res, num_x, num_y, ref_point);
         if (!cg) continue;
-
+	int cactus = 0;
+	int total_cactus = 0;
+	int prickly_cactus = 0;
+	printf("cactus:\n");
         for (int xi = 0; xi < num_x; xi++) {
             for (int yi = 0; yi < num_y; yi++) {
-                int idA = xi * num_y + yi;
+                total_cactus++;
+		    int idA = xi * num_y + yi;
                 Point p = {ref_point.x + xi*cart_grid_res, ref_point.y + yi*cart_grid_res};
                 int range_idx, angle_idx;
-
-                if (getPolarBoxIndex(p, radar->x, radar->y, p_box, &range_idx, &angle_idx)) {
-                    int p_grid_idx = range_idx * (int)p_box->num_angles + angle_idx;
+		//if (idA%10000 == 0) printf("%d ... ",cactus);
+                
+		if (getPolarBoxIndex(p, radar->x, radar->z, p_box, &range_idx, &angle_idx)) {
+		    int p_grid_idx = range_idx * p_box->num_angles + angle_idx;
+		    //int p_grid_idx = angle_idx * (int)p_box->num_ranges + range_idx;
+                    //printf("range_id %d, angle_id %d, min_max ids range: %d, %d || angle: %d, %d\n", range_idx, angle_idx, (int)p_box->min_range_gate, (int)p_box->max_range_gate, (int)p_box->min_angle, (int)p_box->max_angle);
+//		    printf("p_grid_idx = %d, idA = %d", p_grid_idx, idA);
+		    cactus++;
+                    //cactus++;
                     cg->height_grid[idA] = p_box->height_grid[p_grid_idx];
                     cg->grid[idA] = p_box->grid[p_grid_idx];
                     cg->attenuation_grid[idA] = p_box->attenuation_grid[p_grid_idx];
-                } else {
+           	    //if (cactus % 100 == 0) printf("(x,y = %d,%d), (r_id,theta = %d,%d), reflectivity %.2lf\n",xi,yi,range_idx,angle_idx,cg->grid[idA]);
+	    	    prickly_cactus = prickly_cactus + cg->grid[idA];
+		} else {
                     cg->grid[idA] = NAN;
                     cg->height_grid[idA] = NAN;
 	            cg->attenuation_grid[idA] = NAN;
                 }
             }
         }
-
+//printf("\n%d cactus, %d total cactus, %.2lf percentage cactus, %.2lf average prickly cactus\n\n", cactus, total_cactus, (double)cactus/(double)total_cactus, (double)prickly_cactus/(double)cactus);
         cart_grids[cg_count++] = cg;
     }
+	writeCartGridToFile(cart_grids[cg_count-1],scan_idx,0);
 
-    Vol_scan *vol = init_vol_scan(cart_grids, cg_count);
-    for (int i = 0; i < cg_count; i++)
-        add_cart_grid_to_volscan(vol, cart_grids[i], i);
+    //Vol_scan *vol = init_vol_scan(cart_grids, cg_count);
+    //for (int i = 0; i < cg_count; i++)
+      //  add_cart_grid_to_volscan(vol, cart_grids[i], i);
 
-compute_display_grid_average(vol,10.0);
+//compute_display_grid_average(vol,10.0);
 //compute_display_grid_max(vol,10.0);
 //compute_display_grid_lowest_valid_height(vol,10.0);
 //compute_display_grid_min_above_threshold(vol,10.0);
+  
     double true_time_min = radar_scans[scan_count-1].time +
                            (radar_scans[scan_count-1].time - radar_scans[scan_count-2].time);
     double true_time = true_time_min * 60.0;
@@ -262,9 +282,9 @@ if (fp) {
 // --- Write display_grid to file ---
 char disp_filename[256];
 snprintf(disp_filename, sizeof(disp_filename), "outputs/disp_g_%04d.txt", scan_idx);
-if (write_display_grid_to_file(vol, disp_filename) != 0) {
-    fprintf(stderr, "Failed to write display grid to %s\n", disp_filename);
-}
+//if (write_display_grid_to_file(vol, disp_filename) != 0) {
+//    fprintf(stderr, "Failed to write display grid to %s\n", disp_filename);
+//}
 /*
 // --- Write true_grid to file ---
 char true_filename[256];
@@ -293,7 +313,7 @@ write_VPR_to_file(VPR_conv,  "conv",  scan_idx);
     for (int i = 0; i < cg_count; i++)
         free_cart_grid(cart_grids[i]);
     free(cart_grids);
-    free_vol_scan(vol);
+//    free_vol_scan(vol);
 }
     clock_t end = clock();
     printf("Total time: %f seconds\n", (double)(end - start)/CLOCKS_PER_SEC);

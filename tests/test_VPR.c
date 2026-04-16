@@ -84,25 +84,26 @@ printf("conv at %.0f minutes (%s): \n", 60.0 + 30.0 * i, stages[i]);
     free(params);
     */ // end of block 1
 
-
 /*
-
+    
 // start of block 2, 
 
 
        VPR_params *params = malloc(sizeof(VPR_params));
     init_VPR_params(params);
 
-    fill_VPR_params(params,
+      fill_VPR_params(params,
         60.0*60, 120.0*60.0, 170.0*60.0, 200.0*60.0, 230.0*60.0,
-        10.0, 8000.0, 2000.0,        // Echo top
-        50.0, 3.0, 2.0, 2.0,         // Bright band Z
+        7.0, //8000.0,
+	     2000.0, 3000.0,        // Echo top
+        45.0, 1.0, 1.0, 2.0,         // Bright band Z
         3000.0, 100.0, 50.0,       // Bright band heights
-        25.0, 4.0, 3.0,              // Width Z
-        1000.0, 4500.0, 750.0,       // Width H
-        0.4,-0.2, -0.15, -0.05,           // Ratio
-        35, -3.0, 2.0, 20.0,         // Cell base Z
-        500.0, 150.0, 25.0           // Cell base heights
+        15.0, 2.0, 1.0,              // Width Z
+        750.0, 500.0, 250.0,       // Width H
+        0.65,-0.4, -0.15,-0.1,           // Ratio
+        35, -3.0, 2.0, 14.0,         // Cell base Z
+        500.0, 150.0, 25.0,           // Cell base heights
+	0.0005			     // gradient in dB /m.... 
     );
 
     VPR *VPR_strat = create_and_fill_VPR(params);
@@ -115,7 +116,7 @@ printf("conv at %.0f minutes (%s): \n", 60.0 + 30.0 * i, stages[i]);
 
     double time_min = 0.0;
     double time_max = 270.0 * 60.0; // seconds
-    double time_step = 1.0 * 60.0;  // seconds
+    double time_step = 5.0 * 60.0;  // seconds
     int n_times = (int)((time_max - time_min) / time_step) + 1;
 
     FILE *f = fopen("outputs/reflectivity_profile.txt", "w");
@@ -149,29 +150,29 @@ printf("conv at %.0f minutes (%s): \n", 60.0 + 30.0 * i, stages[i]);
 
     fclose(f);
 
-    
-
+ 
 
 */
 
-
-/*
     // Start of block 3
     //
    VPR_params *params = malloc(sizeof(VPR_params));
     init_VPR_params(params);
 
-    fill_VPR_params(params,
+      fill_VPR_params(params,
         60.0*60, 120.0*60.0, 170.0*60.0, 200.0*60.0, 230.0*60.0,
-        10.0, 8000.0, 2000.0,        // Echo top
-        50.0, 3.0, 2.0, 2.0,         // Bright band Z
+        7.0, //8000.0,
+	     2000.0, 3000.0,        // Echo top
+        45.0, 1.0, 1.0, 2.0,         // Bright band Z
         3000.0, 100.0, 50.0,       // Bright band heights
-        25.0, 4.0, 3.0,              // Width Z
-        1000.0, 4500.0, 750.0,       // Width H
-        0.4,-0.2, -0.15, -0.05,           // Ratio
-        35, -3.0, 2.0, 20.0,         // Cell base Z
-        500.0, 150.0, 25.0           // Cell base heights
+        15.0, 2.0, 1.0,              // Width Z
+        750.0, 500.0, 250.0,       // Width H
+        0.65,-0.4, -0.15,-0.1,           // Ratio
+        35, -3.0, 2.0, 14.0,         // Cell base Z
+        500.0, 150.0, 25.0,           // Cell base heights
+	0.0005			     // gradient in dB /m.... 
     );
+
 
     VPR *VPR_strat = create_and_fill_VPR(params);
     VPR *VPR_conv  = create_and_fill_VPR(params);
@@ -297,8 +298,6 @@ free(VPR_A_clima);
     free(VPR_A_gmd);
     free(VPR_A_d);
 
-*/
-
 
 /*
 // Beginning of block 4
@@ -313,7 +312,7 @@ free(VPR_A_clima);
         25.0, 4.0, 3.0,              // Width Z
         1000.0, 4500.0, 750.0,       // Width H
         0.4,-0.2, -0.15, -0.05,           // Ratio
-        35, -3.0, 2.0, 20.0,         // Cell base Z
+        35, -3.0, 2.0, 15.0,         // Cell base Z
         500.0, 150.0, 25.0           // Cell base heights
     );
 
@@ -399,6 +398,8 @@ free(history);
 fclose(f_avg);
 */
 
+
+/*
  // Block 5
 // --- Setup parameters ---
 VPR_params *params = malloc(sizeof(VPR_params));
@@ -481,7 +482,7 @@ for (int h = 0; h < n_heights; h++) {
 }
 
 fclose(f);
-
+*/
 
 
 

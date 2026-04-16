@@ -1,4 +1,4 @@
-// This is the header file for the vertical profiles.c file
+// This is the header for the vertical profiles.c file
 //
 //
 // The setup of all vertical information is done here. In the processing file, in the radars.c file the measuremnt noise can be included. 
@@ -36,6 +36,7 @@ typedef struct VPR {
 	VPR_point BB_m;
 	VPR_point BB_l;
 	VPR_point CB;
+	VPR_point GT;
 } VPR;
 
 /**
@@ -65,7 +66,8 @@ typedef struct VPR_params {
 	double Z_et_0;
 	double h_et_0;
 	double del_h_et;
-
+	double h_above_ML;
+	
 	// bright band parameters:
 	// 		 Everything is relative to the middle of the bright band which determines the height and the peak intensity
 	// 	The heights and reflectivities of the top and bottom of the bright band are determined by their respective width parameters.
@@ -99,6 +101,8 @@ typedef struct VPR_params {
 	double del_h_cb_growth;
 	double del_h_cb_mature;
 		
+	// ground truth parameters:
+	double gradient_from_CB; //so this is the same as the Cloud base multiplied by some gradient relative to height.
 } VPR_params;
 
 
@@ -128,14 +132,15 @@ void fill_VPR_params(
     VPR_params *params,
     double t_growth_start, double t_mature_start, double t_mature_end,
     double t_decay_mid, double t_decay_end,
-    double Z_et_0, double h_et_0, double del_h_et,
+    double Z_et_0, /*double h_et_0,*/ double del_h_et, double h_above_ML,
     double Z_bb_0, double del_Z_bb_growth, double del_Z_bb_mature, double del_Z_bb_decay,
     double h_bb_0, double del_h_bb_growth, double del_h_bb_mature,
     double width_Z_0, double del_width_Z_growth, double del_width_Z_mature,
     double width_h_0, double del_width_h_growth, double del_width_h_mature,
     double ratio_U_to_L, double del_ratio_UL_growth, double del_ratio_UL_mature, double del_ratio_UL_decay,
     double Z_cb_0, double del_Z_cb_growth, double del_Z_cb_mature, double del_Z_cb_decay,
-    double h_cb_0, double del_h_cb_growth, double del_h_cb_mature
+    double h_cb_0, double del_h_cb_growth, double del_h_cb_mature,
+    double gradient_from_CB
 );
 
 /**

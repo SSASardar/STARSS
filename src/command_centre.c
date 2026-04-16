@@ -47,10 +47,17 @@ static void log_message(const char *format, ...) {
 }
 
 // ---------------------- Command Generation ----------------------
-#define SCANS_PER_FILE 5 //RHI stuff
-//#define SCANS_PER_FILE 16
-// #define FIVE_MINUTES 300.0  // seconds
+
 #define FIVE_MINUTES 5.0  // minutes
+// #define FIVE_MINUTES 300.0  // seconds
+
+// RHI THINGS
+//#define SCANS_PER_FILE 5 
+
+// VOLUME to CAPPI things
+#define SCANS_PER_FILE 15
+
+
 
 void generate_commands_file(int file_index, double start_time) {
     char filename[256];
@@ -62,20 +69,25 @@ void generate_commands_file(int file_index, double start_time) {
         return;
     }
 
-    double interval = FIVE_MINUTES / (SCANS_PER_FILE);  // 1/16th of 5 minutes
+    double interval = FIVE_MINUTES / (SCANS_PER_FILE);  // frequency of scans
     int counter_A = 0;
     for (int i = 0; i < SCANS_PER_FILE; i++) {
         Command cmd;
         cmd.time = start_time + i * interval;
-        cmd.radar_id = 2;
-//      snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
-	snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
-        cmd.raincell_id = 1;
-//	cmd.other_angle = counter_A * (24.0 / (SCANS_PER_FILE+1)); // Exampe: 0–12 degrees.
-        cmd.other_angle = 0;
+       cmd.radar_id = 1; // make sure the radar id is correct.
+
+  // RHI THINGS    
+ //	snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
+//        cmd.other_angle = 0;
+
+//   VOL->PPI THINGS
+      snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
+	double VCP_elevation_angles[SCANS_PER_FILE] ={12.0, 8.0, 4.5, 2.0, 0.8, 0.3, 25, 20, 15, 10, 6, 2.8, 1.2, 0.3, 0.3} ; 
+	cmd.other_angle = VCP_elevation_angles[counter_A];
+
+	cmd.raincell_id = 1;
 	counter_A++;
 								 //
-	if (counter_A == 8) counter_A =0;
         fprintf(file, "%.2f %d %s %d %.5f\n",
                 cmd.time,
                 cmd.radar_id,
@@ -87,6 +99,12 @@ void generate_commands_file(int file_index, double start_time) {
     fclose(file);
     printf("Command file '%s' created successfully.\n", filename);
 }
+
+
+
+
+
+
 
 // ---------------------- Command Validation ----------------------
 bool validate_command(const Command *cmd) {

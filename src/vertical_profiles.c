@@ -19,14 +19,15 @@ void fill_VPR_params(
     VPR_params *params,
     double t_growth_start, double t_mature_start, double t_mature_end,
     double t_decay_mid, double t_decay_end,
-    double Z_et_0, double h_et_0, double del_h_et,
+    double Z_et_0,/* double h_et_0,*/ double del_h_et,double h_above_ML,
     double Z_bb_0, double del_Z_bb_growth, double del_Z_bb_mature, double del_Z_bb_decay,
     double h_bb_0, double del_h_bb_growth, double del_h_bb_mature,
     double width_Z_0, double del_width_Z_growth, double del_width_Z_mature,
     double width_h_0, double del_width_h_growth, double del_width_h_mature,
     double ratio_U_to_L,double del_ratio_UL_growth, double del_ratio_UL_mature, double del_ratio_UL_decay,
     double Z_cb_0, double del_Z_cb_growth, double del_Z_cb_mature, double del_Z_cb_decay,
-    double h_cb_0, double del_h_cb_growth, double del_h_cb_mature
+    double h_cb_0, double del_h_cb_growth, double del_h_cb_mature,
+    double gradient_from_CB
 ) {
     if (!params) return;
     // setting starting times of phases.
@@ -45,8 +46,9 @@ void fill_VPR_params(
 
     // Echo Top heights parameters.
     params->Z_et_0   = Z_et_0;
-    params->h_et_0   = h_et_0;
+    params->h_et_0   = h_bb_0 + width_h_0 * ratio_U_to_L + h_above_ML;
     params->del_h_et = del_h_et;
+    params->h_above_ML = h_above_ML;
 
     // Bright band setting parameters
     params->Z_bb_0          = Z_bb_0;
@@ -78,6 +80,9 @@ void fill_VPR_params(
     params->h_cb_0          = h_cb_0;
     params->del_h_cb_growth = del_h_cb_growth;
     params->del_h_cb_mature = del_h_cb_mature;
+
+    //ground truth
+    params->gradient_from_CB = gradient_from_CB;
 }
 
 
@@ -101,17 +106,19 @@ VPR *create_and_fill_VPR(const VPR_params *params) {
     VPR *vpr = malloc(sizeof(VPR));
     if (!vpr) return NULL;
     // Setting parametrisations to the stratiform rain.
-    // Fill Echo Top (ET)
-    vpr->ET.reflectivity = params->Z_et_0;
-    vpr->ET.height       = params->h_et_0;
-
-    // Bright Band Middle
+       // Bright Band Middle
     vpr->BB_m.reflectivity = params->Z_bb_0;
     vpr->BB_m.height       = params->h_bb_0;
 
     // Bright band upper
     vpr->BB_u.reflectivity = vpr->BB_m.reflectivity - params->width_Z_0 *(1- params->ratio_U_to_L);
     vpr->BB_u.height = vpr->BB_m.height + params->width_h_0 * params->ratio_U_to_L;
+
+ // Fill Echo Top (ET)
+    vpr->ET.reflectivity = params->Z_et_0;
+    vpr->ET.height       = vpr->BB_u.height+params->h_above_ML;
+
+
 
     // Bright_band lower
     vpr->BB_l.reflectivity = vpr->BB_m.reflectivity - params->width_Z_0 * (params->ratio_U_to_L);
@@ -120,6 +127,11 @@ VPR *create_and_fill_VPR(const VPR_params *params) {
     // Cell Base
     vpr->CB.reflectivity = params->Z_cb_0;
     vpr->CB.height       = params->h_cb_0;
+
+    // Grount truth
+
+    vpr->GT.reflectivity = params->Z_cb_0 - params->gradient_from_CB*params->h_cb_0;
+    vpr->GT.height = 0.0;
 
     return vpr;
 }
@@ -180,6 +192,10 @@ void update_VPR(const VPR *vpr, const VPR_params *params, double time, VPR *vpr_
 	vpr_conv->CB.height = vpr->CB.height + (f_growth * params->del_h_cb_growth + f_mature * params->del_h_cb_mature)*(1.0-f_decay);
 
 
+
+	vpr_conv->GT.reflectivity = vpr_conv->CB.reflectivity-params->gradient_from_CB*vpr_conv->CB.height;
+	vpr_conv->GT.height = 0.0;
+
 }
 
 
@@ -192,6 +208,7 @@ void print_VPR_points(const VPR* vpr) {
     printf("BB_m:   (%.2f , %.2f)\n", vpr->BB_m.reflectivity, vpr->BB_m.height);
     printf("BB_l:   (%.2f , %.2f)\n", vpr->BB_l.reflectivity, vpr->BB_l.height);
     printf("CB:     (%.2f , %.2f)\n", vpr->CB.reflectivity, vpr->CB.height);
+    printf("GT:     (%.2f , %.2f)\n", vpr->GT.reflectivity, vpr->GT.height);
 }
 
 // given a height and the two parametrisation points it is in between, it gets the reflectivity at that height. 
@@ -204,7 +221,7 @@ double interpolate_reflectivity(VPR_point p1, VPR_point p2, double height) {
 // given any height and a VPR you get the reflectivity. 
 double get_reflectivity_at_height(const VPR *vpr, double height) {
     // Order points from lowest to highest height
-    VPR_point sorted_points[5] = {vpr->CB, vpr->BB_l, vpr->BB_m, vpr->BB_u, vpr->ET};
+    VPR_point sorted_points[6] = {vpr->GT, vpr->CB, vpr->BB_l, vpr->BB_m, vpr->BB_u, vpr->ET};
 
     // determining which VPR points encapsulate the heights.
     // If height is below lowest point, return reflectivity at lowest
@@ -214,13 +231,13 @@ double get_reflectivity_at_height(const VPR *vpr, double height) {
     }
 
     // If height is above highest point, return reflectivity at highest
-    if (height >= sorted_points[4].height) {
+    if (height >= sorted_points[5].height) {
        // return sorted_points[4].reflectivity;
     	return 0.0;
     }
 
     // Find interval where height fits and interpolate
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 5; i++) {
         double h1 = sorted_points[i].height;
         double h2 = sorted_points[i + 1].height;
 
@@ -253,6 +270,9 @@ void cumaddVPR(const VPR *src, VPR *dest) {
 
     dest->CB.reflectivity += src->CB.reflectivity;
     dest->CB.height       += src->CB.height;
+
+    dest->GT.reflectivity += src->GT.reflectivity;
+    dest->GT.height       += src->GT.height;
 }
 
 void divideVPR(VPR *vpr, int divisor) {
@@ -277,6 +297,9 @@ void divideVPR(VPR *vpr, int divisor) {
 
     vpr->CB.reflectivity /= d;
     vpr->CB.height       /= d;
+
+    vpr->GT.reflectivity /= d;
+    vpr->GT.height       /= d;
 }
 
 
@@ -296,6 +319,9 @@ void cumaddVPR_scale(const VPR *src, VPR *dest, double scale) {
 
     dest->CB.reflectivity += src->CB.reflectivity * scale;
     dest->CB.height       += src->CB.height * scale;
+
+    dest->GT.reflectivity += src->GT.reflectivity * scale;
+    dest->GT.height       += src->GT.height * scale;
 }
 
 
@@ -307,6 +333,7 @@ void multiplyVPR(VPR *vpr, double scalar) {
     vpr->BB_m.reflectivity *= scalar;
     vpr->BB_l.reflectivity *= scalar;
     vpr->CB.reflectivity   *= scalar;
+    vpr->GT.reflectivity   *= scalar;
 }
 
 
@@ -355,6 +382,9 @@ void zeroVPR(VPR *vpr)
 
     vpr->CB.reflectivity   = 0.0;
     vpr->CB.height         = 0.0;
+
+    vpr->GT.reflectivity   = 0.0;
+    vpr->GT.height         = 0.0;
 }
 
 

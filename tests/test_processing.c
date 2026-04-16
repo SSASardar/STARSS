@@ -81,7 +81,9 @@ for (int i = 0; i < scan_count; ++i) {
     	Point p;
 	double c_x = radar->x;
 	double c_y = radar->y;
-
+	p_box->x = radar->x;
+	p_box->y = radar->y;
+	p_box->z = radar->z;
 	int range_idx, angle_idx;
 	int idA;
 	for(int xi = 0; xi<num_x;xi++){
