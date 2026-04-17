@@ -170,6 +170,9 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
         Cart_grid *cg = Cart_grid_init(cart_grid_res, num_x, num_y, ref_point);
         if (!cg) continue;
 
+
+	int valid_count = 0;
+int invalid_range = 0, invalid_angle = 0;
         for (int xi = 0; xi < num_x; xi++) {
             for (int yi = 0; yi < num_y; yi++) {
                 int idA = xi * num_y + yi;
@@ -177,18 +180,32 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
                 int range_idx, angle_idx;
 
                 if (getPolarBoxIndex(p, radar->x, radar->y, p_box, &range_idx, &angle_idx)) {
+			valid_count++;
                     int p_grid_idx = range_idx * (int)p_box->num_angles + angle_idx;
                     cg->height_grid[idA] = p_box->height_grid[p_grid_idx];
                     cg->grid[idA] = p_box->grid[p_grid_idx];
-                    cg->attenuation_grid[idA] = p_box->attenuation_grid[p_grid_idx];
+                    cg->estimated_attenuation_grid[idA] = p_box->estimated_attenuation_grid[p_grid_idx];
                 } else {
-                    cg->grid[idA] = NAN;
+	//printf("I am failing here");
+	            double dx = p.x - radar->x;
+            double dy = p.y - radar->y;
+            double r = sqrt(dx*dx + dy*dy);
+            double r_min = p_box->min_range_gate * p_box->range_resolution;
+            double r_max = p_box->max_range_gate * p_box->range_resolution;
+
+            if (r < r_min || r > r_max)
+                invalid_range++;
+            else
+                invalid_angle++;
+    
+		    cg->grid[idA] = NAN;
                     cg->height_grid[idA] = NAN;
-	            cg->attenuation_grid[idA] = NAN;
+	            cg->estimated_attenuation_grid[idA] = NAN;
                 }
             }
         }
 
+	printf("Scan %d: Valid=%d, Invalid range=%d, Invalid angle=%d\n",scan_idx, valid_count, invalid_range, invalid_angle);
         cart_grids[cg_count++] = cg;
     }
 
@@ -200,7 +217,7 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
 
 //compute_display_grid_average(vol,10.0);
 //compute_display_grid_max(vol,10.0);
-compute_display_grid_lowest_valid_height(vol,10.0);
+compute_display_grid_lowest_valid_height(vol,-5.0);
 //compute_display_grid_min_above_threshold(vol,10.0);
     double true_time_min = radar_scans[scan_count-1].time +
                            (radar_scans[scan_count-1].time - radar_scans[scan_count-2].time);
@@ -217,13 +234,40 @@ compute_display_grid_lowest_valid_height(vol,10.0);
     if (fill_refl_ALA_grid(vol, raincell_pos, raincell, VPR_strat, VPR_conv) != 0) {
         fprintf(stderr, "Failed to fill Refl_ALA grid\n");
     }
-
+// DEBUG UNTIL:_______________________________
+// Count classifications
+int class0=0, class1=0, class2=0;
+for (int i = 0; i < vol->num_elements; i++) {
+    if (isnan(vol->refl_ALA[i])) class0++;
+    else if (vol->refl_ALA[i] == VPR_strat->CB.reflectivity) class1++;
+    else if (vol->refl_ALA[i] == VPR_conv->CB.reflectivity) class2++;
+}
+printf("refl_ALA: outside=%d, vprstrat=%d, vprconv=%d\n", class0, class1, class2);
+printf("vprstrat->CB.reflectivity=%.2f, vprconv->CB.reflectivity=%.2f\n", 
+       VPR_strat->CB.reflectivity, VPR_conv->CB.reflectivity);
+//____________________________________________HERE!!!
 
 double mse, mae, bias;
 double total_measured, total_true_masked, total_measured_mm2, total_true_mm2;
 double total_true_unmasked, total_true_mm2_unmasked;
 
-if (compute_rainfall_statistics(vol, 10.0, cart_grid_res,
+// Check overlap between display_grid and refl_ALA
+int both_valid = 0;
+int display_valid = 0;
+int refl_valid = 0;
+
+for (size_t i = 0; i < vol->num_elements; i++) {
+    if (!isnan(vol->display_grid[i])) display_valid++;
+    if (!isnan(vol->refl_ALA[i])) refl_valid++;
+    if (!isnan(vol->display_grid[i]) && !isnan(vol->refl_ALA[i])) both_valid++;
+}
+
+printf("display_grid valid: %d, refl_ALA valid: %d, both valid: %d\n", 
+       display_valid, refl_valid, both_valid);
+
+
+
+if (compute_rainfall_statistics(vol, -5.0, cart_grid_res,
                                 &mse, &mae, &bias,
                                 &total_measured, &total_true_masked,
                                 &total_measured_mm2, &total_true_mm2,

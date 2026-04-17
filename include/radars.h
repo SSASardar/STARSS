@@ -92,6 +92,7 @@ double *grid;/**< the 1D matrix (element_id = radar_id*num_angles + angle_id) of
 double other_angle;/**< storing either the elevation angle or azimuth angle in the PPI or RHI respectively */
 double *height_grid; /**< storing the heights each sample is taken as. also a 1D matrix: (element_id=radar_id*num_angles+angle_id)*/
 double *attenuation_grid; /**< storing the attenuation experienced at each range gate. also a 1D matrix: (element_id=radar_id*num_angles+angle_id)*/
+double *estimated_attenuation_grid; /**< storing the attenuation experienced at each range gate. also a 1D matrix: (element_id=radar_id*num_angles+angle_id)*/
 } Polar_box;
 
 
@@ -408,13 +409,16 @@ int sample_from_relative_location_in_raincell(double range, double angle, double
 void fill_polar_box_grid(struct Polar_box* box, const struct Radar* radar, const struct Spatial_raincell* s_raincell, const struct Raincell* raincell, double time, const struct VPR *vpr_strat, const struct VPR *vpr_conv);
 
 void save_polar_box_grid_to_file(const Polar_box* box, const Radar* radar, int scan_index,double scan_time, const char* filename);
-int read_n_doubles_from_stream(FILE *file,char *first_line,const char *prefix,int n,double *out,char *scratch,size_t scratch_sz);
+
+int read_n_doubles_from_stream(FILE *file,const char *prefix,int n,double *out);
+//int read_n_doubles_from_stream(FILE *file,char *first_line,const char *prefix,int n,double *out,char *scratch,size_t scratch_sz);
 void read_radar_scans(const char* filename);
 
 Bounding_box* bounding_box_from_textfile(const Polar_box* p_box, const Radar* radar);
 
 double gaussian_noise(double mean, double stddev);
 double add_noise(const Radar* radar, double reflectivity);
+double add_noise_SA(const Radar* radar, double attenuation); 
 double compute_specific_attenuation(double refl_dBZ, const Radar* radar);
 
 double normalize_angle(double angle_deg);

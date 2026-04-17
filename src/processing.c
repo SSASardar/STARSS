@@ -37,7 +37,7 @@ Cart_grid* Cart_grid_init(double resolution, int num_x, int num_y, Point ref_poi
 
     cg->grid = (double *)malloc(sizeof(double) * cg->num_elements);
     cg->height_grid = (double *)malloc(sizeof(double)*cg->num_elements);
-    cg->attenuation_grid = (double *)malloc(sizeof(double) * cg->num_elements);
+    cg->estimated_attenuation_grid = (double *)malloc(sizeof(double) * cg->num_elements);
     
     if (!cg->grid) {
         free(cg);
@@ -48,7 +48,7 @@ Cart_grid* Cart_grid_init(double resolution, int num_x, int num_y, Point ref_poi
     for (int i = 0; i < cg->num_elements; i++) {
         cg->grid[i] = 0.0;
     	cg->height_grid[i] = 0.0;
-    	cg->attenuation_grid[i]=0.0;
+    	cg->estimated_attenuation_grid[i]=0.0;
     }
 	//printf("success I think? \n");
     return cg;
@@ -646,7 +646,7 @@ bool getPolarBoxIndex(Point p,
                       int *range_idx,
                       int *angle_idx)
 {
-    if (!box || !range_idx || !angle_idx) return false;
+    if (!box || !range_idx || !angle_idx) {printf("no box, range id or angle id\n");return false;}
 
     const double eps = 1e-8; // small tolerance for floating point errors
 
@@ -661,8 +661,8 @@ bool getPolarBoxIndex(Point p,
     double r_min = box->min_range_gate * box->range_resolution;
     double r_max = box->max_range_gate * box->range_resolution;
 
-    if (r < r_min - eps || r > r_max + eps)
-        return false;
+    if (r < r_min - eps || r > r_max + eps) {/*printf("I am below or above the min and max range of the scan+++++++++++");*/return false;}
+
 
     // --- Angle in [0, 2π) ---
     double angle = atan2(dy, dx);
@@ -674,8 +674,8 @@ bool getPolarBoxIndex(Point p,
     double span = box->num_angles * box->angular_resolution * DEG2RAD;
 
     double angle_diff = fmod(angle - min_angle + 2*M_PI, 2*M_PI);
-    if (angle_diff > span + eps)
-    return false;
+    if (angle_diff > span + eps) {/*printf("I have a larger angle than the angle range in the scan+++++++++");*/return false;}
+
 
     // --- Range index (round to nearest) ---
     *range_idx = (int)floor((r - r_min) / box->range_resolution + 1e-8);
@@ -791,7 +791,8 @@ if (dist_a <= dist_b) { dist_min = dist_a; dist_max = dist_b; } else {dist_min =
 return true;
 	}
 
-    return false;
+    //return false;
+    return true;
 }
 
 
@@ -824,7 +825,7 @@ FILE *fp = fopen(filename, "w");
             int index = x * cg->num_y + y;
 	    if (what_to_print == 0) fprintf(fp, "%.2f ", cg->grid[index]);  // format as needed
             if (what_to_print == 1) fprintf(fp, "%.2f ", cg->height_grid[index]);  // format as needed
-    	    if (what_to_print == 2) fprintf(fp,  "%.2f ", cg->attenuation_grid[index]);    
+    	    if (what_to_print == 2) fprintf(fp,  "%.2f ", cg->estimated_attenuation_grid[index]);    
     }
         fprintf(fp, "\n");  // newline after each row
     }
@@ -965,7 +966,7 @@ int add_cart_grid_to_volscan(Vol_scan *vol, Cart_grid *grid, int ppi_index) {
 	    
 	    vol->grid_refl[vol_idx]   = grid->grid ? grid->grid[local_idx] : NAN;
             vol->grid_height[vol_idx] = grid->height_grid ? grid->height_grid[local_idx] : NAN;
-            vol->grid_att[vol_idx]    = grid->attenuation_grid ? grid->attenuation_grid[local_idx] : NAN;
+            vol->grid_att[vol_idx]    = grid->estimated_attenuation_grid ? grid->estimated_attenuation_grid[local_idx] : NAN;
         }
     }
 
@@ -1062,7 +1063,18 @@ vol->display_grid[base_idx] = (!found || max_val < threshold) ? NAN : max_val;
 
 int compute_display_grid_lowest_valid_height(Vol_scan *vol, double threshold) {
     if (!vol || !vol->grid_refl || !vol->display_grid || !vol->grid_height) return -1;
-
+    // Debug: check grid_refl values
+    int total_refl = 0;
+    int refl_above_threshold = 0;
+    for (size_t i = 0; i < vol->num_x * vol->num_y * vol->num_PPIs; i++) {
+        if (!isnan(vol->grid_refl[i])) {
+            total_refl++;
+            if (vol->grid_refl[i] >= threshold) refl_above_threshold++;
+        }
+    }
+    printf("DEBUG: grid_refl has %d valid values, %d above threshold %.1f\n", 
+           total_refl, refl_above_threshold, threshold);
+    
     for (size_t x = 0; x < vol->num_x; x++) {
         for (size_t y = 0; y < vol->num_y; y++) {
             int base_idx = x * vol->num_y + y;  // index into display_grid
@@ -1235,7 +1247,7 @@ void free_cart_grid(Cart_grid *cg) {
     if (!cg) return;
     free(cg->grid);
     free(cg->height_grid);
-    free(cg->attenuation_grid);
+    free(cg->estimated_attenuation_grid);
     free(cg);
 }
 

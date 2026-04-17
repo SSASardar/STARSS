@@ -19,7 +19,7 @@ typedef struct Cart_grid {
 	double resolution;/**< resolution of the square dx=dy */
 	double *grid;/**< pointer storing the measured reflectivity values*/
 	double *height_grid;/**< pointer storing the heights of the measured reflectivity*/
-	double *attenuation_grid;/**< pointer storing the path-integrated attenuation*/
+	double *estimated_attenuation_grid;/**< pointer storing the path-integrated attenuation*/
 	int num_elements;/**<storing number of gridpoints*/
 	int num_x;/**< storing the number in axis 1 (x)*/
 	int num_y;/**< storing the number in axis 2 (y or z)*/
