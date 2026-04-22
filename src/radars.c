@@ -142,9 +142,12 @@ Polar_box* create_polar_box(
     int grid_size,
     double other_angle,
     double *grid_data,
+    int estimated_attenuation_size,
+    double *estimated_attenuation_data,
     int height_size,
-    double *height_data
-) {
+    double *height_data,
+    int *rain_type
+    ) {
     Polar_box* box = (Polar_box*)malloc(sizeof(Polar_box));
     if (!box) {
         printf("Memory allocation failed for Polar_box.\n");
@@ -154,7 +157,9 @@ Polar_box* create_polar_box(
     // Initialize all pointers to NULL
     box->grid = NULL;
     box->attenuation_grid = NULL;
+    box->estimated_attenuation_grid = NULL;
     box->height_grid = NULL;
+    box->rain_type = NULL;
 
     // Set scalar values
     box->radar_id = radar_id;
@@ -173,18 +178,21 @@ Polar_box* create_polar_box(
     if (grid_size > 0 && grid_data != NULL) {
         box->grid = (double*)malloc(sizeof(double) * grid_size);
         box->attenuation_grid = (double*)malloc(sizeof(double) * grid_size);
-	box->estimated_attenuation_grid = (double*)malloc(sizeof(double)*grid_size);
-        if (!box->grid || !box->attenuation_grid || !box->estimated_attenuation_grid) {
-            printf("Grid allocation failed.\n");
+	box->estimated_attenuation_grid = (double*)malloc(sizeof(double)*estimated_attenuation_size);
+	box->rain_type= (int*)malloc(sizeof(int)*grid_size);
+        if (!box->grid || !box->attenuation_grid || !box->estimated_attenuation_grid || !box->rain_type) {
+            printf("Grid allocation failed for measurements, attenuation, estimated attenuation or raintype.\n");
             free(box->grid);
             free(box->attenuation_grid);
 	    free(box->estimated_attenuation_grid);
+	    free(box->rain_type);
             free(box);
             return NULL;
         }
 
         memcpy(box->grid, grid_data, sizeof(double) * grid_size);
-        memset(box->attenuation_grid, 0, sizeof(double) * grid_size); // initialize to 0
+        memcpy(box->estimated_attenuation_grid, estimated_attenuation_data, sizeof(double) * estimated_attenuation_size);
+        memcpy(box->rain_type, rain_type, sizeof(int) * grid_size);
     }
 
     // Allocate height_grid if needed
@@ -217,6 +225,7 @@ Polar_box* init_polar_box() {
     polar_box->height_grid = NULL;
     polar_box->attenuation_grid = NULL;
     polar_box->estimated_attenuation_grid = NULL;
+    polar_box->rain_type= NULL;
     // Initialize other members to sensible defaults, e.g. 0
     polar_box->range_resolution = 0.0;
     polar_box->angular_resolution = 0.0;
@@ -302,12 +311,14 @@ int num_angles = (int)ceil(span);
         free(polar_box->height_grid);
 	free(polar_box->attenuation_grid);
 	free(polar_box->estimated_attenuation_grid);
+	free(polar_box->rain_type);
 
         polar_box->grid = malloc(sizeof(double) * num_ranges * num_angles);
         polar_box->height_grid = malloc(sizeof(double) * num_ranges * num_angles);
     	polar_box->attenuation_grid = malloc(sizeof(double) * num_ranges * num_angles);
     	polar_box->estimated_attenuation_grid = malloc(sizeof(double) * num_ranges * num_angles);
-    	if (!polar_box->grid || !polar_box->height_grid || !polar_box->attenuation_grid || !polar_box->estimated_attenuation_grid) {
+    	polar_box->rain_type= malloc(sizeof(double) * num_ranges * num_angles);
+    	if (!polar_box->grid || !polar_box->height_grid || !polar_box->attenuation_grid || !polar_box->rain_type) {
             perror("Failed to allocate polar box grids");
             free(centre);
             free(radar_point);
@@ -471,7 +482,8 @@ int num_angles = (int)ceil(span);
         polar_box->height_grid = malloc(sizeof(double) * num_ranges * num_angles);
     	polar_box->attenuation_grid = malloc(sizeof(double) * num_ranges * num_angles);
     	polar_box->estimated_attenuation_grid = malloc(sizeof(double) * num_ranges * num_angles);
-    	if (!polar_box->grid || !polar_box->height_grid || !polar_box->attenuation_grid) {
+    	polar_box->rain_type= malloc(sizeof(double) * num_ranges * num_angles);
+    	if (!polar_box->grid || !polar_box->height_grid || !polar_box->attenuation_grid || !polar_box->rain_type) {
             perror("Failed to allocate polar box grids");
             free(centre);
             free(radar_point);
@@ -664,88 +676,6 @@ if(strcmp(get_scanning_mode(found_radar), "RHI") == 0){
 return bbox;
 }
 
-/*
-Bounding_box* create_bounding_box_for_polar_box_EZ(const Polar_box* p_box) {
-    if (p_box == NULL) {
-        printf("create_bounding_box_for_polar_box_GLOBAL()\n"
-               "You are trying to create a bounding box for a polar box which is not defined (points to NULL).\n"
-               "The bounding box will be assigned NULL.\n\n");
-        return NULL;
-    }
-
-    // Use global radar registry
-    const Radar* found_radar = find_radar_by_id_ONLY(p_box->radar_id);
-    if (found_radar == NULL) {
-        printf("create_bounding_box_for_polar_box_GLOBAL()\n"
-               "No radar found with id %d. Returning NULL.\n\n", p_box->radar_id);
-        return NULL;
-    }
-
-    double rmin = get_min_range_gate(p_box) * get_range_res_radar(found_radar);
-    double curvature_correction_min = cos(
-        p_box->other_angle*DEG2RAD + atan2(rmin * cos(p_box->other_angle*DEG2RAD),
-                                   (KEA + rmin * sin(p_box->other_angle*DEG2RAD)))
-    );
-
-    double rmax = get_max_range_gate(p_box) * get_range_res_radar(found_radar);
-    double curvature_correction_max = cos(
-        p_box->other_angle*DEG2RAD + atan2(rmax * cos(p_box->other_angle*DEG2RAD),
-                                   (KEA + rmax * sin(p_box->other_angle*DEG2RAD)))
-    );
-
-    double anglemin = get_min_angle(p_box) * DEG2RAD;
-    double anglemax = get_max_angle(p_box) * DEG2RAD;
-    double anglemid = (anglemin + anglemax) / 2;
-
-    double xs[5] = {
-        rmax * curvature_correction_max * cos(anglemin),
-        rmin * curvature_correction_min * cos(anglemin),
-        rmax * curvature_correction_max * cos(anglemax),
-        rmin * curvature_correction_min * cos(anglemax),
-        rmax * curvature_correction_max * cos(anglemid)
-    };
-
-    double ys[5] = {
-        rmax * curvature_correction_max * sin(anglemin),
-        rmin * curvature_correction_min * sin(anglemin),
-        rmax * curvature_correction_max * sin(anglemax),
-        rmin * curvature_correction_min * sin(anglemax),
-        rmax * curvature_correction_max * sin(anglemid)
-    };
-
-    double xmin = xs[0], xmax = xs[0];
-    double ymin = ys[0], ymax = ys[0];
-
-    for (int i = 1; i < 5; ++i) {
-        if (xs[i] < xmin) xmin = xs[i];
-        if (xs[i] > xmax) xmax = xs[i];
-        if (ys[i] < ymin) ymin = ys[i];
-        if (ys[i] > ymax) ymax = ys[i];
-    }
-
-    Point* pos_radar = get_position_radar(found_radar);
-
-    // Allocate and fill the bounding box
-    Bounding_box* bbox = malloc(sizeof(Bounding_box));
-    if (!bbox) {
-        printf("Memory allocation failed for Bounding_box.\n");
-        return NULL;
-    }
-
-    bbox->topLeft.x     = xmin + pos_radar->x;
-    bbox->topLeft.y     = ymax + pos_radar->y;
-    bbox->topRight.x    = xmax + pos_radar->x;
-    bbox->topRight.y    = ymax + pos_radar->y;
-    bbox->bottomLeft.x  = xmin + pos_radar->x;
-    bbox->bottomLeft.y  = ymin + pos_radar->y;
-    bbox->bottomRight.x = xmax + pos_radar->x;
-    bbox->bottomRight.y = ymin + pos_radar->y;
-
-    return bbox;
-}
-*/
-
-
 
 double calculate_height_of_beam_at_range(double range, double elevation, double height_of_radar){
 	double height_from_earth_centre = (KEA+1.33333333*height_of_radar);
@@ -830,34 +760,37 @@ if (ri != 0) {
 if (sample == 0) { //raincell shape is always convex, so no strange things need to happen.
         box->grid[idp] = 0.0;
         box->attenuation_grid[idp] = 0.0;
-       box->estimated_attenuation_grid[idp] = 0.0;	
+       box->estimated_attenuation_grid[idp] = 0.0;
+	box->rain_type[idp] = 0;       
 } else if (sample == 1) {
+	box->rain_type[idp] = 1;
         refl_dBZ = get_reflectivity_at_height(vpr_strat, sample_height);
         att = compute_specific_attenuation(refl_dBZ, radar);
 	noisy_att = add_noise_SA(radar,att);
         if(idp == idp_min_one) {
         	box->attenuation_grid[idp] = noisy_att;
-		if(att>10){box->estimated_attenuation_grid[idp] = 10;} else {
-        	box->estimated_attenuation_grid[idp] = att;}
+        	box->estimated_attenuation_grid[idp] = att;
 	} else {
                 box->attenuation_grid[idp] = noisy_att + box->attenuation_grid[idp_min_one];
-        	if(att+box->estimated_attenuation_grid[idp_min_one]>10){box->estimated_attenuation_grid[idp] = 10;}else{box->estimated_attenuation_grid[idp] = att + box->estimated_attenuation_grid[idp_min_one];}
+		box->estimated_attenuation_grid[idp] = att + box->estimated_attenuation_grid[idp_min_one];
 	}
-        box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+        //box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+        box->grid[idp] = add_noise(radar, refl_dBZ);
 } else {
+	box->rain_type[idp] = 2;
         refl_dBZ = get_reflectivity_at_height(vpr_conv, sample_height);
 
         att = compute_specific_attenuation(refl_dBZ, radar); 
         	noisy_att = add_noise_SA(radar,att);
         if(idp == idp_min_one) {
         	box->attenuation_grid[idp] = noisy_att;
-		if(att>10){box->estimated_attenuation_grid[idp] = 10;} else {
-        	box->estimated_attenuation_grid[idp] = att;}
+        	box->estimated_attenuation_grid[idp] = att;
 	} else {
                 box->attenuation_grid[idp] = noisy_att + box->attenuation_grid[idp_min_one];
-        	if(att+box->estimated_attenuation_grid[idp_min_one]>10){box->estimated_attenuation_grid[idp] = 10;}else{box->estimated_attenuation_grid[idp] = att + box->estimated_attenuation_grid[idp_min_one];}
+			box->estimated_attenuation_grid[idp] = att + box->estimated_attenuation_grid[idp_min_one];
 	}
-        box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+        //box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+        box->grid[idp] = add_noise(radar, refl_dBZ);
 }
 
             // Flattened grid write
@@ -880,34 +813,35 @@ for (int ri = 0; ri <num_ranges;ri++){
 			idp_min_one = (ri-1) * num_angles+ai;
 		}	
 		if (sample == 0) { //raincell shape is always convex, so no strange things need to happen.
+	box->rain_type[idp] = 0;       
         box->grid[idp] = 0.0;
         box->attenuation_grid[idp] = 0.0;
        box->estimated_attenuation_grid[idp] = 0.0;	
 } else if (sample == 1) {
+	box->rain_type[idp] = 1;       
         refl_dBZ = get_reflectivity_at_height(vpr_strat, sample_height);
         att = compute_specific_attenuation(refl_dBZ, radar);
 	noisy_att = add_noise_SA(radar,att);
         if(idp == idp_min_one) {
         	box->attenuation_grid[idp] = noisy_att;
-		if(att>10){box->estimated_attenuation_grid[idp] = 10;} else {
-        	box->estimated_attenuation_grid[idp] = att;}
+        	box->estimated_attenuation_grid[idp] = att;
 	} else {
                 box->attenuation_grid[idp] = noisy_att + box->attenuation_grid[idp_min_one];
-        	if(att+box->estimated_attenuation_grid[idp_min_one]>10){box->estimated_attenuation_grid[idp] = 10;}else{box->estimated_attenuation_grid[idp] = att + box->estimated_attenuation_grid[idp_min_one];}
+			box->estimated_attenuation_grid[idp] = att + box->estimated_attenuation_grid[idp_min_one];
 	}
         box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
 } else {
+	box->rain_type[idp] = 2;       
         refl_dBZ = get_reflectivity_at_height(vpr_conv, sample_height);
 
         att = compute_specific_attenuation(refl_dBZ, radar); 
         	noisy_att = add_noise_SA(radar,att);
         if(idp == idp_min_one) {
         	box->attenuation_grid[idp] = noisy_att;
-		if(att>10){box->estimated_attenuation_grid[idp] = 10;} else {
-        	box->estimated_attenuation_grid[idp] = att;}
+        	box->estimated_attenuation_grid[idp] = att;
 	} else {
                 box->attenuation_grid[idp] = noisy_att + box->attenuation_grid[idp_min_one];
-        	if(att+box->estimated_attenuation_grid[idp_min_one]>10){box->estimated_attenuation_grid[idp] = 10;}else{box->estimated_attenuation_grid[idp] = att + box->estimated_attenuation_grid[idp_min_one];}
+			box->estimated_attenuation_grid[idp] = att + box->estimated_attenuation_grid[idp_min_one];
 	}
         box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
 }
@@ -965,9 +899,18 @@ void save_polar_box_grid_to_file(const Polar_box* box, const Radar* radar, int s
     }
     fprintf(fp, "\n");
 
+    fprintf(fp, "rain_type.data=");
+    for (int i = 0; i < total; i++) {
+        fprintf(fp, "%d", box->rain_type[i]);
+        if (i < total - 1) {
+            fprintf(fp, " ");
+        }
+    }
+    fprintf(fp, "\n");
+
 // estimated attenuation data
-    fprintf(fp, "estimated_attenuation_grid.size=%d\n", total);
-    fprintf(fp, "estimated_attenuation_grid.data=");
+    fprintf(fp, "estimated_attenuation.size=%d\n", total);
+    fprintf(fp, "estimated_attenuation.data=");
     for (int i = 0; i < total; i++) {
         fprintf(fp, "%.2f", box->estimated_attenuation_grid[i]);
         if (i < total - 1) {
@@ -993,6 +936,56 @@ void save_polar_box_grid_to_file(const Polar_box* box, const Radar* radar, int s
 
     fclose(fp);
 }
+
+int read_n_ints_from_stream(FILE *file, const char *prefix, int n, int *out) {
+    if (!file || !prefix || n <= 0 || !out) return -1;
+    
+    char buffer[4096];
+    long data_start_pos = -1;
+    
+    while (fgets(buffer, sizeof(buffer), file)) {
+        if (strstr(buffer, prefix)) {
+            char *eq = strchr(buffer, '=');
+            if (eq) {
+                data_start_pos = ftell(file) - strlen(buffer) + (eq - buffer) + 1;
+                fseek(file, data_start_pos, SEEK_SET);
+                break;
+            }
+        }
+    }
+    
+    if (data_start_pos == -1) return -1;
+    
+    int filled = 0;
+    char token[64];
+    int token_len = 0;
+    int in_number = 0;
+    int c;
+    
+    while (filled < n && (c = fgetc(file)) != EOF) {
+        if (isdigit(c) || c == '-') {  // Note: no decimal point for integers
+            if (token_len < (int)sizeof(token) - 1) {
+                token[token_len++] = c;
+            }
+            in_number = 1;
+        } else if (in_number) {
+            token[token_len] = '\0';
+            out[filled++] = atoi(token);  // Use atoi, not atof
+            token_len = 0;
+            in_number = 0;
+            if (filled >= n) break;
+        }
+    }
+    
+    if (in_number && filled < n) {
+        token[token_len] = '\0';
+        out[filled++] = atoi(token);
+    }
+    
+    return (filled == n) ? 0 : -1;
+}
+
+
 
 int read_n_doubles_from_stream(FILE *file,
                                const char *prefix,
@@ -1055,162 +1048,6 @@ int read_n_doubles_from_stream(FILE *file,
 }
 
 
-/*
-int read_n_doubles_from_stream(FILE *file,
-                               char *first_line,
-                               const char *prefix,
-                               int n,
-                               double *out,
-                               char *scratch,
-                               size_t scratch_sz)
-{
-    if (!file || !first_line || !prefix || n <= 0 || !out) return -1;
-    
-    // Find the start of data after prefix
-    char *data_start = strstr(first_line, prefix);
-    if (!data_start) return -1;
-    data_start += strlen(prefix);
-    
-    // Parse all doubles from this line
-    char *ptr = data_start;
-    int filled = 0;
-    
-    while (filled < n && ptr && *ptr) {
-        // Skip whitespace
-        while (*ptr && isspace((unsigned char)*ptr)) ptr++;
-        if (!*ptr) break;
-        
-        char *endptr;
-        errno = 0;
-        double val = strtod(ptr, &endptr);
-        
-        if (endptr == ptr) {
-            // No number found
-            break;
-        }
-        
-        out[filled++] = val;
-        ptr = endptr;
-    }
-    
-    if (filled != n) {
-        fprintf(stderr, "Warning: Expected %d doubles but only read %d\n", n, filled);
-        return -1;
-    }
-    
-    return 0;
-}
-
-
-*/
-
-/*
- * Read exactly `n` doubles for a data block that starts at `first_line`
- * (which must contain the "grid.data=" or "height.data=" prefix).
- *
- * file: open FILE* positioned at the line containing the "prefix" (or later).
- * first_line: buffer containing the current line (the one where prefix was found).
- * prefix: "grid.data=" or "height.data="
- * out: double array of length n (preallocated).
- * scratch: char buffer of size scratch_sz used for reading subsequent lines with fgets.
- *
- * Returns:
- *  0 on success (reads exactly n values into out),
- * -1 on error (incomplete data or malformed token),
- * -2 on allocation error.
- */
-/*int read_n_doubles_from_stream(FILE *file,
-                               char *first_line,
-                               const char *prefix,
-                               int n,
-                               double *out,
-                               char *scratch,
-                               size_t scratch_sz)
-{
-    if (!file || !first_line || !prefix || n <= 0 || !out) return -1;
-
-    // Build a dynamic accumulator string that will hold remaining text to parse.
-    size_t acc_cap = scratch_sz * 2;
-    char *acc = malloc(acc_cap);
-    if (!acc) return -2;
-    acc[0] = '\0';
-
-    // Find prefix in first_line
-    char *p = strstr(first_line, prefix);
-    if (p) p += strlen(prefix);
-    else p = first_line; // just in case
-
-    // Initialize accumulator with the remainder of the first line after prefix
-    size_t len_p = strlen(p);
-    if (len_p + 1 > acc_cap) {
-        char *tmp = realloc(acc, len_p + 1);
-        if (!tmp) { free(acc); return -2; }
-        acc = tmp; acc_cap = len_p + 1;
-    }
-    strcpy(acc, p);
-
-    int filled = 0;
-    char *parse_ptr = acc;
-    errno = 0;
-
-    while (filled < n) {
-        // Skip whitespace at parse_ptr
-        while (*parse_ptr && isspace((unsigned char)*parse_ptr)) parse_ptr++;
-
-        // Attempt to parse with strtod
-        char *endptr = NULL;
-        errno = 0;
-        double v = strtod(parse_ptr, &endptr);
-
-        if (endptr && endptr != parse_ptr) {
-            // Successfully parsed a number
-            out[filled++] = v;
-            parse_ptr = endptr;
-            continue;
-        }
-
-        // No number parsed at current parse_ptr. We need more data.
-        // If we've reached EOF of file -> error (incomplete)
-        if (!fgets(scratch, (int)scratch_sz, file)) {
-            // If parse_ptr contains only whitespace but no more input, it's incomplete
-            // Determine how many we had and return error.
-            free(acc);
-            return -1;  // incomplete data
-        }
-
-        // Append scratch to accumulator, but preserve unparsed tail.
-        // Compute unparsed tail start
-        size_t tail_offset = parse_ptr - acc;  // index of tail start in acc
-        size_t tail_len = strlen(acc + tail_offset);
-
-        // New accumulator size needed
-        size_t addlen = strlen(scratch);
-        size_t need = tail_len + addlen + 1; // +1 null
-        if (need + 32 > acc_cap) { // small slack
-            size_t newcap = acc_cap * 2;
-            while (newcap < tail_len + addlen + 1) newcap *= 2;
-            char *tmp = realloc(acc, newcap);
-            if (!tmp) { free(acc); return -2; }
-            acc = tmp;
-            acc_cap = newcap;
-        }
-
-        // Move the unparsed tail to the front of acc
-        memmove(acc, acc + tail_offset, tail_len + 1); // include null
-        // Append new scratch content
-        strcat(acc, scratch);
-
-        // Reset parse_ptr to beginning of acc
-        parse_ptr = acc;
-        continue;
-    }
-
-    free(acc);
-    return 0;
-}
-
-*/
-
 //creating a radar, a polar box, and a radarscan type from the radar_scans file. 
 
 void read_radar_scans(const char* filename) {
@@ -1234,8 +1071,9 @@ void read_radar_scans(const char* filename) {
     double num_ranges=0, num_angles=0;
     int grid_size = 0;
     double* grid_data = NULL;
-    int estimated_attenuation_grid_size = 0;
-    double* estimated_attenuation_grid_data = NULL;
+    int* rain_type_data = NULL;
+    int estimated_attenuation_size = 0;
+    double* estimated_attenuation_data = NULL;
     double other_angle = 0;
     int height_size = 0;
     double* height_data = NULL;
@@ -1252,8 +1090,9 @@ void read_radar_scans(const char* filename) {
             num_ranges = num_angles = 0;
             grid_size = 0;
             free(grid_data); grid_data = NULL;
-	    estimated_attenuation_grid_size = 0;
-	    free(estimated_attenuation_grid_data); estimated_attenuation_grid_data = NULL;
+	    rain_type_data = NULL;
+	    estimated_attenuation_size = 0;
+	    free(estimated_attenuation_data); estimated_attenuation_data = NULL;
 	    height_size = 0;
 	    free(height_data);height_data=NULL;
     	    continue;
@@ -1267,17 +1106,18 @@ void read_radar_scans(const char* filename) {
             Polar_box* box = create_polar_box(radar_id,mode, min_gate, max_gate,
                                               min_angle, max_angle, num_ranges,
                                               num_angles, range_res, angular_res,
-                                              grid_size, other_angle, grid_data,height_size,height_data);
+                                              grid_size, other_angle, grid_data,estimated_attenuation_size,estimated_attenuation_data,height_size,height_data, rain_type_data);
 
             radar_scans[scan_count].scan_index = scan_index;
 	    radar_scans[scan_count].time = scan_time;
 	    radar_scans[scan_count].radar = radar;
             radar_scans[scan_count].box = box;
             scan_count++;
-            estimated_attenuation_grid_size = 0;
-            free(estimated_attenuation_grid_data); estimated_attenuation_grid_data = NULL;
+            estimated_attenuation_size = 0;
+            free(estimated_attenuation_data); estimated_attenuation_data = NULL;
 	    grid_size = 0;
             free(grid_data); grid_data = NULL;
+	    rain_type_data = NULL;
 	    height_size = 0;
 	    free(height_data);height_data=NULL;
 
@@ -1313,7 +1153,8 @@ void read_radar_scans(const char* filename) {
         if (sscanf(line, "grid.size=%d", &grid_size)) {
             if (grid_size > 0) {
                 grid_data = (double*)malloc(sizeof(double) * grid_size);
-                if (!grid_data) {
+                rain_type_data = (int*)malloc(sizeof(int) * grid_size);
+                if (!grid_data || !rain_type_data) {
                     printf("Memory allocation failed for grid.\n");
                     fclose(file);
                     return;
@@ -1322,12 +1163,12 @@ void read_radar_scans(const char* filename) {
 	printf("I updated the grid memory allocation file: %s, scan %d\n", filename, scan_index);
             continue;
         }
-/*
-        if (sscanf(line, "estimated_attenuation_grid.size=%d", &estimated_attenuation_grid_size)) {
-            if (estimated_attenuation_grid_size > 0) {
-                estimated_attenuation_grid_data = (double*)malloc(sizeof(double) * estimated_attenuation_grid_size);
-                if (!estimated_attenuation_grid_data) {
-                    printf("Memory allocation failed for grid.\n");
+
+        if (sscanf(line, "estimated_attenuation.size=%d", &estimated_attenuation_size)) {
+            if (estimated_attenuation_size > 0) {
+                estimated_attenuation_data = (double*)malloc(sizeof(double) * estimated_attenuation_size);
+                if (!estimated_attenuation_data) {
+                    printf("Memory allocation failed for attenuation grid.\n");
                     fclose(file);
                     return;
                 }
@@ -1335,7 +1176,7 @@ void read_radar_scans(const char* filename) {
 	printf("I updated the estimated attenuation grid memory allocation file: %s, scan %d\n", filename, scan_index);
             continue;
         }
-*/
+
 	if (sscanf(line, "height.size=%d", &height_size)) {
 	    if (height_size > 0) {
 	        height_data = (double*)malloc(sizeof(double) * height_size);
@@ -1345,7 +1186,7 @@ void read_radar_scans(const char* filename) {
 	            return;
 	        }
 	    }
-	printf("I updated the height memory allocation\n");
+	printf("I updated the height memory allocation file: %s, scan %d\n", filename, scan_index);
 	    continue;
 	}
 
@@ -1379,22 +1220,71 @@ if (strstr(line, "grid.data=") && grid_size > 0) {
     continue;  // Skip to next line after reading
 }
 
-// Similarly for estimated_attenuation_grid.data=
-if (strstr(line, "estimated_attenuation_grid.data=") && estimated_attenuation_grid_size > 0) {
-    if (!estimated_attenuation_grid_data) {
-        fprintf(stderr, "estimated_attenuation_grid_data not allocated\n");
+/*
+// Similarly for rain_type.data=
+if (strstr(line, "rain_type.data=") && grid_size> 0) {
+    if (!rain_type_data) {
+        fprintf(stderr, "rain_type_data not allocated\n");
     } else {
         long line_start = ftell(file) - strlen(line);
         fseek(file, line_start, SEEK_SET);
         
-        int rc = read_n_doubles_from_stream(file, "estimated_attenuation_grid.data=", 
-                                           estimated_attenuation_grid_size, 
-                                           estimated_attenuation_grid_data);
+        int rc = read_n_doubles_from_stream(file, "rain_type.data=", 
+                                           grid_size, 
+                                           rain_type_data);
         if (rc != 0) {
-            fprintf(stderr, "Failed to read estimated_attenuation_grid.data for scan %d (rc=%d)\n", 
+            fprintf(stderr, "Failed to read estimated_attenuation.data for scan %d (rc=%d)\n", 
                     scan_index, rc);
-            free(estimated_attenuation_grid_data);
-            estimated_attenuation_grid_data = NULL;
+            free(rain_type_data);
+            rain_type_data= NULL;
+            fclose(file);
+            return;
+        }
+    }
+    continue;
+}
+*/
+
+// For rain_type.data (integers)
+if (strstr(line, "rain_type.data=") && grid_size > 0) {
+    if (!rain_type_data) {
+        fprintf(stderr, "rain_type_data not allocated\n");
+    } else {
+        long line_start = ftell(file) - strlen(line);
+        fseek(file, line_start, SEEK_SET);
+        
+        // Read as integers, not doubles
+        int rc = read_n_ints_from_stream(file, "rain_type.data=", grid_size, rain_type_data);
+        if (rc != 0) {
+            fprintf(stderr, "Failed to read rain_type.data for scan %d (rc=%d)\n", 
+                    scan_index, rc);
+            free(rain_type_data);
+            rain_type_data = NULL;
+            fclose(file);
+            return;
+        }
+    }
+    continue;
+}
+
+
+
+// Similarly for estimated_attenuation.data=
+if (strstr(line, "estimated_attenuation.data=") && estimated_attenuation_size > 0) {
+    if (!estimated_attenuation_data) {
+        fprintf(stderr, "estimated_attenuation_data not allocated\n");
+    } else {
+        long line_start = ftell(file) - strlen(line);
+        fseek(file, line_start, SEEK_SET);
+        
+        int rc = read_n_doubles_from_stream(file, "estimated_attenuation.data=", 
+                                           estimated_attenuation_size, 
+                                           estimated_attenuation_data);
+        if (rc != 0) {
+            fprintf(stderr, "Failed to read estimated_attenuation.data for scan %d (rc=%d)\n", 
+                    scan_index, rc);
+            free(estimated_attenuation_data);
+            estimated_attenuation_data = NULL;
             fclose(file);
             return;
         }
@@ -1615,7 +1505,13 @@ void free_polar_box(Polar_box *box) {
         free(box->attenuation_grid);
         box->attenuation_grid = NULL;
     }
-if (box->estimated_attenuation_grid) {
+
+   if (box->rain_type) {
+        free(box->rain_type);
+        box->rain_type= NULL;
+    }
+  
+    if (box->estimated_attenuation_grid) {
         free(box->estimated_attenuation_grid);
         box->estimated_attenuation_grid = NULL;
     }

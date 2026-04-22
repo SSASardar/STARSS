@@ -116,16 +116,16 @@ for (int i = 0; i < scan_count; ++i) {
             }
 
 
-			    cg->attenuation_grid[3*(idA)+0] =p_box->attenuation_grid[3*p_grid_idx + 0];
-			    cg->attenuation_grid[3*(idA)+1] =p_box->attenuation_grid[3*p_grid_idx + 1];
-			    cg->attenuation_grid[3*(idA)+2] =p_box->attenuation_grid[3*p_grid_idx + 2]; 
+			    cg->estimated_attenuation_grid[3*(idA)+0] =p_box->attenuation_grid[3*p_grid_idx + 0];
+			    cg->estimated_attenuation_grid[3*(idA)+1] =p_box->attenuation_grid[3*p_grid_idx + 1];
+			    cg->estimated_attenuation_grid[3*(idA)+2] =p_box->attenuation_grid[3*p_grid_idx + 2]; 
 
 			} else {
 			    cg->grid[idA] = NAN;// Handle point outside polar box
 			    cg->height_grid[idA] = NAN;// Handle point outside polar box
-			    cg->attenuation_grid[3*(idA)+0] =-1.0; 
-			    cg->attenuation_grid[3*(idA)+1] =-1.0; 
-			    cg->attenuation_grid[3*(idA)+2] =-1.0; 
+			    cg->estimated_attenuation_grid[3*(idA)+0] =-1.0; 
+			    cg->estimated_attenuation_grid[3*(idA)+1] =-1.0; 
+			    cg->estimated_attenuation_grid[3*(idA)+2] =-1.0; 
 			}
 		}
 	}

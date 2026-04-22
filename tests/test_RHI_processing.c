@@ -188,13 +188,13 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
                     //cactus++;
                     cg->height_grid[idA] = p_box->height_grid[p_grid_idx];
                     cg->grid[idA] = p_box->grid[p_grid_idx];
-                    cg->attenuation_grid[idA] = p_box->attenuation_grid[p_grid_idx];
+                    cg->estimated_attenuation_grid[idA] = p_box->attenuation_grid[p_grid_idx];
            	    //if (cactus % 100 == 0) printf("(x,y = %d,%d), (r_id,theta = %d,%d), reflectivity %.2lf\n",xi,yi,range_idx,angle_idx,cg->grid[idA]);
 	    	    prickly_cactus = prickly_cactus + cg->grid[idA];
 		} else {
                     cg->grid[idA] = NAN;
                     cg->height_grid[idA] = NAN;
-	            cg->attenuation_grid[idA] = NAN;
+	            cg->estimated_attenuation_grid[idA] = NAN;
                 }
             }
         }

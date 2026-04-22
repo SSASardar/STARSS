@@ -71,6 +71,8 @@ int write_VPR_to_file(const VPR *vpr, const char *label, int scan_idx) {
     fprintf(fp, "BB_m %.3f %.3f\n", vpr->BB_m.reflectivity, vpr->BB_m.height);
     fprintf(fp, "BB_l %.3f %.3f\n", vpr->BB_l.reflectivity, vpr->BB_l.height);
     fprintf(fp, "CB   %.3f %.3f\n", vpr->CB.reflectivity,   vpr->CB.height);
+    fprintf(fp, "GT   %.3f %.3f\n", vpr->GT.reflectivity,   vpr->GT.height);
+
 
     fclose(fp);
     return 0;
@@ -151,8 +153,14 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
     for (int i = 0; i < scan_count; i++) {
         Polar_box* p_box = radar_scans[i].box;
         Radar* radar = radar_scans[i].radar;
-        double time = radar_scans[i].time;
+	double time = radar_scans[i].time;
 	double time_s_2 = time*60;
+
+		
+    char filename_check[256];
+snprintf(filename_check, sizeof(filename_check), "outputs/read_reflectivity_scan%d_slice%d.txt", scan_idx, i);    
+    
+    	save_polar_box_grid_to_file(p_box, radar, i, time, filename_check);
         update_VPR(VPR_strat, params, time_s_2, VPR_conv);
 
         Bounding_box* bbox = bounding_box_from_textfile(p_box, radar);
@@ -178,13 +186,15 @@ int invalid_range = 0, invalid_angle = 0;
                 int idA = xi * num_y + yi;
                 Point p = {ref_point.x + xi*cart_grid_res, ref_point.y + yi*cart_grid_res};
                 int range_idx, angle_idx;
-
+//printf("line 189\n");
                 if (getPolarBoxIndex(p, radar->x, radar->y, p_box, &range_idx, &angle_idx)) {
 			valid_count++;
                     int p_grid_idx = range_idx * (int)p_box->num_angles + angle_idx;
                     cg->height_grid[idA] = p_box->height_grid[p_grid_idx];
-                    cg->grid[idA] = p_box->grid[p_grid_idx];
+                    cg->grid[idA] = p_box->grid[p_grid_idx];// + 2*p_box->estimated_attenuation_grid[p_grid_idx];
                     cg->estimated_attenuation_grid[idA] = p_box->estimated_attenuation_grid[p_grid_idx];
+//printf("line 196\n");
+		    cg->rain_type_grid[idA] = p_box->rain_type[p_grid_idx];
                 } else {
 	//printf("I am failing here");
 	            double dx = p.x - radar->x;
@@ -201,6 +211,9 @@ int invalid_range = 0, invalid_angle = 0;
 		    cg->grid[idA] = NAN;
                     cg->height_grid[idA] = NAN;
 	            cg->estimated_attenuation_grid[idA] = NAN;
+	       
+//printf("line 215\n");
+	       	    cg->rain_type_grid[idA] = 9;
                 }
             }
         }
@@ -210,14 +223,21 @@ int invalid_range = 0, invalid_angle = 0;
     }
 
     Vol_scan *vol = init_vol_scan(cart_grids, cg_count);
-    for (int i = 0; i < cg_count; i++)
-        add_cart_grid_to_volscan(vol, cart_grids[i], i);
+    for (int i = 0; i < cg_count; i++){
+	    add_cart_grid_to_volscan(vol, cart_grids[i], i);
+    //	writeCartGridToFile(cart_grids[i],i,1);
+    }
+
+    
+    //char filename_vol[256];
+//snprintf(filename_vol, sizeof(filename_vol), "outputs/volume_scan_%04d.bin", scan_idx);
+
+//save_vol_scan_to_file(vol,filename_vol);
 
 
-
-//compute_display_grid_average(vol,10.0);
+compute_display_grid_average(vol,-5.0);
 //compute_display_grid_max(vol,10.0);
-compute_display_grid_lowest_valid_height(vol,-5.0);
+//compute_display_grid_lowest_valid_height(vol,-5.0);
 //compute_display_grid_min_above_threshold(vol,10.0);
     double true_time_min = radar_scans[scan_count-1].time +
                            (radar_scans[scan_count-1].time - radar_scans[scan_count-2].time);
@@ -234,7 +254,10 @@ compute_display_grid_lowest_valid_height(vol,-5.0);
     if (fill_refl_ALA_grid(vol, raincell_pos, raincell, VPR_strat, VPR_conv) != 0) {
         fprintf(stderr, "Failed to fill Refl_ALA grid\n");
     }
-// DEBUG UNTIL:_______________________________
+
+    
+//compute_display_grid_KNMI(vol,-5.0, VPR_strat, VPR_conv);
+    // DEBUG UNTIL:_______________________________
 // Count classifications
 int class0=0, class1=0, class2=0;
 for (int i = 0; i < vol->num_elements; i++) {
@@ -326,10 +349,10 @@ if (write_true_grid_to_file(vol, true_filename) != 0) {
     fprintf(stderr, "Failed to write true grid to %s\n", true_filename);
 }
 
-//int xA = vol->num_x/2;
-//int yA = vol->num_y/2;
-int xA = 450;
-int yA = 300;
+int xA = vol->num_x/2;
+int yA = vol->num_y/2;
+//int xA = 20;
+//int yA = 20;
 
 
 char point_height_file[256];

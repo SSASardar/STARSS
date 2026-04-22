@@ -38,6 +38,8 @@ Cart_grid* Cart_grid_init(double resolution, int num_x, int num_y, Point ref_poi
     cg->grid = (double *)malloc(sizeof(double) * cg->num_elements);
     cg->height_grid = (double *)malloc(sizeof(double)*cg->num_elements);
     cg->estimated_attenuation_grid = (double *)malloc(sizeof(double) * cg->num_elements);
+    cg->rain_type_grid= (int *)malloc(sizeof(int) * cg->num_elements);
+    //if(cg->rain_type_grid)printf("allocating integer pointer (for an array of integers) is successful\n");
     
     if (!cg->grid) {
         free(cg);
@@ -49,6 +51,7 @@ Cart_grid* Cart_grid_init(double resolution, int num_x, int num_y, Point ref_poi
         cg->grid[i] = 0.0;
     	cg->height_grid[i] = 0.0;
     	cg->estimated_attenuation_grid[i]=0.0;
+	cg->rain_type_grid[i] = 9;
     }
 	//printf("success I think? \n");
     return cg;
@@ -809,6 +812,7 @@ if (what_to_print == 0) snprintf(filename, sizeof(filename), "outputs/m_cartesia
 if (what_to_print == 1) snprintf(filename, sizeof(filename), "outputs/h_cartesian_grid_output_%d.txt", scan_id);
 
 if (what_to_print == 2) snprintf(filename, sizeof(filename), "outputs/a_cartesian_grid_output_%d.txt", scan_id);
+if (what_to_print == 3) snprintf(filename, sizeof(filename), "outputs/t_cartesian_grid_output_%d.txt", scan_id);
 
 
 
@@ -826,6 +830,7 @@ FILE *fp = fopen(filename, "w");
 	    if (what_to_print == 0) fprintf(fp, "%.2f ", cg->grid[index]);  // format as needed
             if (what_to_print == 1) fprintf(fp, "%.2f ", cg->height_grid[index]);  // format as needed
     	    if (what_to_print == 2) fprintf(fp,  "%.2f ", cg->estimated_attenuation_grid[index]);    
+    	    if (what_to_print == 3) fprintf(fp,  "%d ", cg->rain_type_grid[index]);    
     }
         fprintf(fp, "\n");  // newline after each row
     }
@@ -896,6 +901,7 @@ Vol_scan *init_vol_scan(Cart_grid **cart_grids, int num_PPIs) {
     vol->grid_refl    = calloc(total_cells, sizeof(double));
     vol->grid_height  = calloc(total_cells, sizeof(double));
     vol->grid_att     = calloc(total_cells, sizeof(double));
+    vol->grid_rain_type     = calloc(total_cells, sizeof(int));
     vol->display_grid = calloc(num_elements, sizeof(double));
     vol->refl_ALA     = calloc(num_elements, sizeof(double));
 
@@ -966,7 +972,9 @@ int add_cart_grid_to_volscan(Vol_scan *vol, Cart_grid *grid, int ppi_index) {
 	    
 	    vol->grid_refl[vol_idx]   = grid->grid ? grid->grid[local_idx] : NAN;
             vol->grid_height[vol_idx] = grid->height_grid ? grid->height_grid[local_idx] : NAN;
-            vol->grid_att[vol_idx]    = grid->estimated_attenuation_grid ? grid->estimated_attenuation_grid[local_idx] : NAN;
+            vol->grid_att[vol_idx]    = grid->estimated_attenuation_grid ? grid->estimated_attenuation_grid[local_idx] : NAN; 
+	    vol->grid_rain_type[vol_idx]   = grid->rain_type_grid ? grid->rain_type_grid[local_idx] : 9;
+	    //if(vol->grid_att[vol_idx]>10.0) vol->grid_att[vol_idx] = 10.0;
         }
     }
 
@@ -980,6 +988,7 @@ void free_vol_scan(Vol_scan *vol) {
     free(vol->grid_height);
     free(vol->grid_att);
     free(vol->display_grid);
+    free(vol->grid_rain_type);
     free(vol);
 }
 
@@ -1010,6 +1019,95 @@ int write_vol_scan_ppi_to_file(const Vol_scan *vol, int ppi_index, const char *f
     return 0;
 }
 
+
+int compute_display_grid_KNMI(Vol_scan *vol, double threshold, const VPR *vpr_strat ,const VPR *vpr_conv) {
+
+    if (!vol) return -1;
+	    double Q_height = 0.0, Q_attenu = 0.0, Q_VPR = 0.0, Q_VPRunc = 0.0;
+		double Z_projected = 0.0;
+
+    for (int x = 0; x < (int)vol->num_x; x++) {
+    for (int y = 0; y < (int)vol->num_y; y++) {
+            int base_idx = x * vol->num_y + y;  // index into display_grid	
+	    double dummy=0;
+            int found = 0;
+
+            for (int ppi = 0; ppi < vol->num_PPIs; ppi++) {
+                int idx = vol_index(vol, x, y, ppi);
+		double estim_pia = vol->grid_att[idx];
+                double atten_correction = 2*estim_pia;
+		if(atten_correction >10) atten_correction = 10;
+		vol->grid_refl[idx] = vol->grid_refl[idx] + atten_correction;		
+		double refl = vol->grid_refl[idx];
+		double height = vol->grid_height[idx];
+
+                if (!isnan(refl)) {
+			
+		Q_attenu = quality_reduction_KNMI(atten_correction,3);
+		Q_height = height_quality_metric_KNMI(height*0.001,0.5,1.0,4.0)*1/0.46044;
+		
+		if(vol->grid_rain_type[idx] == 0 | 9) continue;
+		if(vol->grid_rain_type[idx] == 1) {
+			//Z_projected = refl+compute_ground_to_altitude_diff(vpr_strat,height);
+			//Q_VPR = quality_reduction_KNMI(fabs(compute_ground_to_altitude_diff(vpr_strat,height)),3); 
+		Z_projected = refl*compute_ground_to_altitude_ratio(vpr_strat,height);
+			Q_VPR = quality_reduction_KNMI(fabs(refl*(1-compute_ground_to_altitude_ratio(vpr_strat,height))),3); 
+		}
+		if(vol->grid_rain_type[idx] == 2){
+		//Z_projected = refl+compute_ground_to_altitude_diff(vpr_conv,height);
+			//Q_VPR = quality_reduction_KNMI(fabs(compute_ground_to_altitude_diff(vpr_conv,height)),3); 
+	
+			Z_projected = refl*compute_ground_to_altitude_ratio(vpr_conv,height);
+			Q_VPR = quality_reduction_KNMI(fabs(refl*(1-compute_ground_to_altitude_ratio(vpr_conv,height))),3); 
+	
+		}
+
+
+			//dummy = dummy + refl;
+                        dummy = dummy + Z_projected*Q_attenu*Q_height*Q_VPR;
+                        found = found + 1;
+                }
+            }
+
+		if( found == 0) vol->display_grid[base_idx] = 0.0; 
+	    vol->display_grid[base_idx] = (dummy/(double)found < threshold) ? 0.0: dummy/(double)found;
+    }
+    }
+
+    return 0;
+}
+
+
+
+double compute_ground_to_altitude_ratio(const VPR *vpr, double height){
+	double Z_ground = get_reflectivity_at_height(vpr, vpr->GT.height);
+	double Z_altitude = get_reflectivity_at_height(vpr, height);
+	return Z_ground/Z_altitude;
+}
+
+double compute_ground_to_altitude_diff(const VPR *vpr, double height){
+	double Z_ground = get_reflectivity_at_height(vpr, vpr->GT.height);
+	double Z_altitude = get_reflectivity_at_height(vpr, height);
+	return Z_ground - Z_altitude;
+}
+
+
+double sigmoid_three_point(double p1, double p2, double p3){
+	double prefactor = 2*log10(19);
+	double exponent = prefactor*(p1-0.5*(p2+p3))/(p2-p3);
+	return 1/(1+exp(exponent));
+}
+
+double height_quality_metric_KNMI(double height, double h_l, double h_m, double h_h){
+	double quotient = 1/0.95;
+	double numerator = sigmoid_three_point(height, 0, h_l)-0.05;
+	double multiplier = sigmoid_three_point(height, h_h, h_m);
+	return quotient*numerator*multiplier;
+}	
+
+double quality_reduction_KNMI(double x, double x_0){
+	return exp(-log(2)*(fabs(x)/x_0)*(fabs(x)/x_0));
+}
 
 int compute_display_grid_average(Vol_scan *vol, double threshold) {
     if (!vol) return -1;
@@ -1227,9 +1325,9 @@ int fill_refl_ALA_grid(Vol_scan *vol,
             if (cls == 0) {
                 vol->refl_ALA[idx] = NAN;
             } else if (cls == 1) {
-                vol->refl_ALA[idx] = vpr_1->CB.reflectivity;
+                vol->refl_ALA[idx] = vpr_1->GT.reflectivity;
             } else if (cls == 2) {
-                vol->refl_ALA[idx] = vpr_2->CB.reflectivity;
+                vol->refl_ALA[idx] = vpr_2->GT.reflectivity;
             } else {
                 vol->refl_ALA[idx] = NAN; // unexpected classification
             }
@@ -1246,6 +1344,7 @@ int fill_refl_ALA_grid(Vol_scan *vol,
 void free_cart_grid(Cart_grid *cg) {
     if (!cg) return;
     free(cg->grid);
+    free(cg->rain_type_grid);
     free(cg->height_grid);
     free(cg->estimated_attenuation_grid);
     free(cg);
@@ -1332,3 +1431,96 @@ int compute_rainfall_statistics(const Vol_scan *vol,
     return 0;
 }
 
+
+/**
+ * @brief Save volume scan data to a binary file for Python visualization
+ * @param vol Volume scan structure
+ * @param filename Output filename
+ * @return 0 on success, negative on error
+ */
+int save_vol_scan_to_file(Vol_scan *vol, const char *filename) {
+    if (!vol || !filename) return -1;
+
+    FILE *fp = fopen(filename, "wb");
+    if (!fp) {
+        perror("Failed to open file for writing");
+        return -2;
+    }
+
+    // Write header information
+    // Format: num_PPIs, num_x, num_y, resolution, ref_point.x, ref_point.y, ref_point.z
+    int header[4] = {vol->num_PPIs, (int)vol->num_x, (int)vol->num_y};
+    fwrite(header, sizeof(int), 3, fp);
+
+    double params[4] = {vol->resolution, vol->ref_point.x, vol->ref_point.y, vol->ref_point.z};
+    fwrite(params, sizeof(double), 4, fp);
+
+    // Write the data arrays
+    size_t ppi_size = vol->num_elements;
+    size_t total_size = ppi_size * vol->num_PPIs;
+
+    // Write reflectivity grid
+    fwrite(vol->grid_refl, sizeof(double), total_size, fp);
+
+    // Write height grid
+    fwrite(vol->grid_height, sizeof(double), total_size, fp);
+
+    // Write attenuation grid
+    fwrite(vol->grid_att, sizeof(double), total_size, fp);
+
+    // Write display grid (projected data)
+    fwrite(vol->display_grid, sizeof(double), ppi_size, fp);
+
+    // Write reflectivity at lowest altitude
+    fwrite(vol->refl_ALA, sizeof(double), ppi_size, fp);
+
+    fclose(fp);
+    printf("Volume scan saved to %s\n", filename);
+    return 0;
+}
+
+/**
+ * @brief Save volume scan as text file (easier debugging, but larger)
+ */
+int save_vol_scan_to_text(Vol_scan *vol, const char *filename) {
+    if (!vol || !filename) return -1;
+
+    FILE *fp = fopen(filename, "w");
+    if (!fp) {
+        perror("Failed to open file for writing");
+        return -2;
+    }
+
+    // Write metadata
+    fprintf(fp, "# Volume Scan Data\n");
+    fprintf(fp, "# Format: x y z reflectivity height attenuation\n");
+    fprintf(fp, "# num_PPIs: %d\n", vol->num_PPIs);
+    fprintf(fp, "# num_x: %zu\n", vol->num_x);
+    fprintf(fp, "# num_y: %zu\n", vol->num_y);
+    fprintf(fp, "# resolution: %f\n", vol->resolution);
+    fprintf(fp, "# ref_point: (%f, %f, %f)\n",
+            vol->ref_point.x, vol->ref_point.y, vol->ref_point.z);
+    fprintf(fp, "\n");
+
+    // Write data points
+    for (int ppi_idx = 0; ppi_idx < vol->num_PPIs; ppi_idx++) {
+        double z = vol->ref_point.z + ppi_idx * vol->resolution; // Assuming constant vertical spacing
+
+        for (size_t y = 0; y < vol->num_y; y++) {
+            for (size_t x = 0; x < vol->num_x; x++) {
+                size_t idx = ppi_idx * vol->num_elements + y * vol->num_x + x;
+                double px = vol->ref_point.x + x * vol->resolution;
+                double py = vol->ref_point.y + y * vol->resolution;
+
+                fprintf(fp, "%f %f %f %f %f %f\n",
+                        px, py, z,
+                        vol->grid_refl[idx],
+                        vol->grid_height[idx],
+                        vol->grid_att[idx]);
+            }
+        }
+    }
+
+    fclose(fp);
+    return 0;
+}

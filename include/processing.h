@@ -20,6 +20,7 @@ typedef struct Cart_grid {
 	double *grid;/**< pointer storing the measured reflectivity values*/
 	double *height_grid;/**< pointer storing the heights of the measured reflectivity*/
 	double *estimated_attenuation_grid;/**< pointer storing the path-integrated attenuation*/
+	int *rain_type_grid;/**< pointer storing the integer classification of the rain type*/
 	int num_elements;/**<storing number of gridpoints*/
 	int num_x;/**< storing the number in axis 1 (x)*/
 	int num_y;/**< storing the number in axis 2 (y or z)*/
@@ -42,6 +43,8 @@ typedef struct Vol_scan {
     double *grid_refl;/**< storing the reflectivity measurements in a pointer of size = num_elements * num_PPIs*/
     double *grid_height; /**< storing the heights of the reflectivity measurements in a pointer*/
     double *grid_att; /**< storing the the path-integrated attenuation of the reflectivity measurements in a pointer*/
+    int *grid_rain_type;/**<storing the rainfall classes for each point*/
+    //double *quality_metric; /**< storing the quality metric of each point*/
     double *display_grid;/**< storing the projected data (of size = num_elements in PPI) in a pointer.*/
 double *refl_ALA;       /**<storing the reflectivity at lowest altitude*/
 } Vol_scan;
@@ -108,6 +111,21 @@ void free_vol_scan(Vol_scan *vol);
 
 int write_vol_scan_ppi_to_file(const Vol_scan *vol, int ppi_index, const char *filename);
 
+
+
+int compute_display_grid_KNMI(Vol_scan *vol, double threshold, const VPR *vpr_strat ,const VPR *vpr_conv);
+
+double compute_ground_to_altitude_ratio(const VPR *vpr, double height);
+
+double compute_ground_to_altitude_diff(const VPR *vpr, double height);
+
+double sigmoid_three_point(double p1, double p2, double p3);
+double height_quality_metric_KNMI(double height, double h_l, double h_m, double h_h);
+
+double quality_reduction_KNMI(double x, double x_0);
+
+
+
 int compute_display_grid_average(Vol_scan *vol, double threshold);
 int compute_display_grid_max(Vol_scan *vol, double threshold);
 int compute_display_grid_lowest_valid_height(Vol_scan *vol, double threshold);
@@ -136,4 +154,12 @@ int compute_rainfall_statistics(const Vol_scan *vol,
 
 
 void free_cart_grid(Cart_grid *cg);
+
+
+int save_vol_scan_to_file(Vol_scan *vol, const char *filename);
+
+int save_vol_scan_to_text(Vol_scan *vol, const char *filename); 
+
+
+
 #endif /* PROCESSING_H  */

@@ -93,6 +93,7 @@ double other_angle;/**< storing either the elevation angle or azimuth angle in t
 double *height_grid; /**< storing the heights each sample is taken as. also a 1D matrix: (element_id=radar_id*num_angles+angle_id)*/
 double *attenuation_grid; /**< storing the attenuation experienced at each range gate. also a 1D matrix: (element_id=radar_id*num_angles+angle_id)*/
 double *estimated_attenuation_grid; /**< storing the attenuation experienced at each range gate. also a 1D matrix: (element_id=radar_id*num_angles+angle_id)*/
+int *rain_type;/**< the 1D matrix (element_id = radar_id*num_angles + angle_id) of the type of rain found made */
 } Polar_box;
 
 
@@ -204,8 +205,11 @@ Polar_box* create_polar_box(
     int grid_size,
     double other_angle,
     double *grid_data,
+     int estimated_attenuation_size,
+    double *estimated_attenuation_data,
     int height_size,
-    double *height_data
+    double *height_data,
+    int *rain_type
     );
 
 /**
@@ -409,6 +413,9 @@ int sample_from_relative_location_in_raincell(double range, double angle, double
 void fill_polar_box_grid(struct Polar_box* box, const struct Radar* radar, const struct Spatial_raincell* s_raincell, const struct Raincell* raincell, double time, const struct VPR *vpr_strat, const struct VPR *vpr_conv);
 
 void save_polar_box_grid_to_file(const Polar_box* box, const Radar* radar, int scan_index,double scan_time, const char* filename);
+
+int read_n_ints_from_stream(FILE *file, const char *prefix, int n, int *out);
+
 
 int read_n_doubles_from_stream(FILE *file,const char *prefix,int n,double *out);
 //int read_n_doubles_from_stream(FILE *file,char *first_line,const char *prefix,int n,double *out,char *scratch,size_t scratch_sz);

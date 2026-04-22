@@ -1,16 +1,13 @@
 # Compiler and flags
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c11 -Iinclude
-# Enable AddressSanitizer for memory debugging
-ASAN_FLAGS = -fsanitize=address -g -O1
-
+# Enable AddressSanitizer for memory debugging (commented out for ARM64 compatibility)
+# ASAN_FLAGS = -fsanitize=address -g -O1
 
 # Directories
 SRC_DIR = src
 BUILD_DIR = build
 TEST_DIR = tests
-
-
 
 # Source files and object files
 SRC_FILES := $(wildcard $(SRC_DIR)/*.c)
@@ -46,7 +43,7 @@ tests: $(wildcard $(TEST_DIR)/*.c)
 	@for test_src in $^; do \
 		test_exe="$(BUILD_DIR)/$$(basename $$test_src .c)"; \
 		echo "🔧 Building $$test_src"; \
-		$(CC) $(CFLAGS) $(ASAN_FLAGS) $$test_src $(SRC_NO_MAIN) -o $$test_exe || exit 1; \
+		$(CC) $(CFLAGS) $$test_src $(SRC_NO_MAIN) -o $$test_exe || exit 1; \
 		echo "✅ Running $$test_exe"; \
 		./$$test_exe || exit 1; \
 	done
@@ -71,7 +68,7 @@ ifeq ($(strip $(TEST)),)
 		echo "🔧 Building $$selected_test"; \
 		mkdir -p $(BUILD_DIR); \
 		out_file="$(BUILD_DIR)/$$test_name"; \
-		$(CC) $(CFLAGS) $(ASAN_FLAGS) $$selected_test $(SRC_NO_MAIN) -o $$out_file && \
+		$(CC) $(CFLAGS) $$selected_test $(SRC_NO_MAIN) -o $$out_file && \
 		echo "✅ Running $$out_file"; \
 		./$$out_file; \
 	else \
@@ -91,7 +88,6 @@ else
 	./$$out_file
 endif
 
-
 # ---------------------------------
 # Project management progress report
 PROGRESS_SRC = project_management/current_progress.c
@@ -105,13 +101,8 @@ $(PROGRESS_EXE): $(PROGRESS_SRC)
 	@mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(PROGRESS_SRC) -o $(PROGRESS_EXE)
 
-
-
-
-
-
 # Clean everything
 clean:
 	rm -rf $(BUILD_DIR)/* $(TARGET)
 
-.PHONY: all clean run tests test
+.PHONY: all clean run tests test progress
