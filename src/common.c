@@ -31,4 +31,7 @@ void print_bounding_box(const Bounding_box* box) {
     printf("\n");
 }
 
-
+void pause_programme() {
+    printf("\nPress Enter to continue...");
+    while (getchar() != '\n');  // Wait for Enter key
+}

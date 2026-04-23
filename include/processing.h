@@ -111,7 +111,8 @@ void free_vol_scan(Vol_scan *vol);
 
 int write_vol_scan_ppi_to_file(const Vol_scan *vol, int ppi_index, const char *filename);
 
-
+void save_volscan_grid_to_file(const Vol_scan* vol, int scan_index, double scan_time, const char* grid_type, const char* filename);
+ 
 
 int compute_display_grid_KNMI(Vol_scan *vol, double threshold, const VPR *vpr_strat ,const VPR *vpr_conv);
 

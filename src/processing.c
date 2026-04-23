@@ -95,443 +95,6 @@ bool isPointInSectorAnnulus(Point p, Point center, double minAngle, double maxAn
 
     return isAngleBetween(angle, minAngle, maxAngle);
 }
-/*
-bool getPolarBoxIndex(Point p, double c_x, double c_y, const Polar_box* box, int *range_idx, int *angle_idx) {
-    double dx = p.x - c_x;
-    double dy = p.y - c_y;
-
-    double r = sqrt(dx * dx + dy * dy);
-
-    if (r < box->min_range_gate * box->range_resolution || r > box->max_range_gate * box->range_resolution)
-        return false;
-
-    double angle = normalizeAngle(atan2(dy, dx));  // radians
-
-    if (!isAngleBetween(angle, box->min_angle * DEG2RAD, box->max_angle * DEG2RAD))
-        return false;
-
-    // Range index
-    *range_idx = (int)lround((r - box->min_range_gate * box->range_resolution) / box->range_resolution);
-
-    // Corrected: use radians for angle_diff
-    double angle_diff = normalizeAngle(angle - box->min_angle * DEG2RAD);
-    *angle_idx = (int)lround(angle_diff / (box->angular_resolution * DEG2RAD));
-
-    if (*range_idx >= (int)box->num_ranges || *angle_idx >= (int)box->num_angles)
-        return false;
-
-    return true;
-}
-*/
-
-
-/*
-bool getPolarBoxIndex(Point p, double c_x, double c_y, const Polar_box* box,
-                      int *range_idx, int *angle_idx) {
-    double dx = p.x - c_x;
-    double dy = p.y - c_y;
-
-    double r = sqrt(dx * dx + dy * dy);
-
-    // --- Range check ---
-    if (r <= box->min_range_gate * box->range_resolution ||
-        r > box->max_range_gate * box->range_resolution)
-        return false;
-
-    // --- Angle in [0, 2π) ---
-    double angle = atan2(dy, dx);
-    if (angle < 0) angle += 2 * M_PI;
-
-    double min_angle = box->min_angle * DEG2RAD;
-    if (min_angle < 0) min_angle += 2 * M_PI;
-
-    // Angular span covered by this polar box
-    double span = box->num_angles * box->angular_resolution * DEG2RAD;
-// 
-    // Difference relative to box min angle, wrapped
-    double angle_diff = angle - min_angle;
-    if (angle_diff < 0) angle_diff += 2 * M_PI;
-
-    // If angle is outside the actual span of the box, reject
-    if (angle_diff > span)
-        return false;
-
-double angle_diff = fmod(angle - min_angle + 2*M_PI, 2*M_PI);
-if (angle_diff > span) return false;
-
-
-    // --- Range index (rounded) ---
-    *range_idx = (int)floor((r - box->min_range_gate * box->range_resolution) /
-                             box->range_resolution);
-    if (*range_idx < 0) *range_idx = 0;
-    if (*range_idx >= (int)box->num_ranges) *range_idx = box->num_ranges - 1;
-
-    // --- Angle index (rounded) ---
-    *angle_idx = (int)floor(angle_diff / (box->angular_resolution * DEG2RAD));
-    if (*angle_idx < 0) *angle_idx = 0;
-    if (*angle_idx >= (int)box->num_angles) *angle_idx = box->num_angles - 1;
-
-    return true;
-}
-
-
-*/
-
-
-/*
-double f(double x, double radar_height, double surface_range, double height_above_radar) {
-    // f as the radius, x as the elevation angle.  
-	double kea_and_height = KEA + radar_height;
-
-	return -1*(kea_and_height*sin(x)) + sqrt((kea_and_height*sin(x))*(kea_and_height*sin(x))+ height_above_radar*height_above_radar + 2*height_above_radar*kea_and_height) - (sin(surface_range/kea_and_height)/cos(x));
-}
-*/
-/*
-double df(double x, double radar_height, double surface_range, double height_above_radar) {
-    // analytical derivative 
-	double kea_and_height = KEA + radar_height;
-
-	return (kea_and_height*cos(x) + 0.5*(sqrt(kea_and_height*sin(x)*kea_and_height*sin(x)+height_above_radar*height_above_radar+2*height_above_radar*kea_and_height))*kea_and_height*kea_and_height*sin(2*x)) - sin(surface_range/kea_and_height)*(kea_and_height + height_above_radar)*sin(x)*(1/cos(x)*cos(x));
-}
-
-
-double f(
-    double x,
-    double radar_height,
-    double surface_range,
-    double height_above_radar,
-    FILE *fp
-) {
-    //FILE *fp = fopen("outputs/elevation_angles.txt", "a");
-    if (!fp) {
-        perror("Failed to open debug output file");
-        return -3;
-    }
-
-    const double K = KEA + radar_height;
-
-    // Basic input sanity 
-    if (!isfinite(x) ||
-        !isfinite(K) ||
-        !isfinite(surface_range) ||
-        !isfinite(height_above_radar)) {
-
-        fprintf(fp,
-            "[f] ERROR: non-finite input\n"
-            "    x=%g  KEA=%g  radar_height=%g\n"
-            "    surface_range=%g  height_above_radar=%g\n",
-            x, KEA, radar_height,
-            surface_range, height_above_radar
-        );
-        return NAN;
-    }
-
-    const double sinx = sin(x);
-    const double cosx = cos(x);
-
-     Warn if we are approaching an unphysical elevation
-    if (fabs(cosx) < 1e-8) {
-        fprintf(fp,
-            "[f] WARNING: cos(x) near zero\n"
-            "    x=%.15e  cos(x)=%.3e\n",
-            x, cosx
-        );
-    }
-
-    Radicand of geometric term 
-    const double radicand =
-        (K * sinx) * (K * sinx)
-        + height_above_radar * height_above_radar
-        + 2.0 * height_above_radar * K;
-
-    if (radicand < 0.0) {
-        fprintf(fp,
-            "[f] ERROR: negative radicand\n"
-            "    x=%.15e\n"
-            "    radicand=%.15e\n"
-            "    K=%.15e  h=%.15e\n",
-            x, radicand, K, height_above_radar
-        );
-        return NAN;
-    }
-
-    const double geom = sqrt(radicand);
-
-    const double trig_term = sin(surface_range / K);
-
-    if (!isfinite(trig_term)) {
-        fprintf(fp,
-            "[f] ERROR: sin(surface_range / K) not finite\n"
-            "    surface_range=%.15e  K=%.15e\n",
-            surface_range, K
-        );
-        return NAN;
-    }
-
-    Final function value (cos(x) * original f(x))
-    const double value =
-        -K * sinx * cosx
-        + cosx * geom
-        - trig_term;
-
-    if (!isfinite(value)) {
-        fprintf(fp,
-            "[f] ERROR: f(x) evaluated to NaN/Inf\n"
-            "    x=%.15e\n"
-            "    sinx=%.15e  cosx=%.15e\n"
-            "    geom=%.15e\n"
-            "    value=%.15e\n",
-            x, sinx, cosx, geom, value
-        );
-        return NAN;
-    }
-
-    return value;
-}
-
-int newton_bisection(
-    double a,
-    double b,
-    double x0,
-    double tol,
-    int max_iter,
-    double *root,
-    double radar_height,
-    double surface_range,
-    double height_above_radar
-) {
- 
-FILE *fp = fopen("outputs/elevation_angles.txt", "a");
-if (!fp) {
-    perror("Failed to open output file");
-    return -3;
-}
-   double fa = f(a, radar_height, surface_range, height_above_radar,fp);
-    double fb = f(b, radar_height, surface_range, height_above_radar,fp);
-
-    // Root must be bracketed
-    if (fa * fb > 0.0) {
-        return -1; // no guarantee of root
-    }
-
-    double x = x0;
-    if (x <= a || x >= b) {
-        x = 0.5 * (a + b);  // enforce domain 
-    }
-
-
-//fprintf(fp, "# iter    x               f(x)            method\n");
-//fprintf(fp, "# ------------------------------------------------\n");
-
-
-
-    for (int iter = 0; iter < max_iter; ++iter) {
-        double fx  = f(x, radar_height, surface_range, height_above_radar,fp);
-        double dfx = df(x, radar_height, surface_range, height_above_radar);
-
-        // Convergence check
-        if (fabs(fx) < tol) {
-            *root = x;
-            return 0;
-        }
-
-        double x_new;
-        int use_newton = 1;
-
-        // Reject Newton step if derivative too small
-        if (fabs(dfx) < 1e-12) {
-            use_newton = 0;
-        } else {
-            x_new = x - fx / dfx;
-
-            // Reject Newton step if it leaves the domain
-            if (x_new <= a || x_new >= b) {
-                use_newton = 0;
-            }
-
-            // Reject excessively large steps
-            if (fabs(x_new - x) > 0.5 * (b - a)) {
-                use_newton = 0;
-            }
-        }
-
-        // Fallback to bisection
-        if (!use_newton) {
-            x_new = 0.5 * (a + b);
-        }
-if(iter == 99){
-fprintf(fp,
-        "%4d  % .15e  % .15e  %s\n",
-        iter,
-        x,
-        fx,
-        use_newton ? "Newton" : "Bisection"
-    );
-}
-
-        double f_new = f(x_new, radar_height, surface_range, height_above_radar,fp);
-
-        // Maintain the bracket
-        if (fa * f_new < 0.0) {
-            b  = x_new;
-            fb = f_new;
-        } else {
-            a  = x_new;
-            fa = f_new;
-        }
-
-        x = x_new;
-
-        // Interval-based stopping criterion
-        if (fabs(b - a) < tol) {
-            *root = x;
-            return 0;
-        }
-    }
-fclose(fp);
-    return -2;  // did not converge
-}
-
-
-int brent_root(
-    double a,
-    double b,
-    double tol,
-    int max_iter,
-    double *root,
-    double radar_height,
-    double surface_range,
-    double height_above_radar,
-    FILE *fp
-) {
-    //FILE *fp = fopen("outputs/elevation_angles.txt", "a");
-    if (!fp) {
-        perror("Failed to open debug output file");
-        return -3;
-    }
-
-    fprintf(fp, "\n# ---- Brent root solve start ----\n");
-    fprintf(fp, "# a=%.15e  b=%.15e  tol=%.1e\n", a, b, tol);
-    fprintf(fp, "# iter  a           b           c           "
-                "fa          fb          fc          "
-                "step        |b-c|\n");
-    fprintf(fp, "# ---------------------------------------------------------------------------\n");
-
-    double fa = f(a, radar_height, surface_range, height_above_radar,fp);
-    double fb = f(b, radar_height, surface_range, height_above_radar,fp);
-
-if (!isfinite(fa) || !isfinite(fb)) {
-    fprintf(fp, "# ERROR: f(a) or f(b) is not finite (fa=%g, fb=%g)\n", fa, fb);
-    fclose(fp);
-    return -4;
-}
-
-    if (fa * fb > 0.0) {
-        fprintf(fp, "# ERROR: root not bracketed (fa*fb > 0)\n");
-        fclose(fp);
-        return -1;
-    }
-
-    if (fabs(fa) < fabs(fb)) {
-        double tmp;
-        tmp = a; a = b; b = tmp;
-        tmp = fa; fa = fb; fb = tmp;
-    }
-
-    double c  = a;
-    double fc = fa;
-    double d  = b - a;
-    double e  = d;
-
-    for (int iter = 0; iter < max_iter; ++iter) {
-
-        if (fabs(fc) < fabs(fb)) {
-            double tmp;
-            tmp = a;  a = b;  b = c;  c = tmp;
-            tmp = fa; fa = fb; fb = fc; fc = tmp;
-        }
-
-        double tol_act = 2.0 * DBL_EPSILON * fabs(b) + tol * 0.5;
-        double m = 0.5 * (c - b);
-
-        fprintf(fp,
-            "%4d  % .6e  % .6e  % .6e  "
-            "% .3e  % .3e  % .3e  ",
-            iter, a, b, c, fa, fb, fc
-        );
-
-         //Convergence test
-        if (fabs(m) <= tol_act || fb == 0.0) {
-            fprintf(fp, "CONVERGED   %.3e\n", fabs(m));
-            *root = b;
-            fclose(fp);
-            return 0;
-        }
-
-        double p = 0.0, q = 1.0;
-        const char *step_type = "Bisection";
-
-        if (fabs(e) >= tol_act && fabs(fa) > fabs(fb)) {
-
-            double s = fb / fa;
-
-            if (a == c) {
-                //Secant
-                p = 2.0 * m * s;
-                q = 1.0 - s;
-                step_type = "Secant";
-            } else {
-                //Inverse quadratic interpolation
-                double r = fb / fc;
-                double t = fa / fc;
-                p = s * (2.0 * m * t * (t - r) - (b - a) * (r - 1.0));
-                q = (t - 1.0) * (r - 1.0) * (s - 1.0);
-                step_type = "IQI";
-            }
-
-            if (p > 0.0) q = -q;
-            p = fabs(p);
-
-            if (2.0 * p < fmin(3.0 * m * q - fabs(tol_act * q),
-                               fabs(e * q))) {
-                e = d;
-                d = p / q;
-            } else {
-                d = m;
-                e = m;
-                step_type = "Bisection";
-            }
-        } else {
-            d = m;
-            e = m;
-        }
-
-        fprintf(fp, "%-9s  %.3e\n", step_type, fabs(c - b));
-
-        a = b;
-        fa = fb;
-
-        if (fabs(d) > tol_act)
-            b += d;
-        else
-            b += (m > 0 ? tol_act : -tol_act);
-
-        fb = f(b, radar_height, surface_range, height_above_radar,fp);
-
-        if ((fb > 0.0 && fc > 0.0) || (fb < 0.0 && fc < 0.0)) {
-            c = a;
-            fc = fa;
-            d = b - a;
-            e = d;
-        }
-    }
-
-    fprintf(fp, "# ERROR: did not converge in %d iterations\n", max_iter);
-    //fclose(fp);
-    return -2;
-}
-
-*/
 
 /* r1(theta) */
 double r1(double theta, double s, double k_eA, double h)
@@ -1020,60 +583,221 @@ int write_vol_scan_ppi_to_file(const Vol_scan *vol, int ppi_index, const char *f
 }
 
 
+
+
+/**
+ * @brief Prints a specified grid from a volume scan to a file in 2D format
+ * @param vol Pointer to the volume scan structure
+ * @param scan_index Index/identifier for this scan
+ * @param scan_time Timestamp of the scan
+ * @param grid_type String specifying which grid to print ("refl", "height", "att", "rain_type", "display", "refl_ALA")
+ * @param filename Output file name (appends if exists)
+ */
+void save_volscan_grid_to_file(const Vol_scan* vol, int scan_index, double scan_time, 
+                                const char* grid_type, const char* filename) {
+    FILE* fp = fopen(filename, "a");
+    if (!fp) {
+        perror("Failed to open output file");
+        exit(EXIT_FAILURE);
+    }
+    
+    // Determine which grid to print and its data type
+    const double* double_grid = NULL;
+    const int* int_grid = NULL;
+    int is_int_grid = 0;
+    char grid_name[32];
+    
+    if (strcmp(grid_type, "refl") == 0) {
+        double_grid = vol->grid_refl;
+        strcpy(grid_name, "reflectivity");
+    } else if (strcmp(grid_type, "height") == 0) {
+        double_grid = vol->grid_height;
+        strcpy(grid_name, "height");
+    } else if (strcmp(grid_type, "att") == 0) {
+        double_grid = vol->grid_att;
+        strcpy(grid_name, "attenuation");
+    } else if (strcmp(grid_type, "rain_type") == 0) {
+        int_grid = vol->grid_rain_type;
+        is_int_grid = 1;
+        strcpy(grid_name, "rain_type");
+    } else if (strcmp(grid_type, "display") == 0) {
+        double_grid = vol->display_grid;
+        strcpy(grid_name, "display");
+    } else if (strcmp(grid_type, "refl_ALA") == 0) {
+        double_grid = vol->refl_ALA;
+        strcpy(grid_name, "refl_ALA");
+    } else {
+        fprintf(stderr, "Error: Unknown grid type '%s'\n", grid_type);
+        fprintf(fp, "Error: Unknown grid type '%s'\n", grid_type);
+        fclose(fp);
+        exit(EXIT_FAILURE);
+    }
+    
+    // Write volume scan header
+    fprintf(fp, "=== BEGIN VOLUME_SCAN ===\n");
+    fprintf(fp, "scan.index=%d\n", scan_index);
+    fprintf(fp, "scan.time=%lf\n", scan_time);
+    fprintf(fp, "vol.num_PPIs=%d\n", vol->num_PPIs);
+    fprintf(fp, "vol.num_x=%zu\n", vol->num_x);
+    fprintf(fp, "vol.num_y=%zu\n", vol->num_y);
+    fprintf(fp, "vol.num_elements_per_PPI=%zu\n", vol->num_elements);
+    fprintf(fp, "vol.grid_type=%s\n", grid_name);
+    fprintf(fp, "vol.ref_point.x=%.3f\n", vol->ref_point.x);
+    fprintf(fp, "vol.ref_point.y=%.3f\n", vol->ref_point.y);
+    fprintf(fp, "vol.resolution=%.6f\n", vol->resolution);
+    
+    // Print each PPI separately in 2D format
+    for (int ppi = 0; ppi < vol->num_PPIs; ppi++) {
+        fprintf(fp, "\n--- BEGIN PPI %d ---\n", ppi);
+        fprintf(fp, "ppi.index=%d\n", ppi);
+        fprintf(fp, "ppi.dimensions=%zux%zu\n", vol->num_x, vol->num_y);
+        
+        if (!is_int_grid) {
+            // Double grid - print as 2D matrix
+            fprintf(fp, "%s.data.2D=\n", grid_name);
+            for (size_t x = 0; x < vol->num_x; x++) {
+                for (size_t y = 0; y < vol->num_y; y++) {
+                    int idx = vol_index(vol, x, y, ppi);
+                    if (isnan(double_grid[idx])) {
+                        fprintf(fp, "NaN");
+                    } else {
+                        fprintf(fp, "%.2f", double_grid[idx]);
+                    }
+                    if (y < vol->num_y - 1) {
+                        fprintf(fp, " ");
+                    }
+                }
+                fprintf(fp, "\n");
+            }
+        } else {
+            // Integer grid (rain_type) - print as 2D matrix
+            fprintf(fp, "%s.data.2D=\n", grid_name);
+            for (size_t x = 0; x < vol->num_x; x++) {
+                for (size_t y = 0; y < vol->num_y; y++) {
+                    int idx = vol_index(vol, x, y, ppi);
+                    fprintf(fp, "%d", int_grid[idx]);
+                    if (y < vol->num_y - 1) {
+                        fprintf(fp, " ");
+                    }
+                }
+                fprintf(fp, "\n");
+            }
+        }
+        
+        fprintf(fp, "--- END PPI %d ---\n", ppi);
+    }
+    
+    fprintf(fp, "=== END VOLUME_SCAN ===\n\n");
+    
+    fclose(fp);
+}
+
+
+
+
+
+
+
+
+
+
+
 int compute_display_grid_KNMI(Vol_scan *vol, double threshold, const VPR *vpr_strat ,const VPR *vpr_conv) {
 
     if (!vol) return -1;
 	    double Q_height = 0.0, Q_attenu = 0.0, Q_VPR = 0.0, Q_VPRunc = 0.0;
 		double Z_projected = 0.0;
-
+		double vpr_correction = 0.0;
+	int counter_valid = 0, counter_invalid = 0;
     for (int x = 0; x < (int)vol->num_x; x++) {
     for (int y = 0; y < (int)vol->num_y; y++) {
             int base_idx = x * vol->num_y + y;  // index into display_grid	
 	    double dummy=0;
+	    double dummy_quality = 0;
             int found = 0;
+	    double Q_T = 0.0;
 
             for (int ppi = 0; ppi < vol->num_PPIs; ppi++) {
                 int idx = vol_index(vol, x, y, ppi);
 		double estim_pia = vol->grid_att[idx];
                 double atten_correction = 2*estim_pia;
 		if(atten_correction >10) atten_correction = 10;
-		vol->grid_refl[idx] = vol->grid_refl[idx] + atten_correction;		
-		double refl = vol->grid_refl[idx];
+		//vol->grid_refl[idx] = vol->grid_refl[idx] + atten_correction;		
+		double refl = vol->grid_refl[idx] + atten_correction;
 		double height = vol->grid_height[idx];
+		
+
 
                 if (!isnan(refl)) {
 			
 		Q_attenu = quality_reduction_KNMI(atten_correction,3);
-		Q_height = height_quality_metric_KNMI(height*0.001,0.5,1.0,4.0)*1/0.46044;
+		Q_height = height_quality_metric_KNMI(height*0.001,0.5,1.0,4.0)/0.46044;
 		
-		if(vol->grid_rain_type[idx] == 0 | 9) continue;
+		if(vol->grid_rain_type[idx] == (0 | 9)) Z_projected = 0.0;
 		if(vol->grid_rain_type[idx] == 1) {
-			//Z_projected = refl+compute_ground_to_altitude_diff(vpr_strat,height);
-			//Q_VPR = quality_reduction_KNMI(fabs(compute_ground_to_altitude_diff(vpr_strat,height)),3); 
-		Z_projected = refl*compute_ground_to_altitude_ratio(vpr_strat,height);
-			Q_VPR = quality_reduction_KNMI(fabs(refl*(1-compute_ground_to_altitude_ratio(vpr_strat,height))),3); 
+//			counter_valid++;
+			vpr_correction = compute_ground_to_altitude_diff(vpr_strat,height);
+			//if(counter_valid%100 == 0) {printf("vpr_correction is %.3e dB\n\n", vpr_correction);}
+			Z_projected = refl+compute_ground_to_altitude_diff(vpr_strat,height);
+			Q_VPR = quality_reduction_KNMI(fabs(compute_ground_to_altitude_diff(vpr_strat,height)),3); 
+			//Z_projected = refl*compute_ground_to_altitude_ratio(vpr_strat,height);
+			//Q_VPR = quality_reduction_KNMI(fabs(refl*(1-compute_ground_to_altitude_ratio(vpr_strat,height))),3); 
 		}
 		if(vol->grid_rain_type[idx] == 2){
-		//Z_projected = refl+compute_ground_to_altitude_diff(vpr_conv,height);
-			//Q_VPR = quality_reduction_KNMI(fabs(compute_ground_to_altitude_diff(vpr_conv,height)),3); 
+//			counter_invalid++;
+			vpr_correction = compute_ground_to_altitude_diff(vpr_conv,height);
+			//if(counter_valid%100 == 0) {printf("vpr_correction is %.3e dB\n\n", vpr_correction);}
+			Z_projected = refl+vpr_correction;
+			Q_VPR = quality_reduction_KNMI(fabs(vpr_correction),3); 
 	
-			Z_projected = refl*compute_ground_to_altitude_ratio(vpr_conv,height);
-			Q_VPR = quality_reduction_KNMI(fabs(refl*(1-compute_ground_to_altitude_ratio(vpr_conv,height))),3); 
+			//Z_projected = refl*compute_ground_to_altitude_ratio(vpr_conv,height);
+			//Q_VPR = quality_reduction_KNMI(fabs(refl*(1-compute_ground_to_altitude_ratio(vpr_conv,height))),3); 
 	
 		}
+		
+		Q_T = (Q_attenu)*(Q_height)*(Q_VPR);
+		//Q_T = (1-Q_attenu)*(1-Q_height)*(1-Q_VPR);
+//if(Q_T <= 0.0) continue;
+//if(Q_T <0.01) {printf("(x,y,ppi) = (%d, %d, %d) \n\n\nAtten_corr = %.3e, At_corr_refl = %.3e, height = %.3e, vpr_correction = %.3e\n\n\n Q_atten = %.3e \n\n Q_height = %.3e \n\n Q_VPR = %.3e\n\n\n\n  Z_projected = %.3e\n\n\n",x, y, ppi, atten_correction, refl, height,vpr_correction, Q_attenu, Q_height, Q_VPR, Z_projected);	
+//		pause_programme();
+//		}
+	
 
 
+//if(Z_projected >30.0) {printf("(x,y,ppi) = (%d, %d, %d) \n\n\nAtten_corr = %.3e, At_corr_refl = %.3e, height = %.3e, vpr_correction = %.3e\n\n\n Q_atten = %.3e \n\n Q_height = %.3e \n\n Q_VPR = %.3e\n\n\n\n  Z_projected = %.3e\n\n\n",x, y, ppi, atten_correction, refl, height,vpr_correction, Q_attenu, Q_height, Q_VPR, Z_projected);	
+//		pause_programme();}
 			//dummy = dummy + refl;
-                        dummy = dummy + Z_projected*Q_attenu*Q_height*Q_VPR;
-                        found = found + 1;
-                }
+                       dummy = dummy + Z_projected;
+                        //dummy = dummy + Z_projected*(Q_T);
+                        
+			//dummy_quality = dummy_quality + (Q_T);
+			
+			found = found + 1;
+			
+			Z_projected = 0.0;
+			Q_attenu = 0.0;
+			Q_height = 0.0;
+			Q_VPR = 0.0;
+			Q_T = 0.0;
+                
+		}
             }
 
-		if( found == 0) vol->display_grid[base_idx] = 0.0; 
-	    vol->display_grid[base_idx] = (dummy/(double)found < threshold) ? 0.0: dummy/(double)found;
-    }
-    }
 
+		if( found == 0) {
+			vol->display_grid[base_idx] = 0.0;
+		       	//printf("no non-NaN values found in refl data for point (%d,%d) for the whole PPI\n", x, y);
+			//counter_invalid++;
+		} else {
+			//counter_valid++;
+	    //vol->display_grid[base_idx] = (dummy/(double)found < threshold) ? 0.0: dummy/(double)found;
+	    vol->display_grid[base_idx] = dummy/(double)found;
+	   // vol->display_grid[base_idx] = dummy/dummy_quality;
+	    //if(base_idx%1000 == 0) printf("%.3e is the corrected reflectivity\n\n", dummy/(double)found);
+		}
+    }
+    }
+	printf("proportion of core / raincell = %.2f\n\n", (double)counter_invalid/(double)(counter_valid + counter_invalid));
     return 0;
 }
 
@@ -1088,7 +812,8 @@ double compute_ground_to_altitude_ratio(const VPR *vpr, double height){
 double compute_ground_to_altitude_diff(const VPR *vpr, double height){
 	double Z_ground = get_reflectivity_at_height(vpr, vpr->GT.height);
 	double Z_altitude = get_reflectivity_at_height(vpr, height);
-	return Z_ground - Z_altitude;
+	//return Z_ground - Z_altitude;
+	return Z_altitude - Z_ground;
 }
 
 
@@ -1216,7 +941,7 @@ int write_display_grid_to_file(const Vol_scan *vol, const char *filename) {
             int idx = x * vol->num_y + y;
             double val = vol->display_grid[idx];
             if (isnan(val)) fprintf(f, "NaN ");
-            else fprintf(f, "%.2f ", val);
+            else fprintf(f, "%.3f ", val);
         }
         fprintf(f, "\n");
     }

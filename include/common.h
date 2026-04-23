@@ -54,4 +54,6 @@ typedef struct Bounding_box {
 void print_bounding_box(const Bounding_box* box);
 
 
+void pause_programme();
+
 #endif /* COMMON_H */

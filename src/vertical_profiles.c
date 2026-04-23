@@ -247,7 +247,7 @@ double get_reflectivity_at_height(const VPR *vpr, double height) {
     }
 
     // Should never reach here if input height is in range
-    return -1.0;
+    return 0.0;
 }
 
 

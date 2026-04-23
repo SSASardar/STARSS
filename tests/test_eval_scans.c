@@ -133,6 +133,7 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
     double cart_grid_res = 25;
 
     for (int scan_idx = 0; scan_idx < NUM_SCANS; scan_idx++) {
+   // for (int scan_idx = 24; scan_idx < 32; scan_idx++) {
     char filename[256];
     snprintf(filename, sizeof(filename), "outputs/radar_scan_%04d.txt", scan_idx);
 
@@ -157,10 +158,10 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
 	double time_s_2 = time*60;
 
 		
-    char filename_check[256];
-snprintf(filename_check, sizeof(filename_check), "outputs/read_reflectivity_scan%d_slice%d.txt", scan_idx, i);    
+//    char filename_check[256];
+//snprintf(filename_check, sizeof(filename_check), "outputs/read_reflectivity_scan%d_slice%d.txt", scan_idx, i);    
     
-    	save_polar_box_grid_to_file(p_box, radar, i, time, filename_check);
+//  	save_polar_box_grid_to_file(p_box, radar, i, time, filename_check);
         update_VPR(VPR_strat, params, time_s_2, VPR_conv);
 
         Bounding_box* bbox = bounding_box_from_textfile(p_box, radar);
@@ -235,13 +236,17 @@ int invalid_range = 0, invalid_angle = 0;
 //save_vol_scan_to_file(vol,filename_vol);
 
 
-compute_display_grid_average(vol,-5.0);
+//compute_display_grid_average(vol,-5.0);
 //compute_display_grid_max(vol,10.0);
 //compute_display_grid_lowest_valid_height(vol,-5.0);
 //compute_display_grid_min_above_threshold(vol,10.0);
     double true_time_min = radar_scans[scan_count-1].time +
                            (radar_scans[scan_count-1].time - radar_scans[scan_count-2].time);
     double true_time = true_time_min * 60.0;
+
+
+
+    //save_volscan_grid_to_file(vol, scan_count, true_time_min, "refl", "outputs/filled_in_vol.txt");
 
     update_VPR(VPR_strat, params, true_time, VPR_conv);
 
@@ -256,7 +261,7 @@ compute_display_grid_average(vol,-5.0);
     }
 
     
-//compute_display_grid_KNMI(vol,-5.0, VPR_strat, VPR_conv);
+compute_display_grid_KNMI(vol,-5.0, VPR_strat, VPR_conv);
     // DEBUG UNTIL:_______________________________
 // Count classifications
 int class0=0, class1=0, class2=0;
