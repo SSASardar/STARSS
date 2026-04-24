@@ -8,4 +8,4 @@ echo "Running make test with input 3..."
 echo 4 | make test
 
 echo "Running Python script..."
-python visualisations/testB.py
+python visualisations/testB_nc.py

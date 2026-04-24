@@ -47,6 +47,10 @@ typedef struct Vol_scan {
     //double *quality_metric; /**< storing the quality metric of each point*/
     double *display_grid;/**< storing the projected data (of size = num_elements in PPI) in a pointer.*/
 double *refl_ALA;       /**<storing the reflectivity at lowest altitude*/
+double emp_vpr_strat[80]; /**<storing (num_points_in_grid, reflectivity) the empirical stratiform VPR of size 50*2 */
+double emp_vpr_conv[80]; /**<storing (num_points_in_grid, reflectivity) the empirical convective VPR of size 50*2 */
+
+
 } Vol_scan;
 
 Cart_grid* Cart_grid_init(double resolution, int num_x, int num_y, Point ref_point);
@@ -160,6 +164,18 @@ void free_cart_grid(Cart_grid *cg);
 int save_vol_scan_to_file(Vol_scan *vol, const char *filename);
 
 int save_vol_scan_to_text(Vol_scan *vol, const char *filename); 
+
+void process_volume_scan_VPR(Vol_scan *vs);
+void compute_average_empVPR(Vol_scan *vs);
+
+int print_vpr_profile(const Vol_scan *vs, const char *filename, int profile_type);
+int print_vpr_detailed(const Vol_scan *vs, const char *filename, int profile_type, int append); 
+
+
+double get_reflectivity_from_empirical_vpr_interp(const double *emp_vpr, double height, double bin_size_km, double ground_height_km); 
+double compute_ground_to_altitude_diff_empirical(const Vol_scan *vol, double height, int rain_type, double bin_size_km, double ground_height_km);
+int compute_display_grid_KNMI_empirical(Vol_scan *vol, double threshold, double bin_size_km, double ground_height_km);
+ 
 
 
 

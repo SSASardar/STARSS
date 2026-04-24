@@ -130,7 +130,7 @@ int main() {
     Raincell* raincell = create_raincell(1, 0.5, 10000.0, -0.5);   
 Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
 
-    double cart_grid_res = 25;
+    double cart_grid_res = 1000;
 
     for (int scan_idx = 0; scan_idx < NUM_SCANS; scan_idx++) {
    // for (int scan_idx = 24; scan_idx < 32; scan_idx++) {
@@ -219,7 +219,7 @@ int invalid_range = 0, invalid_angle = 0;
             }
         }
 
-	printf("Scan %d: Valid=%d, Invalid range=%d, Invalid angle=%d\n",scan_idx, valid_count, invalid_range, invalid_angle);
+//	printf("Scan %d: Valid=%d, Invalid range=%d, Invalid angle=%d\n",scan_idx, valid_count, invalid_range, invalid_angle);
         cart_grids[cg_count++] = cg;
     }
 
@@ -229,17 +229,33 @@ int invalid_range = 0, invalid_angle = 0;
     //	writeCartGridToFile(cart_grids[i],i,1);
     }
 
-    
+   process_volume_scan_VPR(vol);
+   compute_average_empVPR(vol);
+
+   
+
+
+print_vpr_detailed(vol, "outputs/vpr_emp_strat.txt", 1, 1);  // Append stratiform
+print_vpr_detailed(vol, "outputs/vpr_emp_conv.txt", 2, 1);  // Append convective
+
+   /*
+	if (print_vpr_profile(vol, "emp_vprs_strat.txt", 1) == 0) {
+    printf("Stratiform profile written\n");
+}
+
+if (print_vpr_profile(vol, "emp_vprs_conv.txt", 2) == 0) {
+    printf("Convective profile appended\n");
+}
+  */
+
+
+
     //char filename_vol[256];
 //snprintf(filename_vol, sizeof(filename_vol), "outputs/volume_scan_%04d.bin", scan_idx);
 
 //save_vol_scan_to_file(vol,filename_vol);
 
 
-//compute_display_grid_average(vol,-5.0);
-//compute_display_grid_max(vol,10.0);
-//compute_display_grid_lowest_valid_height(vol,-5.0);
-//compute_display_grid_min_above_threshold(vol,10.0);
     double true_time_min = radar_scans[scan_count-1].time +
                            (radar_scans[scan_count-1].time - radar_scans[scan_count-2].time);
     double true_time = true_time_min * 60.0;
@@ -261,18 +277,20 @@ int invalid_range = 0, invalid_angle = 0;
     }
 
     
-compute_display_grid_KNMI(vol,-5.0, VPR_strat, VPR_conv);
-    // DEBUG UNTIL:_______________________________
+//compute_display_grid_KNMI(vol,-5.0, VPR_strat, VPR_conv);
+compute_display_grid_KNMI_empirical(vol, -5.0, 0.5,0);
+
+// DEBUG UNTIL:_______________________________
 // Count classifications
-int class0=0, class1=0, class2=0;
-for (int i = 0; i < vol->num_elements; i++) {
-    if (isnan(vol->refl_ALA[i])) class0++;
-    else if (vol->refl_ALA[i] == VPR_strat->CB.reflectivity) class1++;
-    else if (vol->refl_ALA[i] == VPR_conv->CB.reflectivity) class2++;
-}
-printf("refl_ALA: outside=%d, vprstrat=%d, vprconv=%d\n", class0, class1, class2);
-printf("vprstrat->CB.reflectivity=%.2f, vprconv->CB.reflectivity=%.2f\n", 
-       VPR_strat->CB.reflectivity, VPR_conv->CB.reflectivity);
+//int class0=0, class1=0, class2=0;
+//for (int i = 0; i < vol->num_elements; i++) {
+//    if (isnan(vol->refl_ALA[i])) class0++;
+//    else if (vol->refl_ALA[i] == VPR_strat->CB.reflectivity) class1++;
+//    else if (vol->refl_ALA[i] == VPR_conv->CB.reflectivity) class2++;
+//}
+//printf("refl_ALA: outside=%d, vprstrat=%d, vprconv=%d\n", class0, class1, class2);
+//printf("vprstrat->CB.reflectivity=%.2f, vprconv->CB.reflectivity=%.2f\n", 
+//       VPR_strat->CB.reflectivity, VPR_conv->CB.reflectivity);
 //____________________________________________HERE!!!
 
 double mse, mae, bias;

@@ -436,14 +436,14 @@ Vol_scan *init_vol_scan(Cart_grid **cart_grids, int num_PPIs) {
     size_t num_elements = nx * ny;
 
     // Debug logging of grid calculation
-    fprintf(stderr,
-        "[DEBUG] init_vol_scan:\n"
-        "  min_x=%.2f, max_x%.2f, min_y=%.2f, max_y=%.2f\n"
-        "  resolution=%.4f → nx=%zu, ny=%zu → total=%zu cells\n"
-        "  num_PPIs=%d → total_cells=%zu\n",
-        min_x, max_x, min_y, max_y,
-        res, nx, ny, num_elements,
-        num_PPIs, num_elements * (size_t)num_PPIs);
+//    fprintf(stderr,
+//        "[DEBUG] init_vol_scan:\n"
+//        "  min_x=%.2f, max_x%.2f, min_y=%.2f, max_y=%.2f\n"
+//        "  resolution=%.4f → nx=%zu, ny=%zu → total=%zu cells\n"
+//        "  num_PPIs=%d → total_cells=%zu\n",
+//        min_x, max_x, min_y, max_y,
+//        res, nx, ny, num_elements,
+//        num_PPIs, num_elements * (size_t)num_PPIs);
 
     // Sanity check
     if (num_elements > MAX_ALLOWED_CELLS || num_elements * (size_t)num_PPIs > MAX_ALLOWED_CELLS) {
@@ -692,17 +692,18 @@ void save_volscan_grid_to_file(const Vol_scan* vol, int scan_index, double scan_
     fclose(fp);
 }
 
-
-
-
-
-
-
-
-
-
-
+/*
 int compute_display_grid_KNMI(Vol_scan *vol, double threshold, const VPR *vpr_strat ,const VPR *vpr_conv) {
+
+// Add this debug code
+double test_Q = quality_reduction_KNMI(0, 3);  // Should be 1.0
+double test_Q2 = quality_reduction_KNMI(10, 3); // Should be very small
+printf("quality_reduction_KNMI(0,3)=%.2e\n", test_Q);
+printf("quality_reduction_KNMI(10,3)=%.2e\n", test_Q2);
+
+double test_H = height_quality_metric_KNMI(2.0, 0.5, 1.0, 4.0);
+printf("height_quality_metric=%.2e\n", test_H);
+
 
     if (!vol) return -1;
 	    double Q_height = 0.0, Q_attenu = 0.0, Q_VPR = 0.0, Q_VPRunc = 0.0;
@@ -726,12 +727,12 @@ int compute_display_grid_KNMI(Vol_scan *vol, double threshold, const VPR *vpr_st
 		double refl = vol->grid_refl[idx] + atten_correction;
 		double height = vol->grid_height[idx];
 		
-
+		
 
                 if (!isnan(refl)) {
 			
+		Q_height = height_quality_metric_KNMI(height*0.001,0.5,1.0,4.0);
 		Q_attenu = quality_reduction_KNMI(atten_correction,3);
-		Q_height = height_quality_metric_KNMI(height*0.001,0.5,1.0,4.0)/0.46044;
 		
 		if(vol->grid_rain_type[idx] == (0 | 9)) Z_projected = 0.0;
 		if(vol->grid_rain_type[idx] == 1) {
@@ -754,8 +755,14 @@ int compute_display_grid_KNMI(Vol_scan *vol, double threshold, const VPR *vpr_st
 			//Q_VPR = quality_reduction_KNMI(fabs(refl*(1-compute_ground_to_altitude_ratio(vpr_conv,height))),3); 
 	
 		}
-		
+	
+		double Z_projected_linear = pow(10.0, Z_projected*0.1);
+
+
 		Q_T = (Q_attenu)*(Q_height)*(Q_VPR);
+	//	if(Q_T<1e-5) continue;
+
+		//	Q_T = 1.0;  // Override the product
 		//Q_T = (1-Q_attenu)*(1-Q_height)*(1-Q_VPR);
 //if(Q_T <= 0.0) continue;
 //if(Q_T <0.01) {printf("(x,y,ppi) = (%d, %d, %d) \n\n\nAtten_corr = %.3e, At_corr_refl = %.3e, height = %.3e, vpr_correction = %.3e\n\n\n Q_atten = %.3e \n\n Q_height = %.3e \n\n Q_VPR = %.3e\n\n\n\n  Z_projected = %.3e\n\n\n",x, y, ppi, atten_correction, refl, height,vpr_correction, Q_attenu, Q_height, Q_VPR, Z_projected);	
@@ -767,10 +774,11 @@ int compute_display_grid_KNMI(Vol_scan *vol, double threshold, const VPR *vpr_st
 //if(Z_projected >30.0) {printf("(x,y,ppi) = (%d, %d, %d) \n\n\nAtten_corr = %.3e, At_corr_refl = %.3e, height = %.3e, vpr_correction = %.3e\n\n\n Q_atten = %.3e \n\n Q_height = %.3e \n\n Q_VPR = %.3e\n\n\n\n  Z_projected = %.3e\n\n\n",x, y, ppi, atten_correction, refl, height,vpr_correction, Q_attenu, Q_height, Q_VPR, Z_projected);	
 //		pause_programme();}
 			//dummy = dummy + refl;
-                       dummy = dummy + Z_projected;
-                        //dummy = dummy + Z_projected*(Q_T);
+                       //dummy = dummy + Z_projected;
+                      	//dummy = dummy + Z_projected*Q_T;
+                       	dummy = dummy + Z_projected_linear*(Q_T);
                         
-			//dummy_quality = dummy_quality + (Q_T);
+			dummy_quality = dummy_quality + (Q_T);
 			
 			found = found + 1;
 			
@@ -779,6 +787,7 @@ int compute_display_grid_KNMI(Vol_scan *vol, double threshold, const VPR *vpr_st
 			Q_height = 0.0;
 			Q_VPR = 0.0;
 			Q_T = 0.0;
+			Z_projected_linear = 0.0;
                 
 		}
             }
@@ -791,13 +800,343 @@ int compute_display_grid_KNMI(Vol_scan *vol, double threshold, const VPR *vpr_st
 		} else {
 			//counter_valid++;
 	    //vol->display_grid[base_idx] = (dummy/(double)found < threshold) ? 0.0: dummy/(double)found;
-	    vol->display_grid[base_idx] = dummy/(double)found;
-	   // vol->display_grid[base_idx] = dummy/dummy_quality;
-	    //if(base_idx%1000 == 0) printf("%.3e is the corrected reflectivity\n\n", dummy/(double)found);
+	   //vol->display_grid[base_idx] = dummy/(double)found;
+	    vol->display_grid[base_idx] = 10*log10(dummy/dummy_quality);
+	    if(base_idx%10000 == 0) printf("f(%.3e/%.3e) = f(%.3e) = %.3e\n\n",dummy, dummy_quality, dummy/dummy_quality, 10*log10(dummy/dummy_quality));
 		}
     }
     }
 	printf("proportion of core / raincell = %.2f\n\n", (double)counter_invalid/(double)(counter_valid + counter_invalid));
+    return 0;
+}
+
+*/
+/*
+int compute_display_grid_KNMI(Vol_scan *vol, double threshold, const VPR *vpr_strat, const VPR *vpr_conv) {
+    if (!vol) return -1;
+    
+    double Q_height = 0.0, Q_attenu = 0.0, Q_VPR = 0.0, Q_VPRunc = 0.0;
+    double Z_projected = 0.0;
+    double vpr_correction = 0.0;
+    int counter_valid = 0, counter_invalid = 0;
+    
+    // DEBUG counters
+    int total_points_with_data = 0;
+    int total_points_with_weights = 0;
+    double min_weight = 1e10, max_weight = -1e10;
+    
+    for (int x = 0; x < (int)vol->num_x; x++) {
+        for (int y = 0; y < (int)vol->num_y; y++) {
+            int base_idx = x * vol->num_y + y;
+            double dummy = 0;
+            double dummy_quality = 0;
+            int found = 0;
+            double Q_T = 0.0;
+            
+            // DEBUG: accumulate in linear space
+            double sum_Z_linear = 0.0;
+            double sum_weights = 0.0;
+            int n_measurements = 0;
+            
+            for (int ppi = 0; ppi < vol->num_PPIs; ppi++) {
+                int idx = vol_index(vol, x, y, ppi);
+                double estim_pia = vol->grid_att[idx];
+                double atten_correction = 2 * estim_pia;
+                if(atten_correction > 10) atten_correction = 10;
+                
+                double refl = vol->grid_refl[idx] + atten_correction;
+                double height = vol->grid_height[idx];
+                
+                if (!isnan(refl)) {
+                    total_points_with_data++;
+                    n_measurements++;
+                    
+                    Q_attenu = quality_reduction_KNMI(atten_correction, 3);
+                    Q_height = fmin(height_quality_metric_KNMI(height*0.001, 0.5, 1.0, 4.0), 1.0);
+                    
+                    if(vol->grid_rain_type[idx] == 1) {
+                        vpr_correction = compute_ground_to_altitude_diff(vpr_strat, height);
+                        Z_projected = refl + vpr_correction;
+                        Q_VPR = quality_reduction_KNMI(fabs(vpr_correction), 3);
+                    } else if(vol->grid_rain_type[idx] == 2) {
+                        vpr_correction = compute_ground_to_altitude_diff(vpr_conv, height);
+                        Z_projected = refl + vpr_correction;
+                        Q_VPR = quality_reduction_KNMI(fabs(vpr_correction), 3);
+                    } else {
+                        Z_projected = 0.0;
+                        Q_VPR = 0.0;
+                    }
+                    
+                    Q_T = Q_attenu * Q_height * Q_VPR;
+                    
+                    // Track weight extremes
+                    if(Q_T < min_weight && Q_T > 0) min_weight = Q_T;
+                    if(Q_T > max_weight) max_weight = Q_T;
+                    
+                    // DEBUG: Print problematic cases
+                    if(Q_T < 1e-6 && Q_T > 0) {
+                        printf("VERY SMALL WEIGHT at (x=%d,y=%d,ppi=%d): Q_T=%.2e\n", x, y, ppi, Q_T);
+                        printf("  Q_attenu=%.2e, Q_height=%.2e, Q_VPR=%.2e\n", Q_attenu, Q_height, Q_VPR);
+                        printf("  atten_correction=%.2f, height=%.2f, vpr_correction=%.2f\n", 
+                               atten_correction, height, vpr_correction);
+                        printf("  Z_projected=%.2f dBZ\n", Z_projected);
+                    }
+                    
+                    // Method 1: Simple average (no weighting) for comparison
+                    // Convert to linear for correct averaging
+                    if(Z_projected > -10.0 && Q_T > 1e-9) {  // Lower threshold
+                        double Z_linear = pow(10.0, Z_projected / 10.0);
+                        sum_Z_linear += Z_linear;
+                        sum_weights += 1.0;  // Unweighted for comparison
+                        total_points_with_weights++;
+                    }
+                    
+                    found++;
+                    
+                    Z_projected = 0.0;
+                    Q_attenu = 0.0;
+                    Q_height = 0.0;
+                    Q_VPR = 0.0;
+                    Q_T = 0.0;
+                }
+            }
+            
+            // Calculate display value
+            if (sum_weights > 0) {
+                double Z_linear_avg = sum_Z_linear / sum_weights;
+                dummy = 10.0 * log10(Z_linear_avg);
+                
+                // DEBUG: Print suspicious outputs
+                if(dummy > 100 || dummy < -50) {
+                    printf("PROBLEM at (x=%d,y=%d): dummy=%.2f dBZ, n_meas=%d\n", x, y, dummy, n_measurements);
+                    printf("  sum_Z_linear=%.2e, sum_weights=%.2f, Z_avg_linear=%.2e\n", 
+                           sum_Z_linear, sum_weights, Z_linear_avg);
+                }
+            } else {
+                dummy = -999.0;  // Fill value
+            }
+            
+            // Store in display grid (assuming you have one)
+            // vol->display_grid[base_idx] = dummy;
+        }
+    }
+    
+    // Print summary statistics
+    printf("DEBUG SUMMARY:\n");
+    printf("  Total points with data: %d\n", total_points_with_data);
+    printf("  Total points with weights > threshold: %d\n", total_points_with_weights);
+    printf("  Min weight: %.2e, Max weight: %.2e\n", min_weight, max_weight);
+    
+    return 0;
+}
+
+*/
+
+
+/*
+
+   int compute_display_grid_KNMI(Vol_scan *vol, double threshold, const VPR *vpr_strat, const VPR *vpr_conv) {
+    if (!vol) return -1;
+    
+    double Q_height = 0.0, Q_attenu = 0.0, Q_VPR = 0.0;
+    double Z_projected = 0.0;
+    double vpr_correction = 0.0;
+    int counter_valid = 0, counter_invalid = 0;
+    
+    for (int x = 0; x < (int)vol->num_x; x++) {
+        for (int y = 0; y < (int)vol->num_y; y++) {
+            int base_idx = x * vol->num_y + y;
+            
+            // Use linear space for averaging (as per paper)
+            double sum_Z_linear = 0.0;
+            double sum_weights = 0.0;
+            int found = 0;
+            
+            for (int ppi = 0; ppi < vol->num_PPIs; ppi++) {
+                int idx = vol_index(vol, x, y, ppi);
+                double estim_pia = vol->grid_att[idx];
+                double atten_correction = 2 * estim_pia;
+                if (atten_correction > 10) atten_correction = 10;
+                
+                double refl = vol->grid_refl[idx] + atten_correction;
+                double height = vol->grid_height[idx];
+                
+                if (!isnan(refl)) {
+                    // Calculate quality metrics
+                    double height_km = height * 0.001;
+                    Q_height = height_quality_metric_KNMI(height_km, 0.5, 1.0, 4.0);
+                    Q_attenu = quality_reduction_KNMI(atten_correction, 3);
+                    
+                    // Force Q_height to [0,1]
+                    if (Q_height > 1.0) Q_height = 1.0;
+                    if (Q_height < 0.0) Q_height = 0.0;
+                    
+                    // Calculate VPR correction based on rain type
+                    if (vol->grid_rain_type[idx] == 1) {
+                        vpr_correction = compute_ground_to_altitude_diff(vpr_strat, height);
+                        Z_projected = refl + vpr_correction;
+                        Q_VPR = quality_reduction_KNMI(fabs(vpr_correction), 3);
+                    } else if (vol->grid_rain_type[idx] == 2) {
+                        vpr_correction = compute_ground_to_altitude_diff(vpr_conv, height);
+                        Z_projected = refl + vpr_correction;
+                        Q_VPR = quality_reduction_KNMI(fabs(vpr_correction), 3);
+                    } else {
+                        // Rain type 0 or 9 - no convection, no VPR correction needed
+                   continue 
+		    }
+                    
+                    // CRITICAL: Skip measurements with extremely poor VPR quality
+                    if (Q_VPR < 1e-8) {
+                        continue;  // This measurement is useless
+                    }
+                    
+                    // Convert dBZ to linear (mm^6/m^3) - as per paper Eq. 1
+                    double Z_linear = pow(10.0, Z_projected / 10.0);
+                    
+                    // Combined quality weight
+                    double Q_T = Q_attenu * Q_height * Q_VPR;
+                    
+                    // Only include if weight is reasonable
+                    if (Q_T > 1e-9 && Z_projected > -20.0 && Z_projected < 100.0) {
+                        sum_Z_linear += Z_linear * Q_T;
+                        sum_weights += Q_T;
+                        found++;
+                    }
+                    
+                    // Reset
+                    Z_projected = 0.0;
+                    Q_attenu = 0.0;
+                    Q_height = 0.0;
+                    Q_VPR = 0.0;
+                }
+            }
+            
+            // Compute final display value 
+            if (found > 0 && sum_weights > 1e-12) {
+                double Z_linear_avg = sum_Z_linear / sum_weights;
+                
+                // Convert back to dBZ
+                double display_value = 10.0 * log10(Z_linear_avg);
+                
+                // Apply reasonable bounds for weather radar
+                if (display_value < -10.0) display_value = -10.0;  // Noise floor
+                if (display_value > 80.0) display_value = 80.0;    // Max reasonable
+                
+                vol->display_grid[base_idx] = display_value;
+                
+                // Debug output (only occasionally)
+                if (base_idx % 50000 == 0 && found > 0) {
+                    printf("Pixel (%d,%d): Z_lin=%.3e, Z_dB=%.2f (n=%d, sum_w=%.3e)\n", 
+                           x, y, Z_linear_avg, display_value, found, sum_weights);
+                }
+            } else {
+                // No valid data
+                vol->display_grid[base_idx] = -32.0;  // Typical noise floor
+            }
+        }
+    }
+    
+    printf("proportion of core / raincell = %.2f\n\n", 
+           (double)counter_invalid / (double)(counter_valid + counter_invalid + 1));
+    return 0;
+}
+
+*/
+
+
+int compute_display_grid_KNMI(Vol_scan *vol, double threshold, const VPR *vpr_strat, const VPR *vpr_conv) {
+    if (!vol) return -1;
+    
+    for (int x = 0; x < (int)vol->num_x; x++) {
+        for (int y = 0; y < (int)vol->num_y; y++) {
+            int base_idx = x * vol->num_y + y;
+            
+            // First pass: collect all valid measurements for this pixel
+            typedef struct {
+                double Z_linear;
+                double Q_raw;
+            } Measurement;
+            
+            Measurement measurements[32];  // Max PPIs
+            int n_meas = 0;
+            double sum_raw_weights = 0.0;
+            
+            // Collect all measurements
+            for (int ppi = 0; ppi < vol->num_PPIs && ppi < 32; ppi++) {
+                int idx = vol_index(vol, x, y, ppi);
+                double estim_pia = vol->grid_att[idx];
+                double atten_correction = 2 * estim_pia;
+                if (atten_correction > 10) atten_correction = 10;
+                
+                double refl = vol->grid_refl[idx] + atten_correction;
+                double height = vol->grid_height[idx];
+                
+                if (!isnan(refl) && refl > -30.0) {  // Valid reflectivity
+                    // Calculate quality metrics
+                    double Q_height = height_quality_metric_KNMI(height*0.001, 0.5, 1.0, 4.0);
+                    double Q_attenu = quality_reduction_KNMI(atten_correction, 3);
+                    
+                    if (Q_height > 1.0) Q_height = 1.0;
+                    if (Q_height < 0.0) Q_height = 0.0;
+                    
+                    double vpr_correction = 0.0;
+                    double Q_VPR = 1.0;
+                    
+                    if (vol->grid_rain_type[idx] == 1) {
+                        vpr_correction = compute_ground_to_altitude_diff(vpr_strat, height);
+                        // Cap VPR correction
+                        if (vpr_correction > 6.0) vpr_correction = 6.0;
+                        if (vpr_correction < -6.0) vpr_correction = -6.0;
+                        Q_VPR = quality_reduction_KNMI(fabs(vpr_correction), 3);
+                    } else if (vol->grid_rain_type[idx] == 2) {
+                        vpr_correction = compute_ground_to_altitude_diff(vpr_conv, height);
+                        if (vpr_correction > 6.0) vpr_correction = 6.0;
+                        if (vpr_correction < -6.0) vpr_correction = -6.0;
+                        Q_VPR = quality_reduction_KNMI(fabs(vpr_correction), 3);
+                    }
+                    
+                    double Z_projected = refl + vpr_correction;
+                    double Z_linear = pow(10.0, Z_projected / 10.0);
+                    double Q_raw = Q_attenu * Q_height * Q_VPR;
+                    
+                    // Only keep measurements with reasonable quality
+                    if (Q_raw > 1e-6) {
+                        measurements[n_meas].Z_linear = Z_linear;
+                        measurements[n_meas].Q_raw = Q_raw;
+                        sum_raw_weights += Q_raw;
+                        n_meas++;
+                    }
+                }
+            }
+            
+            // Second pass: compute weighted average with normalized weights
+            if (n_meas > 0 && sum_raw_weights > 0) {
+                double sum_Z_normalized = 0.0;
+                
+                for (int i = 0; i < n_meas; i++) {
+                    double weight_normalized = measurements[i].Q_raw / sum_raw_weights;
+                    sum_Z_normalized += measurements[i].Z_linear * weight_normalized;
+                }
+                
+                // Convert to dBZ
+                double Z_dB = 10.0 * log10(sum_Z_normalized);
+                
+                // Apply reasonable bounds
+                if (Z_dB < -10.0) Z_dB = -10.0;
+                if (Z_dB > 80.0) Z_dB = 80.0;
+                
+                vol->display_grid[base_idx] = Z_dB;
+                
+                // Debug
+                if (base_idx % 100000 == 0) {
+                    printf("Pixel (%d,%d): n_meas=%d, sum_weights=%.3f, Z_dB=%.2f\n", 
+                           x, y, n_meas, sum_raw_weights, Z_dB);
+                }
+            } else {
+                vol->display_grid[base_idx] = 0.00;  // No data
+            }
+        }
+    }
     return 0;
 }
 
@@ -812,8 +1151,8 @@ double compute_ground_to_altitude_ratio(const VPR *vpr, double height){
 double compute_ground_to_altitude_diff(const VPR *vpr, double height){
 	double Z_ground = get_reflectivity_at_height(vpr, vpr->GT.height);
 	double Z_altitude = get_reflectivity_at_height(vpr, height);
-	//return Z_ground - Z_altitude;
-	return Z_altitude - Z_ground;
+	return Z_ground - Z_altitude;
+	//return Z_altitude - Z_ground;
 }
 
 
@@ -1247,5 +1586,471 @@ int save_vol_scan_to_text(Vol_scan *vol, const char *filename) {
     }
 
     fclose(fp);
+    return 0;
+}
+
+
+
+
+
+
+/**
+ * @brief Processes each point in the volume scan, sorting reflectivity and attenuation
+ *        into stratiform (type 1) and convective (type 2) VPR bins.
+ * 
+ * @param vs Pointer to the Vol_scan structure to process
+ */
+void process_volume_scan_VPR(Vol_scan *vs) {
+    if (vs == NULL) return;
+    
+    // Initialize the empirical VPR arrays
+    // First 40 entries (0-39): point counts per bin
+    // Last 40 entries (40-79): cumulative reflectivity values
+    memset(vs->emp_vpr_strat, 0, sizeof(vs->emp_vpr_strat));
+    memset(vs->emp_vpr_conv, 0, sizeof(vs->emp_vpr_conv));
+    
+    // Constants
+    const double MIN_HEIGHT = 0;      // m
+    const double MAX_HEIGHT = 20000;     // m
+    const double BIN_SIZE = 500;        // m
+    const int NUM_BINS = 40;
+    
+    // Iterate through each PPI in the volume scan
+    for (int ppi_idx = 0; ppi_idx < vs->num_PPIs; ppi_idx++) {
+        
+        // Iterate through x-dimension
+        for (size_t x = 0; x < vs->num_x; x++) {
+            
+            // Iterate through y-dimension
+            for (size_t y = 0; y < vs->num_y; y++) {
+                
+                // Calculate global index using the provided indexing function
+                int global_idx = vol_index(vs, x, y, ppi_idx);
+                
+                // Get the rain type for this point
+                int rain_type = vs->grid_rain_type[global_idx];
+                
+                // Skip if rain_type is not 1 or 2 (assuming 0 or negative indicate no data/invalid)
+                if (rain_type != 1 && rain_type != 2) {
+                    continue;
+                }
+                
+                // Get the height for this point (in m)
+                double height_m = vs->grid_height[global_idx];
+                
+                // Check if height is within valid range
+                if (height_m < MIN_HEIGHT || height_m > MAX_HEIGHT) {
+                    continue;
+                }
+                
+                // Determine which bin this height falls into (0-39)
+                int bin_index = (int)(height_m / BIN_SIZE);
+                
+                // Ensure bin_index is within valid range
+                if (bin_index < 0 || bin_index >= NUM_BINS) {
+                    continue;
+                }
+                
+                // Get reflectivity value
+                double reflectivity = vs->grid_refl[global_idx];
+                
+                // Get path-integrated attenuation and double it
+                double atten = vs->grid_att[global_idx];
+                double doubled_atten = 2.0 * atten;
+		if(doubled_atten>10.0) doubled_atten = 10.0;
+
+                // Calculate effective reflectivity: reflectivity + 2*attenuation
+                double effective_refl = reflectivity + doubled_atten;
+                
+                // Store in appropriate VPR array based on rain type
+                double *emp_vpr = (rain_type == 1) ? vs->emp_vpr_strat : vs->emp_vpr_conv;
+                
+                // Increment point count for this bin (indices 0-39)
+                emp_vpr[bin_index] += 1.0;
+                
+                // Add to cumulative reflectivity (indices 40-79, offset by NUM_BINS)
+                emp_vpr[NUM_BINS + bin_index] += effective_refl;
+            }
+        }
+    }
+}
+
+/**
+ * @brief Computes the average reflectivity for each VPR bin.
+ * 
+ * @param vs Pointer to the Vol_scan structure (must have been processed by process_volume_scan_VPR)
+ */
+void compute_average_empVPR(Vol_scan *vs) {
+    if (vs == NULL) return;
+    
+    const int NUM_BINS = 40;
+    
+    // Process stratiform VPR (type 1)
+    for (int bin = 0; bin < NUM_BINS; bin++) {
+        double point_count = vs->emp_vpr_strat[bin];
+        
+        if (point_count > 0) {
+            // Convert cumulative reflectivity to average
+            vs->emp_vpr_strat[NUM_BINS + bin] /= point_count;
+        }
+        // If point_count is 0, leave the cumulative reflectivity as 0
+        // (you could also set to NaN if desired: vs->emp_vpr_strat[NUM_BINS + bin] = NAN;)
+    }
+    
+    // Process convective VPR (type 2)
+    for (int bin = 0; bin < NUM_BINS; bin++) {
+        double point_count = vs->emp_vpr_conv[bin];
+        
+        if (point_count > 0) {
+            // Convert cumulative reflectivity to average
+            vs->emp_vpr_conv[NUM_BINS + bin] /= point_count;
+        }
+    }
+}
+
+
+/**
+ * @brief Prints the empirical vertical profiles to a file.
+ *        Writes one profile per line (40 points per profile).
+ *        Each subsequent call appends a new profile on a new line.
+ * 
+ * @param vs Pointer to the Vol_scan structure containing the VPR data
+ * @param filename Name of the file to write to
+ * @param profile_type Type of profile to print: 
+ *                     1 for stratiform, 2 for convective
+ * @return 0 on success, -1 on error
+ */
+int print_vpr_profile(const Vol_scan *vs, const char *filename, int profile_type) {
+    if (vs == NULL || filename == NULL) {
+        return -1;
+    }
+    
+    const int NUM_BINS = 40;
+    double *emp_vpr = NULL;
+    const char *profile_name = NULL;
+    
+    // Select the appropriate profile
+    if (profile_type == 1) {
+        emp_vpr = vs->emp_vpr_strat;
+        profile_name = "stratiform";
+    } else if (profile_type == 2) {
+        emp_vpr = vs->emp_vpr_conv;
+        profile_name = "convective";
+    } else {
+        fprintf(stderr, "Error: Invalid profile_type. Use 1 for stratiform, 2 for convective.\n");
+        return -1;
+    }
+    
+    // Open file in append mode to add new profiles at the end
+    FILE *file = fopen(filename, "a");
+    if (file == NULL) {
+        fprintf(stderr, "Error: Could not open file '%s' for writing.\n", filename);
+        return -1;
+    }
+    
+    // Write the profile type as a comment or identifier (optional)
+    // fprintf(file, "# %s profile\n", profile_name);
+    
+    // Write the 40 average reflectivity values (indices 40-79) on one line
+    for (int bin = 0; bin < NUM_BINS; bin++) {
+        fprintf(file, "%.6f", emp_vpr[NUM_BINS + bin]);
+        
+        // Add space between values, but not after the last one
+        if (bin < NUM_BINS - 1) {
+            fprintf(file, " ");
+        }
+    }
+    
+    // Add newline to separate profiles
+    fprintf(file, "\n");
+    
+    // Close the file
+    fclose(file);
+    
+    return 0;
+}
+/**
+ * @brief Prints the complete VPR data (both point counts and averages) to a file.
+ *        Format: For each bin: bin_center_height count avg_reflectivity
+ * 
+ * @param vs Pointer to the Vol_scan structure
+ * @param filename Name of the file to write to
+ * @param profile_type 1 for stratiform, 2 for convective
+ * @param append If non-zero, append to file; if 0, overwrite file
+ * @return 0 on success, -1 on error
+ */
+int print_vpr_detailed(const Vol_scan *vs, const char *filename, int profile_type, int append) {
+    if (vs == NULL || filename == NULL) {
+        return -1;
+    }
+    
+    const int NUM_BINS = 40;
+    const double BIN_SIZE = 0.5;  // km
+    const double BIN_CENTER_OFFSET = BIN_SIZE / 2.0;  // 0.25 km
+    
+    double *emp_vpr = NULL;
+    const char *mode = append ? "a" : "w";
+    const char *profile_name = (profile_type == 1) ? "stratiform" : "convective";
+    
+    // Select the appropriate profile
+    if (profile_type == 1) {
+        emp_vpr = vs->emp_vpr_strat;
+    } else if (profile_type == 2) {
+        emp_vpr = vs->emp_vpr_conv;
+    } else {
+        fprintf(stderr, "Error: Invalid profile_type. Use 1 for stratiform, 2 for convective.\n");
+        return -1;
+    }
+    
+    // Open file
+    FILE *file = fopen(filename, mode);
+    if (file == NULL) {
+        fprintf(stderr, "Error: Could not open file '%s' for writing.\n", filename);
+        return -1;
+    }
+    
+    // Write header (only if not appending or file is new)
+    if (!append || ftell(file) == 0) {
+        fprintf(file, "# %s Vertical Profile Reflectivity (VPR)\n", profile_name);
+        fprintf(file, "# Format: bin_index bin_center_height_km point_count avg_reflectivity_dBZ\n");
+        fprintf(file, "# Height bins: 0-20 km in 0.5 km increments\n");
+        fprintf(file, "# Bins 0-39: %s\n", (profile_type == 1) ? "stratiform" : "convective");
+        fprintf(file, "#\n");
+    }
+    
+    // Write data for each bin
+    for (int bin = 0; bin < NUM_BINS; bin++) {
+        double bin_center = bin * BIN_SIZE + BIN_CENTER_OFFSET;
+        double point_count = emp_vpr[bin];
+        double avg_reflectivity = emp_vpr[NUM_BINS + bin];
+        
+        // Only write bins that have data (optional)
+        // if (point_count > 0) {
+            fprintf(file, "%d %.2f %.0f %.6f\n", bin, bin_center, point_count, avg_reflectivity);
+        // }
+    }
+    
+    fprintf(file, "\n");  // Add empty line between profiles if appending
+    
+    fclose(file);
+    
+    return 0;
+}
+
+
+
+
+double get_reflectivity_from_empirical_vpr_interp(const double *emp_vpr, double height, double bin_size_km, double ground_height_km) {
+    const int NUM_BINS = 40;
+    const double BIN_SIZE = bin_size_km*0.001;
+    const double HALF_BIN = BIN_SIZE / 2.0;
+    
+    // Calculate bin index and fractional position
+    double bin_center = (int)(height / BIN_SIZE) * BIN_SIZE + HALF_BIN;
+    int bin_index = (int)(height / BIN_SIZE);
+    
+    // Check bounds
+    if (bin_index < 0 || bin_index >= NUM_BINS) {
+        return NAN;
+    }
+    
+    // Get point counts for current and adjacent bins
+    double count_current = emp_vpr[bin_index];
+    double refl_current = emp_vpr[NUM_BINS + bin_index];
+    
+    // If current bin has data, we'll use it with possible interpolation
+    if (count_current > 0) {
+        // Check if we need to interpolate with adjacent bins
+        double height_offset = height - bin_center;
+        double interp_factor = height_offset / BIN_SIZE;
+        
+        // Try to interpolate with next bin if height is above bin center
+        if (interp_factor > 0 && bin_index + 1 < NUM_BINS) {
+            double count_next = emp_vpr[bin_index + 1];
+            double refl_next = emp_vpr[NUM_BINS + bin_index + 1];
+            
+            if (count_next > 0) {
+                // Linear interpolation between current and next bin
+                double refl_interp = refl_current * (1.0 - interp_factor) + refl_next * interp_factor;
+                return refl_interp;
+            }
+        }
+        // Try to interpolate with previous bin if height is below bin center
+        else if (interp_factor < 0 && bin_index - 1 >= 0) {
+            double count_prev = emp_vpr[bin_index - 1];
+            double refl_prev = emp_vpr[NUM_BINS + bin_index - 1];
+            
+            if (count_prev > 0) {
+                // Linear interpolation between previous and current bin
+                double refl_interp = refl_prev * (1.0 + interp_factor) + refl_current * (-interp_factor);
+                return refl_interp;
+            }
+        }
+        
+        // No interpolation possible, return current bin value
+        return refl_current;
+    } else {
+        // Current bin has no data, find nearest bin with data
+        int nearest_bin = -1;
+        double min_distance = 1e6;
+        
+        for (int i = 0; i < NUM_BINS; i++) {
+            if (emp_vpr[i] > 0) {
+                double bin_center_i = i * BIN_SIZE + HALF_BIN;
+                double distance = fabs(bin_center_i - height);
+                if (distance < min_distance) {
+                    min_distance = distance;
+                    nearest_bin = i;
+                }
+            }
+        }
+        
+        if (nearest_bin >= 0) {
+            return emp_vpr[NUM_BINS + nearest_bin];
+        } else {
+            return NAN;
+        }
+    }
+}
+
+// Updated function to compute ground-to-altitude difference using empirical VPR
+double compute_ground_to_altitude_diff_empirical(const Vol_scan *vol, double height, int rain_type, 
+                                                   double bin_size_km, double ground_height_km) {
+    double Z_ground = NAN;
+    double Z_altitude = NAN;
+    
+    // Select the appropriate empirical VPR based on rain type
+    const double *emp_vpr = NULL;
+    if (rain_type == 1) {
+        emp_vpr = vol->emp_vpr_strat;
+    } else if (rain_type == 2) {
+        emp_vpr = vol->emp_vpr_conv;
+    } else {
+        return 0.0;  // Unknown rain type
+    }
+    
+    // Get reflectivity at ground level (lowest altitude with data)
+    // Find the lowest bin that has data
+    const int NUM_BINS = 40;
+    int lowest_bin = -1;
+    for (int i = 0; i < NUM_BINS; i++) {
+        if (emp_vpr[i] > 0) {
+            lowest_bin = i;
+            break;
+        }
+    }
+    
+    if (lowest_bin >= 0) {
+        // Use the reflectivity from the lowest bin as ground reflectivity
+        Z_ground = emp_vpr[NUM_BINS + lowest_bin];
+        
+        // Get reflectivity at the specified altitude
+        Z_altitude = get_reflectivity_from_empirical_vpr_interp(emp_vpr, height, bin_size_km, ground_height_km);
+        
+        if (!isnan(Z_ground) && !isnan(Z_altitude)) {
+            return Z_ground - Z_altitude;
+        }
+    }
+    
+    return 0.0;  // Default if no valid data
+}
+
+// Updated main function that uses empirical VPR
+int compute_display_grid_KNMI_empirical(Vol_scan *vol, double threshold, double bin_size_km, double ground_height_km) {
+    if (!vol) return -1;
+    
+    const int NUM_BINS = 40;
+    
+    for (int x = 0; x < (int)vol->num_x; x++) {
+        for (int y = 0; y < (int)vol->num_y; y++) {
+            int base_idx = x * vol->num_y + y;
+            
+            // First pass: collect all valid measurements for this pixel
+            typedef struct {
+                double Z_linear;
+                double Q_raw;
+            } Measurement;
+            
+            Measurement measurements[32];  // Max PPIs
+            int n_meas = 0;
+            double sum_raw_weights = 0.0;
+            
+            // Collect all measurements
+            for (int ppi = 0; ppi < vol->num_PPIs && ppi < 32; ppi++) {
+                int idx = vol_index(vol, x, y, ppi);
+                double estim_pia = vol->grid_att[idx];
+                double atten_correction = 2 * estim_pia;
+                if (atten_correction > 10) atten_correction = 10;
+                
+                double refl = vol->grid_refl[idx] + atten_correction;
+                double height = vol->grid_height[idx];
+                
+                if (!isnan(refl) && refl > -30.0) {  // Valid reflectivity
+                    // Calculate quality metrics
+                    double Q_height = height_quality_metric_KNMI(height*0.001, 0.5, 1.0, 4.0);
+                    double Q_attenu = quality_reduction_KNMI(atten_correction, 3);
+                    
+                    if (Q_height > 1.0) Q_height = 1.0;
+                    if (Q_height < 0.0) Q_height = 0.0;
+                    
+                    double vpr_correction = 0.0;
+                    double Q_VPR = 1.0;
+                    
+                    // Use empirical VPR based on rain type
+                    if (vol->grid_rain_type[idx] == 1 || vol->grid_rain_type[idx] == 2) {
+                        vpr_correction = compute_ground_to_altitude_diff_empirical(vol, height, 
+                                                                                    vol->grid_rain_type[idx],
+                                                                                    bin_size_km, ground_height_km);
+                        
+                        // Cap VPR correction
+                        if (vpr_correction > 6.0) vpr_correction = 6.0;
+                        if (vpr_correction < -6.0) vpr_correction = -6.0;
+                        
+                        // Quality based on absolute correction
+                        Q_VPR = quality_reduction_KNMI(fabs(vpr_correction), 3);
+                    }
+                    
+                    double Z_projected = refl + vpr_correction;
+                    double Z_linear = pow(10.0, Z_projected / 10.0);
+                    double Q_raw = Q_attenu * Q_height * Q_VPR;
+                    
+                    // Only keep measurements with reasonable quality
+                    if (Q_raw > 1e-6) {
+                        measurements[n_meas].Z_linear = Z_linear;
+                        measurements[n_meas].Q_raw = Q_raw;
+                        sum_raw_weights += Q_raw;
+                        n_meas++;
+                    }
+                }
+            }
+            
+            // Second pass: compute weighted average with normalized weights
+            if (n_meas > 0 && sum_raw_weights > 0) {
+                double sum_Z_normalized = 0.0;
+                
+                for (int i = 0; i < n_meas; i++) {
+                    double weight_normalized = measurements[i].Q_raw / sum_raw_weights;
+                    sum_Z_normalized += measurements[i].Z_linear * weight_normalized;
+                }
+                
+                // Convert to dBZ
+                double Z_dB = 10.0 * log10(sum_Z_normalized);
+                
+                // Apply reasonable bounds
+                if (Z_dB < -10.0) Z_dB = -10.0;
+                if (Z_dB > 80.0) Z_dB = 80.0;
+                
+                vol->display_grid[base_idx] = Z_dB;
+                
+                // Debug
+                if (base_idx % 100000 == 0) {
+                    printf("Pixel (%d,%d): n_meas=%d, sum_weights=%.3f, Z_dB=%.2f\n", 
+                           x, y, n_meas, sum_raw_weights, Z_dB);
+                }
+            } else {
+                vol->display_grid[base_idx] = 0.00;  // No data
+            }
+        }
+    }
     return 0;
 }

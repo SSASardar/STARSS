@@ -1160,7 +1160,7 @@ void read_radar_scans(const char* filename) {
                     return;
                 }
             }
-	printf("I updated the grid memory allocation file: %s, scan %d\n", filename, scan_index);
+//	printf("I updated the grid memory allocation file: %s, scan %d\n", filename, scan_index);
             continue;
         }
 
@@ -1173,7 +1173,7 @@ void read_radar_scans(const char* filename) {
                     return;
                 }
             }
-	printf("I updated the estimated attenuation grid memory allocation file: %s, scan %d\n", filename, scan_index);
+//	printf("I updated the estimated attenuation grid memory allocation file: %s, scan %d\n", filename, scan_index);
             continue;
         }
 
@@ -1186,7 +1186,7 @@ void read_radar_scans(const char* filename) {
 	            return;
 	        }
 	    }
-	printf("I updated the height memory allocation file: %s, scan %d\n", filename, scan_index);
+//	printf("I updated the height memory allocation file: %s, scan %d\n", filename, scan_index);
 	    continue;
 	}
 
