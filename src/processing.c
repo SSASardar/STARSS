@@ -1709,6 +1709,103 @@ void compute_average_empVPR(Vol_scan *vs) {
 }
 
 
+
+/**
+ * @brief Computes the standard deviation for each VPR bin by making a second pass through the volume scan.
+ *        Uses the previously computed average reflectivity for each bin.
+ * 
+ * @param vs Pointer to the Vol_scan structure (must have been processed by process_volume_scan_VPR and compute_average_empVPR)
+ */
+void compute_std_dev_empVPR(Vol_scan *vs) {
+    if (vs == NULL) return;
+    
+    const int NUM_BINS = 40;
+    const double MIN_HEIGHT = 0;      // m
+    const double MAX_HEIGHT = 20000;  // m
+    const double BIN_SIZE = 500;      // m
+    
+    // First, initialize the sum of squared differences to zero
+    // Indices 80-119 will store the sum of squared differences
+    for (int bin = 0; bin < NUM_BINS; bin++) {
+        vs->emp_vpr_strat[2 * NUM_BINS + bin] = 0.0;
+        vs->emp_vpr_conv[2 * NUM_BINS + bin] = 0.0;
+    }
+    
+    // Second pass: iterate through all points to calculate sum of squared differences
+    for (int ppi_idx = 0; ppi_idx < vs->num_PPIs; ppi_idx++) {
+        for (size_t x = 0; x < vs->num_x; x++) {
+            for (size_t y = 0; y < vs->num_y; y++) {
+                int global_idx = vol_index(vs, x, y, ppi_idx);
+                
+                int rain_type = vs->grid_rain_type[global_idx];
+                if (rain_type != 1 && rain_type != 2) continue;
+                
+                double height_m = vs->grid_height[global_idx];
+                if (height_m < MIN_HEIGHT || height_m > MAX_HEIGHT) continue;
+                
+                int bin_index = (int)(height_m / BIN_SIZE);
+                if (bin_index < 0 || bin_index >= NUM_BINS) continue;
+                
+                double reflectivity = vs->grid_refl[global_idx];
+                double atten = vs->grid_att[global_idx];
+                double doubled_atten = 2.0 * atten;
+                if (doubled_atten > 10.0) doubled_atten = 10.0;
+                
+                double effective_refl = reflectivity + doubled_atten;
+                
+                // Get the average for this bin
+                double avg_refl = 0.0;
+                double *sum_sq_diff = NULL;
+                
+                if (rain_type == 1) {
+                    avg_refl = vs->emp_vpr_strat[NUM_BINS + bin_index];
+                    sum_sq_diff = &vs->emp_vpr_strat[2 * NUM_BINS + bin_index];
+                } else {
+                    avg_refl = vs->emp_vpr_conv[NUM_BINS + bin_index];
+                    sum_sq_diff = &vs->emp_vpr_conv[2 * NUM_BINS + bin_index];
+                }
+                
+                // Accumulate sum of squared differences
+                double diff = effective_refl - avg_refl;
+                *sum_sq_diff += (diff * diff);
+            }
+        }
+    }
+    
+    // Now calculate the standard deviation for each bin
+    // Process stratiform VPR (type 1)
+    for (int bin = 0; bin < NUM_BINS; bin++) {
+        double point_count = vs->emp_vpr_strat[bin];
+        double sum_sq_diff = vs->emp_vpr_strat[2 * NUM_BINS + bin];
+        
+        if (point_count > 1) {
+            // Sample standard deviation: sqrt( sum((x - mean)²) / (n-1) )
+            double variance = sum_sq_diff / (point_count - 1.0);
+            vs->emp_vpr_strat[2 * NUM_BINS + bin] = sqrt(variance);
+        } else if (point_count == 1) {
+            vs->emp_vpr_strat[2 * NUM_BINS + bin] = 0.0;
+        } else {
+            vs->emp_vpr_strat[2 * NUM_BINS + bin] = 0.0;  // No data
+        }
+    }
+    
+    // Process convective VPR (type 2)
+    for (int bin = 0; bin < NUM_BINS; bin++) {
+        double point_count = vs->emp_vpr_conv[bin];
+        double sum_sq_diff = vs->emp_vpr_conv[2 * NUM_BINS + bin];
+        
+        if (point_count > 1) {
+            double variance = sum_sq_diff / (point_count - 1.0);
+            vs->emp_vpr_conv[2 * NUM_BINS + bin] = sqrt(variance);
+        } else if (point_count == 1) {
+            vs->emp_vpr_conv[2 * NUM_BINS + bin] = 0.0;
+        } else {
+            vs->emp_vpr_conv[2 * NUM_BINS + bin] = 0.0;  // No data
+        }
+    }
+}
+
+
 /**
  * @brief Prints the empirical vertical profiles to a file.
  *        Writes one profile per line (40 points per profile).
@@ -2052,5 +2149,80 @@ int compute_display_grid_KNMI_empirical(Vol_scan *vol, double threshold, double 
             }
         }
     }
+    return 0;
+}
+
+
+
+
+/**
+ * @brief Prints the complete VPR data (point counts, average reflectivity, and standard deviation) to a file.
+ *        Format: For each bin: bin_index bin_center_height_km point_count avg_reflectivity_dBZ std_deviation_dBZ
+ *
+ * @param vs Pointer to the Vol_scan structure
+ * @param filename Name of the file to write to
+ * @param profile_type 1 for stratiform, 2 for convective
+ * @param append If non-zero, append to file; if 0, overwrite file
+ * @return 0 on success, -1 on error
+ */
+int print_vpr_detailed_with_std(const Vol_scan *vs, const char *filename, int profile_type, int append) {
+    if (vs == NULL || filename == NULL) {
+        return -1;
+    }
+
+    const int NUM_BINS = 40;
+    const double BIN_SIZE = 0.5;  // km
+    const double BIN_CENTER_OFFSET = BIN_SIZE / 2.0;  // 0.25 km
+
+    double *emp_vpr = NULL;
+    const char *mode = append ? "a" : "w";
+    const char *profile_name = (profile_type == 1) ? "stratiform" : "convective";
+
+    // Select the appropriate profile
+    if (profile_type == 1) {
+        emp_vpr = (double*)vs->emp_vpr_strat;
+    } else if (profile_type == 2) {
+        emp_vpr = (double*)vs->emp_vpr_conv;
+    } else {
+        fprintf(stderr, "Error: Invalid profile_type. Use 1 for stratiform, 2 for convective.\n");
+        return -1;
+    }
+
+    // Open file
+    FILE *file = fopen(filename, mode);
+    if (file == NULL) {
+        fprintf(stderr, "Error: Could not open file '%s' for writing.\n", filename);
+        return -1;
+    }
+
+    // Write header (only if not appending or file is new)
+    if (!append || ftell(file) == 0) {
+        fprintf(file, "# %s Vertical Profile Reflectivity (VPR) with Standard Deviation\n", profile_name);
+        fprintf(file, "# Format: bin_index bin_center_height_km point_count avg_reflectivity_dBZ std_deviation_dBZ\n");
+        fprintf(file, "# Height bins: 0-20 km in 0.5 km increments\n");
+        fprintf(file, "# Bins 0-39: %s\n", (profile_type == 1) ? "stratiform" : "convective");
+        fprintf(file, "# Standard deviation is sample standard deviation (dividing by n-1)\n");
+        fprintf(file, "#\n");
+    }
+
+    // Write data for each bin
+    for (int bin = 0; bin < NUM_BINS; bin++) {
+        double bin_center = bin * BIN_SIZE + BIN_CENTER_OFFSET;
+        double point_count = emp_vpr[bin];
+        double avg_reflectivity = emp_vpr[NUM_BINS + bin];
+        double std_deviation = emp_vpr[2 * NUM_BINS + bin];
+
+        // Check if standard deviation is valid (not NaN)
+        if (isnan(std_deviation)) {
+            fprintf(file, "%d %.2f %.0f %.6f %s\n", bin, bin_center, point_count, avg_reflectivity, "NaN");
+        } else {
+            fprintf(file, "%d %.2f %.0f %.6f %.6f\n", bin, bin_center, point_count, avg_reflectivity, std_deviation);
+        }
+    }
+
+    fprintf(file, "\n");  // Add empty line between profiles if appending
+
+    fclose(file);
+
     return 0;
 }

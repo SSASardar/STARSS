@@ -229,14 +229,22 @@ int invalid_range = 0, invalid_angle = 0;
     //	writeCartGridToFile(cart_grids[i],i,1);
     }
 
+
+//    process_volume_scan_VPR_with_std(vol);
+//   FOR VPR WITHOUT STDEV
    process_volume_scan_VPR(vol);
    compute_average_empVPR(vol);
-
+   compute_std_dev_empVPR(vol);
    
 
 
-print_vpr_detailed(vol, "outputs/vpr_emp_strat.txt", 1, 1);  // Append stratiform
-print_vpr_detailed(vol, "outputs/vpr_emp_conv.txt", 2, 1);  // Append convective
+
+print_vpr_detailed_with_std(vol, "outputs/vpr_emp_strat.txt", 1, 1);  // Append stratiform with std dev
+print_vpr_detailed_with_std(vol, "outputs/vpr_emp_conv.txt", 2, 1);  // Append convective with std dev
+
+//   FOR VPR WITHOUT STDEV
+//print_vpr_detailed(vol, "outputs/vpr_emp_strat.txt", 1, 1);  // Append stratiform
+//print_vpr_detailed(vol, "outputs/vpr_emp_conv.txt", 2, 1);  // Append convective
 
    /*
 	if (print_vpr_profile(vol, "emp_vprs_strat.txt", 1) == 0) {
@@ -278,6 +286,8 @@ if (print_vpr_profile(vol, "emp_vprs_conv.txt", 2) == 0) {
 
     
 //compute_display_grid_KNMI(vol,-5.0, VPR_strat, VPR_conv);
+
+//   FOR VPR WITHOUT STDEV
 compute_display_grid_KNMI_empirical(vol, -5.0, 0.5,0);
 
 // DEBUG UNTIL:_______________________________
