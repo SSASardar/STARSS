@@ -1170,6 +1170,7 @@ double height_quality_metric_KNMI(double height, double h_l, double h_m, double 
 }	
 
 double quality_reduction_KNMI(double x, double x_0){
+	if(x == NAN){return 0.0;}
 	return exp(-log(2)*(fabs(x)/x_0)*(fabs(x)/x_0));
 }
 
@@ -1934,12 +1935,9 @@ int print_vpr_detailed(const Vol_scan *vs, const char *filename, int profile_typ
     return 0;
 }
 
-
-
-
 double get_reflectivity_from_empirical_vpr_interp(const double *emp_vpr, double height, double bin_size_km, double ground_height_km) {
     const int NUM_BINS = 40;
-    const double BIN_SIZE = bin_size_km*0.001;
+    const double BIN_SIZE = bin_size_km*1000;
     const double HALF_BIN = BIN_SIZE / 2.0;
     
     // Calculate bin index and fractional position
@@ -1948,7 +1946,9 @@ double get_reflectivity_from_empirical_vpr_interp(const double *emp_vpr, double 
     
     // Check bounds
     if (bin_index < 0 || bin_index >= NUM_BINS) {
-        return NAN;
+        
+//	printf("_1_");
+	    return NAN;
     }
     
     // Get point counts for current and adjacent bins
@@ -2005,6 +2005,85 @@ double get_reflectivity_from_empirical_vpr_interp(const double *emp_vpr, double 
         if (nearest_bin >= 0) {
             return emp_vpr[NUM_BINS + nearest_bin];
         } else {
+        
+	printf("_2_");
+	    	return NAN;
+        }
+    }
+}
+
+
+double get_stdev_from_empirical_vpr_interp(const double *emp_vpr, double height, double bin_size_km, double ground_height_km) {
+    const int NUM_BINS = 40;
+    const double BIN_SIZE = bin_size_km*1000;
+    const double HALF_BIN = BIN_SIZE / 2.0;
+    
+    // Calculate bin index and fractional position
+    double bin_center = (int)(height / BIN_SIZE) * BIN_SIZE + HALF_BIN;
+    int bin_index = (int)(height / BIN_SIZE);
+    
+    // Check bounds
+    if (bin_index < 0 || bin_index >= NUM_BINS) {
+	//printf("_1_");
+    	    return NAN;
+    }
+    
+    // Get point counts for current and adjacent bins
+    double count_current = emp_vpr[bin_index];
+    double stdev_current = emp_vpr[2*NUM_BINS + bin_index];
+    
+    // If current bin has data, we'll use it with possible interpolation
+    if (count_current > 0) {
+        // Check if we need to interpolate with adjacent bins
+        double height_offset = height - bin_center;
+        double interp_factor = height_offset / BIN_SIZE;
+        
+        // Try to interpolate with next bin if height is above bin center
+        if (interp_factor > 0 && bin_index + 1 < NUM_BINS) {
+            double count_next = emp_vpr[bin_index + 1];
+            double stdev_next = emp_vpr[2*NUM_BINS + bin_index + 1];
+            
+            if (count_next > 0) {
+                // Linear interpolation between current and next bin
+                double stdev_interp = stdev_current * (1.0 - interp_factor) + stdev_next * interp_factor;
+                return stdev_interp;
+            }
+        }
+        // Try to interpolate with previous bin if height is below bin center
+        else if (interp_factor < 0 && bin_index - 1 >= 0) {
+            double count_prev = emp_vpr[bin_index - 1];
+            double stdev_prev = emp_vpr[2*NUM_BINS + bin_index - 1];
+            
+            if (count_prev > 0) {
+                // Linear interpolation between previous and current bin
+                double stdev_interp = stdev_prev * (1.0 + interp_factor) + stdev_current * (-interp_factor);
+                return stdev_interp;
+            }
+        }
+        
+        // No interpolation possible, return current bin value
+        return stdev_current;
+    } else {
+        // Current bin has no data, find nearest bin with data
+        int nearest_bin = -1;
+        double min_distance = 1e6;
+        
+        for (int i = 0; i < NUM_BINS; i++) {
+            if (emp_vpr[i] > 0) {
+                double bin_center_i = i * BIN_SIZE + HALF_BIN;
+                double distance = fabs(bin_center_i - height);
+                if (distance < min_distance) {
+                    min_distance = distance;
+                    nearest_bin = i;
+                }
+            }
+        }
+        
+        if (nearest_bin >= 0) {
+            return emp_vpr[2*NUM_BINS + nearest_bin];
+        } else {
+
+	//printf("_2_");
             return NAN;
         }
     }
@@ -2043,7 +2122,7 @@ double compute_ground_to_altitude_diff_empirical(const Vol_scan *vol, double hei
         
         // Get reflectivity at the specified altitude
         Z_altitude = get_reflectivity_from_empirical_vpr_interp(emp_vpr, height, bin_size_km, ground_height_km);
-        
+      // printf("%.3e",Z_altitude); 
         if (!isnan(Z_ground) && !isnan(Z_altitude)) {
             return Z_ground - Z_altitude;
         }
@@ -2052,12 +2131,58 @@ double compute_ground_to_altitude_diff_empirical(const Vol_scan *vol, double hei
     return 0.0;  // Default if no valid data
 }
 
+
+// Updated function to compute ground-to-altitude difference using empirical VPR
+double compute_VPR_stdev_at_height_empirical(const Vol_scan *vol, double height, int rain_type, 
+                                                   double bin_size_km, double ground_height_km) {
+    double stdev_altitude = NAN;
+    
+    // Select the appropriate empirical VPR based on rain type
+    const double *emp_vpr = NULL;
+    if (rain_type == 1) {
+        emp_vpr = vol->emp_vpr_strat;
+    } else if (rain_type == 2) {
+        emp_vpr = vol->emp_vpr_conv;
+    } else {
+        return 0.0;  // Unknown rain type
+    }
+    
+    // Get reflectivity at ground level (lowest altitude with data)
+    // Find the lowest bin that has data
+    const int NUM_BINS = 40;
+    int lowest_bin = -1;
+    for (int i = 0; i < NUM_BINS; i++) {
+        if (emp_vpr[i] > 0) {
+            lowest_bin = i;
+            break;
+        }
+    }
+    
+    if (lowest_bin >= 0) {
+        // Get stdev at the specified altitude
+        stdev_altitude = get_stdev_from_empirical_vpr_interp(emp_vpr, height, bin_size_km, ground_height_km);
+      // printf("%.3e",Z_altitude); 
+        if (!isnan(stdev_altitude)) {
+            return stdev_altitude;
+        }
+    }
+    
+    return 0.0;  // Default if no valid data
+}
+
+
+
+
 // Updated main function that uses empirical VPR
 int compute_display_grid_KNMI_empirical(Vol_scan *vol, double threshold, double bin_size_km, double ground_height_km) {
     if (!vol) return -1;
     
     const int NUM_BINS = 40;
-    
+int n_unc_eq_1 = 0;
+int n_unc_lt_1e5 = 0;
+double sum_unc_remaining = 0.0;
+int n_unc_remaining = 0;
+	
     for (int x = 0; x < (int)vol->num_x; x++) {
         for (int y = 0; y < (int)vol->num_y; y++) {
             int base_idx = x * vol->num_y + y;
@@ -2071,7 +2196,10 @@ int compute_display_grid_KNMI_empirical(Vol_scan *vol, double threshold, double 
             Measurement measurements[32];  // Max PPIs
             int n_meas = 0;
             double sum_raw_weights = 0.0;
-            
+      
+			
+			// Add these counters before the loop
+	      
             // Collect all measurements
             for (int ppi = 0; ppi < vol->num_PPIs && ppi < 32; ppi++) {
                 int idx = vol_index(vol, x, y, ppi);
@@ -2092,12 +2220,23 @@ int compute_display_grid_KNMI_empirical(Vol_scan *vol, double threshold, double 
                     
                     double vpr_correction = 0.0;
                     double Q_VPR = 1.0;
-                    
+                    double Q_VPR_unc = 1.0;
                     // Use empirical VPR based on rain type
                     if (vol->grid_rain_type[idx] == 1 || vol->grid_rain_type[idx] == 2) {
-                        vpr_correction = compute_ground_to_altitude_diff_empirical(vol, height, 
+                         vpr_correction = compute_ground_to_altitude_diff_empirical(vol, height, 
                                                                                     vol->grid_rain_type[idx],
                                                                                     bin_size_km, ground_height_km);
+     
+			 //printf("%.3d", vpr_correction);
+                     
+	 double stdev = compute_VPR_stdev_at_height_empirical(vol, height, 
+                                                                                    vol->grid_rain_type[idx],
+                                                                                    bin_size_km, ground_height_km);
+     
+				
+				
+				
+				
                         
                         // Cap VPR correction
                         if (vpr_correction > 6.0) vpr_correction = 6.0;
@@ -2105,11 +2244,26 @@ int compute_display_grid_KNMI_empirical(Vol_scan *vol, double threshold, double 
                         
                         // Quality based on absolute correction
                         Q_VPR = quality_reduction_KNMI(fabs(vpr_correction), 3);
-                    }
+      
+
+
+		
+			Q_VPR_unc = quality_reduction_KNMI(fabs(3*stdev),3); 
+		//	printf("%.3e",Q_VPR_unc);
+// Statistics collection
+if (Q_VPR_unc == 1) {
+    n_unc_eq_1++;
+} else if (Q_VPR_unc < 1e-5) {
+    n_unc_lt_1e5++;
+} else {
+    sum_unc_remaining += Q_VPR_unc;
+    n_unc_remaining++;
+}		    
+		    }
                     
                     double Z_projected = refl + vpr_correction;
                     double Z_linear = pow(10.0, Z_projected / 10.0);
-                    double Q_raw = Q_attenu * Q_height * Q_VPR;
+                    double Q_raw = Q_attenu * Q_height * Q_VPR * Q_VPR_unc;
                     
                     // Only keep measurements with reasonable quality
                     if (Q_raw > 1e-6) {
@@ -2121,6 +2275,7 @@ int compute_display_grid_KNMI_empirical(Vol_scan *vol, double threshold, double 
                 }
             }
             
+
             // Second pass: compute weighted average with normalized weights
             if (n_meas > 0 && sum_raw_weights > 0) {
                 double sum_Z_normalized = 0.0;
@@ -2149,6 +2304,21 @@ int compute_display_grid_KNMI_empirical(Vol_scan *vol, double threshold, double 
             }
         }
     }
+
+// After the loop ends, print the statistics:
+printf("\n=== Q_ Statistics ===\n");
+printf("Number of Q_VPR == 1.0: %d\n", n_unc_eq_1);
+printf("Number of Q_VPR < 1e-5: %d\n", n_unc_lt_1e5);
+if (n_unc_remaining > 0) {
+    printf("Average of remaining Q_VPR values: %.6f (based on %d values)\n", 
+           sum_unc_remaining / n_unc_remaining, n_unc_remaining);
+} else {
+    printf("No remaining Q_VPR_unc values to average.\n");
+}
+printf("================================\n");
+
+
+
     return 0;
 }
 

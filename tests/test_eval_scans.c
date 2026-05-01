@@ -127,8 +127,8 @@ int main() {
     compute_average_VPR(VPR_A_d, params, t3, t2, 60.0, VPR_dummy);
 
 
-    Raincell* raincell = create_raincell(1, 0.5, 10000.0, -0.5);   
-Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
+    Raincell* raincell = create_raincell(1, 0.5, 15000.0, -0.5);   
+Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,10);
 
     double cart_grid_res = 1000;
 

@@ -175,6 +175,7 @@ int print_vpr_detailed(const Vol_scan *vs, const char *filename, int profile_typ
 
 
 double get_reflectivity_from_empirical_vpr_interp(const double *emp_vpr, double height, double bin_size_km, double ground_height_km); 
+double get_stdev_from_empirical_vpr_interp(const double *emp_vpr, double height, double bin_size_km, double ground_height_km);
 double compute_ground_to_altitude_diff_empirical(const Vol_scan *vol, double height, int rain_type, double bin_size_km, double ground_height_km);
 int compute_display_grid_KNMI_empirical(Vol_scan *vol, double threshold, double bin_size_km, double ground_height_km);
  
