@@ -24,7 +24,7 @@ void print_bounding_box(const Bounding_box* box) {
 
     printf("  +------------+\n");
     printf("  |            |\n");
-    printf("  |            |\n");
+    printf("  |      *     |\n");
     printf("  |            |\n");
     printf("  +------------+\n");
 
