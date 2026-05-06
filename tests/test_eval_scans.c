@@ -368,6 +368,8 @@ if (fp) {
     fprintf(stderr, "Failed to open outputs/stats.txt for writing\n");
 }
 
+int print_or_not = 0;
+if(print_or_not == 1) {
 // --- Write display_grid to file ---
 char disp_filename[256];
 snprintf(disp_filename, sizeof(disp_filename), "outputs/disp_g_%04d.txt", scan_idx);
@@ -397,6 +399,7 @@ if (write_heights_for_point(vol, xA, yA, point_height_file) != 0) {
 
 if(scan_idx == 0) write_VPR_to_file(VPR_strat, "strat", scan_idx);
 write_VPR_to_file(VPR_conv,  "conv",  scan_idx);
+}
 
     // Free memory
     for (int i = 0; i < cg_count; i++)

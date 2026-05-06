@@ -765,9 +765,14 @@ if (sample == 0) { //raincell shape is always convex, so no strange things need 
 } else if (sample == 1) {
 	box->rain_type[idp] = 1;
         refl_dBZ = get_reflectivity_at_height(vpr_strat, sample_height);
-        att = compute_specific_attenuation(refl_dBZ, radar);
+refl_dBZ = add_noise_VPR(refl_dBZ);
+
+if(sample_height < vpr_strat->CB.height) { 
+	att = compute_specific_attenuation(refl_dBZ, radar);
 	noisy_att = add_noise_SA(radar,att);
-        if(idp == idp_min_one) {
+}
+     
+	if(idp == idp_min_one) {
         	box->attenuation_grid[idp] = noisy_att;
         	box->estimated_attenuation_grid[idp] = att;
 	} else {
@@ -780,8 +785,11 @@ if (sample == 0) { //raincell shape is always convex, so no strange things need 
 	box->rain_type[idp] = 2;
         refl_dBZ = get_reflectivity_at_height(vpr_conv, sample_height);
 
+refl_dBZ = add_noise_VPR(refl_dBZ);
+if(sample_height < vpr_conv->CB.height) { 
         att = compute_specific_attenuation(refl_dBZ, radar); 
         	noisy_att = add_noise_SA(radar,att);
+}
         if(idp == idp_min_one) {
         	box->attenuation_grid[idp] = noisy_att;
         	box->estimated_attenuation_grid[idp] = att;
@@ -820,9 +828,13 @@ for (int ri = 0; ri <num_ranges;ri++){
 } else if (sample == 1) {
 	box->rain_type[idp] = 1;       
         refl_dBZ = get_reflectivity_at_height(vpr_strat, sample_height);
-        att = compute_specific_attenuation(refl_dBZ, radar);
+
+refl_dBZ = add_noise_VPR(refl_dBZ);
+if(sample_height < vpr_strat->CB.height) { 
+	att = compute_specific_attenuation(refl_dBZ, radar);
 	noisy_att = add_noise_SA(radar,att);
-        if(idp == idp_min_one) {
+}
+if(idp == idp_min_one) {
         	box->attenuation_grid[idp] = noisy_att;
         	box->estimated_attenuation_grid[idp] = att;
 	} else {
@@ -834,9 +846,13 @@ for (int ri = 0; ri <num_ranges;ri++){
 	box->rain_type[idp] = 2;       
         refl_dBZ = get_reflectivity_at_height(vpr_conv, sample_height);
 
+refl_dBZ = add_noise_VPR(refl_dBZ);
+if(sample_height < vpr_conv->CB.height) { 
         att = compute_specific_attenuation(refl_dBZ, radar); 
         	noisy_att = add_noise_SA(radar,att);
-        if(idp == idp_min_one) {
+
+}
+if(idp == idp_min_one) {
         	box->attenuation_grid[idp] = noisy_att;
         	box->estimated_attenuation_grid[idp] = att;
 	} else {
@@ -1557,6 +1573,14 @@ double add_noise(const Radar* radar, double reflectivity) {
     // Add Gaussian noise with 0 mean and noise_db as standard deviation
     return reflectivity + gaussian_noise(0.0, noise_db);
 }
+// Function to add noise for VPR 
+double add_noise_VPR(double reflectivity) {
+    double noise_db = reflectivity*0.06666666667;// 2/30 in dB scale to ensure values dont deviate too much 
+
+    // Add Gaussian noise with 0 mean and noise_db as standard deviation
+    return reflectivity + gaussian_noise(0.0, noise_db);
+}
+
 
 // Function to add noise based on frequency
 double add_noise_SA(const Radar* radar, double attenuation) {

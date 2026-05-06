@@ -425,6 +425,8 @@ Bounding_box* bounding_box_from_textfile(const Polar_box* p_box, const Radar* ra
 
 double gaussian_noise(double mean, double stddev);
 double add_noise(const Radar* radar, double reflectivity);
+
+double add_noise_VPR(double reflectivity);
 double add_noise_SA(const Radar* radar, double attenuation); 
 double compute_specific_attenuation(double refl_dBZ, const Radar* radar);
 

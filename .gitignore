@@ -11,7 +11,7 @@ plots/
 archive/
 inputs/
 videos/
-
+*.mp4
 
 # Xcode
 *.xcworkspace
