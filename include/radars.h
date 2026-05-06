@@ -33,12 +33,14 @@ struct Cart_grid; // from processing.h
  * @defgroup XBandAttenuationCoefficients X-band attenuation coefficients
  * @brief Empirical attenuation coefficients for X-band radar.
  * Coefficients for k = a * Z^b [dB/km]   
- * Source: Hitschfeld & Bordan (1954)     
+ * Source: https://essd.copernicus.org/articles/16/2317/2024/ 
  *
  * @{
  */
-#define A_COEFF_X 1.5e-5  /**< Coefficient a for X-band */
-#define B_COEFF_X 1.02    /**< Exponent b for X-band */
+//#define A_COEFF_X 1.5e-5  /**< Coefficient a for X-band */
+//#define B_COEFF_X 1.02    /**< Exponent b for X-band */
+#define A_COEFF_X 6.27e-5  /**< Coefficient a for X-band */
+#define B_COEFF_X 0.845    /**< Exponent b for X-band */
 /** @} */
 
 
@@ -46,11 +48,13 @@ struct Cart_grid; // from processing.h
  * @defgroup CBandAttenuationCoefficients C-band attenuation coefficients
  * @brief Empirical attenuation coefficients for C-band radar.
  * Coefficients for k = a * Z^b [dB/km]   
- * Source: Hitschfeld & Bordan (1954)     
+ * Source: https://journals.ametsoc.org/view/journals/atot/38/6/JTECH-D-20-0113.1.xml     
  * @{
  */
-#define A_COEFF_C 1.5e-5
-#define B_COEFF_C 0.80
+#define A_COEFF_C 7.215e-6
+//#define A_COEFF_C 1.5e-5
+#define B_COEFF_C 0.907
+//#define B_COEFF_C 0.80
 /** @} */
 
 /**

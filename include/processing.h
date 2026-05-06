@@ -108,6 +108,9 @@ static inline int vol_index(const Vol_scan *vol, int x, int y, int ppi) {
     return ppi * vol->num_elements + x * vol->num_y + y;
 }
 
+Cart_grid* interpolate_scan_NN(Polar_box *p_box, Radar *radar, double time, 
+                                double cart_grid_res, int scan_idx, int slice_idx);
+
 int add_cart_grid_to_volscan(Vol_scan *vol, Cart_grid *grid, int ppi_index);
 
 void free_vol_scan(Vol_scan *vol);

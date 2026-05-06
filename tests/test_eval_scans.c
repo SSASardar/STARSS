@@ -4,6 +4,8 @@
 #include "material_coords_raincell.h"
 #include "spatial_coords_raincell.h"
 #include "vertical_profiles.h"
+#include "analysis.h"
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,15 +17,6 @@
 
 #define NUM_SCANS 54  // 0..53
     
-typedef struct {
-    double mse;
-    double mae;
-    double bias;
-    double total_measured;        // sum of R over grid points
-    double total_true;            // sum of R over grid points
-    double total_measured_mm2;    // area-corrected total in mm*h per km²
-    double total_true_mm2;        // area-corrected total in mm*h per km²
-} RainfallStats;
 
 int write_heights_for_point(Vol_scan *vol, int xi, int yi, const char *filename) {
     if (!vol || !vol->grid_height || !vol->grid_refl) return -1;
@@ -85,6 +78,11 @@ int main() {
     clock_t start = clock();
 
     RainfallStats stats_array[NUM_SCANS];
+
+
+    init_stats_array(stats_array, NUM_SCANS);
+    FILE *fp_clear = fopen("outputs/stats.txt", "w");
+    if (fp_clear) fclose(fp_clear);
 
     // -------------------------------
     // Step 0: setup VPR structures once
@@ -163,64 +161,14 @@ Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,10);
     
 //  	save_polar_box_grid_to_file(p_box, radar, i, time, filename_check);
         update_VPR(VPR_strat, params, time_s_2, VPR_conv);
-
-        Bounding_box* bbox = bounding_box_from_textfile(p_box, radar);
-
-        int num_x = (int)(ceil((bbox->bottomRight.x - bbox->bottomLeft.x)/cart_grid_res));
-        int num_y = (int)(ceil((bbox->topLeft.y - bbox->bottomLeft.y)/cart_grid_res));
-        if (num_x <= 0) num_x = 1;
-        if (num_y <= 0) num_y = 1;
-
-        Point ref_point = {
-            ceil(bbox->bottomLeft.x / cart_grid_res) * cart_grid_res,
-            ceil(bbox->bottomLeft.y / cart_grid_res) * cart_grid_res
-        };
-
-        Cart_grid *cg = Cart_grid_init(cart_grid_res, num_x, num_y, ref_point);
-        if (!cg) continue;
-
-
-	int valid_count = 0;
-int invalid_range = 0, invalid_angle = 0;
-        for (int xi = 0; xi < num_x; xi++) {
-            for (int yi = 0; yi < num_y; yi++) {
-                int idA = xi * num_y + yi;
-                Point p = {ref_point.x + xi*cart_grid_res, ref_point.y + yi*cart_grid_res};
-                int range_idx, angle_idx;
-//printf("line 189\n");
-                if (getPolarBoxIndex(p, radar->x, radar->y, p_box, &range_idx, &angle_idx)) {
-			valid_count++;
-                    int p_grid_idx = range_idx * (int)p_box->num_angles + angle_idx;
-                    cg->height_grid[idA] = p_box->height_grid[p_grid_idx];
-                    cg->grid[idA] = p_box->grid[p_grid_idx];// + 2*p_box->estimated_attenuation_grid[p_grid_idx];
-                    cg->estimated_attenuation_grid[idA] = p_box->estimated_attenuation_grid[p_grid_idx];
-//printf("line 196\n");
-		    cg->rain_type_grid[idA] = p_box->rain_type[p_grid_idx];
-                } else {
-	//printf("I am failing here");
-	            double dx = p.x - radar->x;
-            double dy = p.y - radar->y;
-            double r = sqrt(dx*dx + dy*dy);
-            double r_min = p_box->min_range_gate * p_box->range_resolution;
-            double r_max = p_box->max_range_gate * p_box->range_resolution;
-
-            if (r < r_min || r > r_max)
-                invalid_range++;
-            else
-                invalid_angle++;
-    
-		    cg->grid[idA] = NAN;
-                    cg->height_grid[idA] = NAN;
-	            cg->estimated_attenuation_grid[idA] = NAN;
-	       
-//printf("line 215\n");
-	       	    cg->rain_type_grid[idA] = 9;
-                }
-            }
-        }
-
 //	printf("Scan %d: Valid=%d, Invalid range=%d, Invalid angle=%d\n",scan_idx, valid_count, invalid_range, invalid_angle);
-        cart_grids[cg_count++] = cg;
+
+    // Interpolate this scan slice to Cartesian grid
+    Cart_grid *cg = interpolate_scan_NN(p_box, radar, time, cart_grid_res, scan_idx, i);
+
+    if (!cg) continue;
+
+cart_grids[cg_count++] = cg;
     }
 
     Vol_scan *vol = init_vol_scan(cart_grids, cg_count);
@@ -238,10 +186,11 @@ int invalid_range = 0, invalid_angle = 0;
    
 
 
-
+int print_or_not = 1;
+if(print_or_not == 1) {
 print_vpr_detailed_with_std(vol, "outputs/vpr_emp_strat.txt", 1, 1);  // Append stratiform with std dev
 print_vpr_detailed_with_std(vol, "outputs/vpr_emp_conv.txt", 2, 1);  // Append convective with std dev
-
+}
 //   FOR VPR WITHOUT STDEV
 //print_vpr_detailed(vol, "outputs/vpr_emp_strat.txt", 1, 1);  // Append stratiform
 //print_vpr_detailed(vol, "outputs/vpr_emp_conv.txt", 2, 1);  // Append convective
@@ -307,6 +256,7 @@ double mse, mae, bias;
 double total_measured, total_true_masked, total_measured_mm2, total_true_mm2;
 double total_true_unmasked, total_true_mm2_unmasked;
 
+/*
 // Check overlap between display_grid and refl_ALA
 int both_valid = 0;
 int display_valid = 0;
@@ -321,8 +271,9 @@ for (size_t i = 0; i < vol->num_elements; i++) {
 printf("display_grid valid: %d, refl_ALA valid: %d, both valid: %d\n", 
        display_valid, refl_valid, both_valid);
 
+*/
 
-
+/*
 if (compute_rainfall_statistics(vol, -5.0, cart_grid_res,
                                 &mse, &mae, &bias,
                                 &total_measured, &total_true_masked,
@@ -367,8 +318,23 @@ if (fp) {
 } else {
     fprintf(stderr, "Failed to open outputs/stats.txt for writing\n");
 }
+*/
 
-int print_or_not = 0;
+
+       // Compute and store statistics for this scan
+double volume_duration = 5.0 * 60.0; // 5 minutes in seconds        
+if (compute_and_store_stats(vol, -5.0, cart_grid_res, volume_duration, stats_array, scan_idx) == 0) {
+            // Append to stats.txt in EXACT original format
+            append_stats_to_file(stats_array, scan_idx, "outputs/stats.txt");
+            
+            // Optional: Print to console using the new function
+            print_scan_stats_console(stats_array, scan_idx);
+        } else {
+            printf("Scan %d: Failed to compute statistics\n", scan_idx);
+        }
+
+
+
 if(print_or_not == 1) {
 // --- Write display_grid to file ---
 char disp_filename[256];
