@@ -30,7 +30,7 @@ typedef struct {
 
 
 
-
+/*
 void initialize_test_environment(
     VPR **VPR_strat,
     VPR **VPR_conv,
@@ -44,7 +44,21 @@ void initialize_test_environment(
     double *cart_grid_res,
     double *sim_time
 );
-
+*/
+void initialize_test_environment(
+    VPR **VPR_strat,
+    VPR **VPR_conv,
+    VPR **VPR_A_clima,
+    VPR **VPR_A_gmd,
+    VPR **VPR_A_d,
+    VPR **VPR_dummy,
+    VPR_params **params,
+    Raincell **raincell,
+    Spatial_raincell **s_raincell,
+    double *cart_grid_res,
+    double *sim_time,
+    double x1, double x2, double x3, double x4, double x5, double x6
+);
 
 void cleanup_test_environment(
     VPR *VPR_strat,

@@ -1,4 +1,4 @@
-// file: combined_test.c
+// file: test_chain_1.c
 // Combines both test_command_centre and test_eval_scan functionality
 
 #include <stdio.h>

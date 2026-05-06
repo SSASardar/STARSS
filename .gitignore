@@ -12,6 +12,10 @@ archive/
 inputs/
 videos/
 *.mp4
+batch*/
+config.txt
+params.txt
+
 
 # Xcode
 *.xcworkspace

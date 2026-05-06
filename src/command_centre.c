@@ -97,7 +97,7 @@ void generate_commands_file(int file_index, double start_time) {
     }
 
     fclose(file);
-    printf("Command file '%s' created successfully.\n", filename);
+//    printf("Command file '%s' created successfully.\n", filename);
 }
 
 
