@@ -17,6 +17,16 @@
 
 static int global_command_id = 0;
 
+// Worker ID support
+char g_worker_id[16] = "";  // empty string = original behavior
+
+void set_worker_id(const char *id) {
+    if (id && id[0]) {
+        snprintf(g_worker_id, sizeof(g_worker_id), "_%s", id);
+    } else {
+        g_worker_id[0] = '\0';
+    }
+}
 
 // ---------------------- Logging ----------------------
 FILE *log_file = NULL;
@@ -27,7 +37,16 @@ FILE *open_log_file_with_timestamp() {
     if (!t) return NULL;
 
     char filename[256];
-    strftime(filename, sizeof(filename), "logs/control_centre_%Y-%m-%d_%H-%M-%S.log", t);
+    char logs_dir[256];
+    snprintf(logs_dir, sizeof(logs_dir), "logs%s", g_worker_id);
+    snprintf(filename, sizeof(filename), "%s/control_centre_%Y-%m-%d_%H-%M-%S.log", logs_dir, t);
+
+    // This is a simplified version - use strftime properly
+    strftime(filename, sizeof(filename), logs_dir, t);
+    // Actually, simpler approach:
+    char actual_filename[512];
+    strftime(actual_filename, sizeof(actual_filename), "control_centre_%Y-%m-%d_%H-%M-%S.log", t);
+    snprintf(filename, sizeof(filename), "%s/%s", logs_dir, actual_filename);
 
     FILE *log_file = fopen(filename, "a");
     if (!log_file) {
@@ -39,11 +58,13 @@ FILE *open_log_file_with_timestamp() {
 static void log_message(const char *format, ...) {
     if (!log_file) return;
 
-    va_list args;
-    va_start(args, format);
-    vfprintf(log_file, format, args);
-    fflush(log_file);
-    va_end(args);
+//    va_list args;
+//    va_start(args, format);
+//    vfprintf(log_file, format, args);
+//    fflush(log_file);
+//    va_end(args);
+return;  // Just return immediately
+
 }
 
 // ---------------------- Command Generation ----------------------
@@ -57,11 +78,9 @@ static void log_message(const char *format, ...) {
 // VOLUME to CAPPI things
 #define SCANS_PER_FILE 15
 
-
-
 void generate_commands_file(int file_index, double start_time) {
     char filename[256];
-    snprintf(filename, sizeof(filename), "inputs/commands_%04d.txt", file_index);
+    snprintf(filename, sizeof(filename), "inputs%s/commands_%04d.txt", g_worker_id, file_index);
 
     FILE *file = fopen(filename, "w");
     if (!file) {
@@ -74,20 +93,19 @@ void generate_commands_file(int file_index, double start_time) {
     for (int i = 0; i < SCANS_PER_FILE; i++) {
         Command cmd;
         cmd.time = start_time + i * interval;
-       cmd.radar_id = 1; // make sure the radar id is correct.
+        cmd.radar_id = 1; // make sure the radar id is correct.
 
-  // RHI THINGS    
- //	snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
-//        cmd.other_angle = 0;
+        // RHI THINGS    
+        // snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
+        // cmd.other_angle = 0;
 
-//   VOL->PPI THINGS
-      snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
-	double VCP_elevation_angles[SCANS_PER_FILE] ={12.0, 8.0, 4.5, 2.0, 0.8, 0.3, 25, 20, 15, 10, 6, 2.8, 1.2, 0.3, 0.3} ; 
-	cmd.other_angle = VCP_elevation_angles[counter_A];
+        // VOL->PPI THINGS
+        snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
+        double VCP_elevation_angles[SCANS_PER_FILE] = {12.0, 8.0, 4.5, 2.0, 0.8, 0.3, 25, 20, 15, 10, 6, 2.8, 1.2, 0.3, 0.3}; 
+        cmd.other_angle = VCP_elevation_angles[counter_A];
+        cmd.raincell_id = 1;
+        counter_A++;
 
-	cmd.raincell_id = 1;
-	counter_A++;
-								 //
         fprintf(file, "%.2f %d %s %d %.5f\n",
                 cmd.time,
                 cmd.radar_id,
@@ -97,14 +115,7 @@ void generate_commands_file(int file_index, double start_time) {
     }
 
     fclose(file);
-//    printf("Command file '%s' created successfully.\n", filename);
 }
-
-
-
-
-
-
 
 // ---------------------- Command Validation ----------------------
 bool validate_command(const Command *cmd) {
@@ -137,68 +148,8 @@ void printCommand(const Command* cmd) {
     printf("Other Angle: %.2f\n", cmd->other_angle);
     printf("============ \n\n");
 }
-/*
-void execute_command(const Command *cmd,Polar_box *box, const char *filename) {
-    if (!cmd) {
-        log_message("Fatal Error: NULL command pointer passed to execute_command().\n");
-        return;
-    }
-    log_message("Executing command ID %d...\n", cmd->command_id);
-   // printCommand(cmd);
-   
 
-    if (strcmp(cmd->scan_mode, "PPI") == 0) {
- 
-	    // Find radar associated with polar box
-    const  Radar* found_radar = find_radar_by_id_ONLY(cmd->radar_id);
-    if (found_radar) {
-        printf("Radar found: ID = %d, Frequency = %s, Max Range = %.2f\n",
-               get_radar_id(found_radar), get_frequency(found_radar), get_max_range_radar(found_radar));
-    } else {
-        printf("Radar not found.\n");
-    }
-
-   const Raincell* rc = find_raincell_by_id_ONLY(cmd->raincell_id);
-if (rc != NULL) {
-    printf("Found Raincell with ID %d, core radius = %f\n", rc->id, rc->radius_core);
-} else {
-    printf("Raincell not found!\n");
-} 
-
-const Spatial_raincell* s_rc = find_spatial_raincell_by_id_ONLY(cmd->raincell_id);
-if (s_rc != NULL) {
-    printf("Found Spatial_raincell with ID %d at (%.2f, %.2f) initially\n",
-           s_rc->id, s_rc->initial_x, s_rc->initial_y);
-} else {
-    printf("Spatial_raincell not found!\n");
-}
-
-
-
-    update_other_angle(box, cmd->other_angle);
-
-	// Fill polar box
-	    if (fill_polar_box(box, cmd->time, s_rc, found_radar, rc) != 0) {
-        printf("Failed to update polar box at time  %lf\n", cmd->time);
-        // handle error if needed
-    }
-
-
-    Bounding_box* bounded_polar_box = create_bounding_box_for_polar_box_EZ(box);
-
-print_bounding_box(bounded_polar_box);
-
-
-fill_polar_box_grid(box, found_radar, s_rc, rc, cmd->time);
-
-save_polar_box_grid_to_file(box, found_radar, cmd->local_scan_id, cmd->time,filename);
-
-}
-printf("===================\n\n");
-}
-*/
-
-void execute_command(const Command *cmd, Polar_box *box, const char *filename, const VPR *vpr_strat ,const VPR_params *params, VPR *vpr_conv) {
+void execute_command(const Command *cmd, Polar_box *box, const char *filename, const VPR *vpr_strat, const VPR_params *params, VPR *vpr_conv) {
     if (!cmd || !box) {
         log_message("Fatal: NULL pointer in execute_command\n");
         return;
@@ -215,30 +166,28 @@ void execute_command(const Command *cmd, Polar_box *box, const char *filename, c
     const Spatial_raincell* s_rc = find_spatial_raincell_by_id_ONLY(cmd->raincell_id);
     if (!s_rc) { log_message("Spatial Raincell %d not found\n", cmd->raincell_id); return; }
 
-double time_in_min = cmd->time;
-double time_in_sec = cmd->time * 60.0;
+    double time_in_min = cmd->time;
+    double time_in_sec = cmd->time * 60.0;
+    
     // Fill and compute polar box
     if (fill_polar_box(box, time_in_sec, s_rc, radar, rc, params) != 0) {
         log_message("Failed to fill polar box for command ID %d\n", cmd->command_id);
         return;
     }
 
-
-if(strcmp(get_scanning_mode(radar), "PPI")==0)update_other_angle(box, cmd->other_angle);
-
-
+    if (strcmp(get_scanning_mode(radar), "PPI") == 0) {
+        update_other_angle(box, cmd->other_angle);
+    }
 
     Point* pos_raincell = get_position_raincell(time_in_sec, s_rc);
-log_message("Radar=(%.1f, %.1f), Raincell=(%.1f, %.1f), time=%.1f, angle=%.3f rad\n",
-            radar->x, radar->y,
-            pos_raincell->x, pos_raincell->y,
-            time_in_sec,
-            box->other_angle);
-free(pos_raincell);
+    log_message("Radar=(%.1f, %.1f), Raincell=(%.1f, %.1f), time=%.1f, angle=%.3f rad\n",
+                radar->x, radar->y,
+                pos_raincell->x, pos_raincell->y,
+                time_in_sec,
+                box->other_angle);
+    free(pos_raincell);
 
-update_VPR(vpr_strat, params, time_in_sec, vpr_conv);
-
-
+    update_VPR(vpr_strat, params, time_in_sec, vpr_conv);
 
     fill_polar_box_grid(box, radar, s_rc, rc, time_in_sec, vpr_strat, vpr_conv);
     save_polar_box_grid_to_file(box, radar, cmd->local_scan_id, time_in_min, filename);
@@ -279,9 +228,9 @@ bool read_command_file_once(const char *filename, const VPR *vpr_strat, const VP
             continue;
         }
 
-        // Safe output file name
+        // Safe output file name with worker ID support
         char filenameA[256];
-        snprintf(filenameA, sizeof(filenameA), "outputs/radar_scan_%.4d.txt", cmd.command_id);
+        snprintf(filenameA, sizeof(filenameA), "outputs%s/radar_scan_%.4d.txt", g_worker_id, cmd.command_id);
 
         // Execute the command safely
         execute_command(&cmd, box, filenameA, vpr_strat, params, vpr_conv);
@@ -296,16 +245,26 @@ bool read_command_file_once(const char *filename, const VPR *vpr_strat, const VP
 }
 
 // ---------------------- Monitor Inputs ----------------------
-void monitor_and_process_inputs(const VPR *vpr_strat, const VPR_params *params,  VPR *vpr_conv) {
+void monitor_and_process_inputs(const VPR *vpr_strat, const VPR_params *params, VPR *vpr_conv) {
     int file_index = 0;
 
-    if (mkdir("logs", 0755) == -1 && errno != EEXIST) {
-        fprintf(stderr, "Failed to create logs directory: %s\n", strerror(errno));
-        return;
+    // Create worker-specific directories
+    char inputs_dir[256];
+    char archive_dir[256];
+    char logs_dir[256];
+    
+    snprintf(inputs_dir, sizeof(inputs_dir), "inputs%s", g_worker_id);
+    snprintf(archive_dir, sizeof(archive_dir), "archive%s", g_worker_id);
+    snprintf(logs_dir, sizeof(logs_dir), "logs%s", g_worker_id);
+
+    if (mkdir(inputs_dir, 0755) == -1 && errno != EEXIST) {
+        fprintf(stderr, "Failed to create %s directory: %s\n", inputs_dir, strerror(errno));
     }
-    if (mkdir("archive", 0755) == -1 && errno != EEXIST) {
-        fprintf(stderr, "Failed to create archive directory: %s\n", strerror(errno));
-        return;
+    if (mkdir(archive_dir, 0755) == -1 && errno != EEXIST) {
+        fprintf(stderr, "Failed to create %s directory: %s\n", archive_dir, strerror(errno));
+    }
+    if (mkdir(logs_dir, 0755) == -1 && errno != EEXIST) {
+        fprintf(stderr, "Failed to create %s directory: %s\n", logs_dir, strerror(errno));
     }
 
     log_file = open_log_file_with_timestamp();
@@ -318,10 +277,10 @@ void monitor_and_process_inputs(const VPR *vpr_strat, const VPR_params *params, 
 
     while (1) {
         char filename[256];
-        snprintf(filename, sizeof(filename), "inputs/commands_%04d.txt", file_index);
+        snprintf(filename, sizeof(filename), "inputs%s/commands_%04d.txt", g_worker_id, file_index);
 
         char archive_filename[256];
-        snprintf(archive_filename, sizeof(archive_filename), "archive/commands_%04d.txt", file_index);
+        snprintf(archive_filename, sizeof(archive_filename), "archive%s/commands_%04d.txt", g_worker_id, file_index);
 
         if (access(filename, F_OK) == 0) {
             log_message("Detected file: %s. Beginning processing...\n", filename);
@@ -349,4 +308,3 @@ void monitor_and_process_inputs(const VPR *vpr_strat, const VPR_params *params, 
     fclose(log_file);
     log_file = NULL;
 }
-

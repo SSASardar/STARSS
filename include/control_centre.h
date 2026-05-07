@@ -19,10 +19,16 @@ typedef struct {
 } Command;
 
 // ---------------------- Function Prototypes ----------------------
+// Worker ID support
+extern char g_worker_id[16];
+void set_worker_id(const char *id);
+
 
 // Logging
 FILE *open_log_file_with_timestamp(void);
 //void log_message(const char *format, ...);
+
+
 
 // Command handling
 bool validate_command(const Command *cmd);

@@ -137,72 +137,7 @@ quick-test:
 	@$(MAKE) --no-print-directory build-test TEST=$(TEST)
 	@$(MAKE) --no-print-directory run-test TEST=$(TEST) ARGS="$(ARGS)"
 
-# Batch test with multiple parameter combinations from a file
-# Usage: make batch-test TEST=test_cl PARAM_FILE=params.txt
-#batch-test:
-#	@if [ -z "$(TEST)" ]; then \
-#		echo "❌ Please specify TEST name"; \
-#		exit 1; \
-#	fi
-#	@if [ -z "$(PARAM_FILE)" ]; then \
-#		echo "❌ Please specify PARAM_FILE"; \
-#		exit 1; \
-#	fi
-#	@if [ ! -f "$(PARAM_FILE)" ]; then \
-#		echo "❌ Parameter file $(PARAM_FILE) not found"; \
-#		exit 1; \
-#	fi
-#	@echo "Creating batch directory: $(BATCH_DIR)"
-#	@mkdir -p "$(BATCH_DIR)"
-#	@$(MAKE) --no-print-directory build-test TEST=$(TEST)
-#	@echo "🚀 Running batch tests from $(PARAM_FILE)"
-#	@echo "========================================"
-#	@counter=1; \
-#	total=$$(grep -v '^#' $(PARAM_FILE) | grep -v '^$$' | wc -l | tr -d ' '); \
-#	echo "Total tests to run: $$total"; \
-#	echo ""; \
-#	while IFS= read -r params; do \
-#		if [ ! -z "$$params" ] && [ "$$params" != "$$(echo $$params | cut -c1)#" ]; then \
-#			echo "📊 Test $$counter/$$total: $$params"; \
-#			\
-#			r_val=$$(echo "$$params" | sed -n 's/.*-r \([0-9]*\).*/\1/p'); \
-#			m_val=$$(echo "$$params" | sed -n 's/.*-m \([0-9]*\).*/\1/p'); \
-#			c_val=$$(echo "$$params" | sed -n 's/.*-c \([0-9]*\).*/\1/p'); \
-#			k_val=$$(echo "$$params" | sed -n 's/.*-k \([0-9.]*\).*/\1/p'); \
-#			y_val=$$(echo "$$params" | sed -n 's/.*-y \([0-9]*\).*/\1/p'); \
-#			a_val=$$(echo "$$params" | sed -n 's/.*-a \([0-9.]*\).*/\1/p'); \
-#			\
-#			if [ -z "$$r_val" ]; then r_val="0000"; fi; \
-#			if [ -z "$$m_val" ]; then m_val="000"; fi; \
-#			if [ -z "$$c_val" ]; then c_val="0000"; fi; \
-#			if [ -z "$$k_val" ]; then k_val="000"; else k_val=$$(printf "%03d" $$(echo "$$k_val * 100" | bc | cut -d. -f1)); fi; \
-#			if [ -z "$$y_val" ]; then y_val="000000"; fi; \
-#			if [ -z "$$a_val" ]; then a_val="00"; else a_val=$$(printf "%02d" $$(echo "$$a_val + 0.5" | bc | cut -d. -f1)); fi; \
-#			\
-#			stats_filename="stats_r_$${r_val}_m_$${m_val}_c_$${c_val}_k_$${k_val}_y_$${y_val}_a_$${a_val}.txt"; \
-#			echo "   Output file: $(BATCH_DIR)/$$stats_filename"; \
-#			\
-#			rm -f $(OUTPUTS_DIR)/*.txt; \
-#			\
-#			./$(BUILD_DIR)/$(TEST) $$params; \
-#			\
-#			if [ -f "$(OUTPUTS_DIR)/stats.txt" ]; then \
-#				mv "$(OUTPUTS_DIR)/stats.txt" "$(BATCH_DIR)/$$stats_filename"; \
-#				echo "   ✅ Saved to $(BATCH_DIR)/$$stats_filename"; \
-#			else \
-#				echo "   ⚠️ Warning: stats.txt not found"; \
-#			fi; \
-#			\
-#			echo "----------------------------------------"; \
-#			counter=$$((counter + 1)); \
-#		fi; \
-#	done < $(PARAM_FILE)
-#	@echo "✅ Completed $$((counter-1)) test runs"
-#	@echo "📁 Results saved in: $(BATCH_DIR)"
-
-
-
-# Batch test with multiple parameter combinations from a file
+# Batch test with multiple parameter combinations from a file (Serial)
 # Usage: make batch-test TEST=test_cl PARAM_FILE=params.txt
 batch-test:
 	@if [ -z "$(TEST)" ]; then \
@@ -287,7 +222,67 @@ batch-test:
 	echo "⏱️  Total time: $$total_min minutes $$total_sec seconds"; \
 	echo "📁 Results saved in: $(BATCH_DIR)"
 
-
+# Parallel batch test with multiple cores (GNU Parallel)
+# Usage: make parallel-batch-test TEST=test_cl PARAM_FILE=params.txt CORES=8
+parallel-batch-test:
+	@if [ -z "$(TEST)" ]; then \
+		echo "❌ Please specify TEST name"; \
+		exit 1; \
+	fi
+	@if [ -z "$(PARAM_FILE)" ]; then \
+		echo "❌ Please specify PARAM_FILE"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(PARAM_FILE)" ]; then \
+		echo "❌ Parameter file $(PARAM_FILE) not found"; \
+		exit 1; \
+	fi
+	@if [ -z "$(CORES)" ]; then \
+		CORES=8; \
+		echo "⚠️  CORES not specified, using 8 cores"; \
+	fi
+	@echo "Creating batch directory: $(BATCH_DIR)"
+	@mkdir -p "$(BATCH_DIR)"
+	@$(MAKE) --no-print-directory build-test TEST=$(TEST)
+	@echo "🚀 Running parallel batch tests from $(PARAM_FILE) on $(CORES) cores"
+	@echo "========================================"
+	@total=$$(grep -v '^#' $(PARAM_FILE) | grep -v '^$$' | wc -l | tr -d ' '); \
+	echo "Total tests to run: $$total"; \
+	echo ""; \
+	start_time=$$(date +%s); \
+	cat $(PARAM_FILE) | grep -v '^#' | grep -v '^$$' | \
+	parallel -j $(CORES) --bar \
+		'params="{}"; \
+		WORKER_ID=$$(printf "%03d" {#}); \
+		r_val=$$(echo $$params | sed -n "s/.*-r \([0-9]*\).*/\1/p"); \
+		m_val=$$(echo $$params | sed -n "s/.*-m \([0-9]*\).*/\1/p"); \
+		c_val=$$(echo $$params | sed -n "s/.*-c \([0-9]*\).*/\1/p"); \
+		k_val=$$(echo $$params | sed -n "s/.*-k \([0-9.]*\).*/\1/p"); \
+		y_val=$$(echo $$params | sed -n "s/.*-y \([0-9]*\).*/\1/p"); \
+		a_val=$$(echo $$params | sed -n "s/.*-a \([0-9.]*\).*/\1/p"); \
+		[ -z "$$r_val" ] && r_val="0000" || r_val=$$(printf "%04d" $$r_val); \
+		[ -z "$$m_val" ] && m_val="000" || m_val=$$(printf "%03d" $$m_val); \
+		[ -z "$$c_val" ] && c_val="0000" || c_val=$$(printf "%04d" $$c_val); \
+		[ -z "$$k_val" ] && k_val="000" || k_val=$$(printf "%03d" $$(echo "$$k_val * 100" | bc | cut -d. -f1)); \
+		[ -z "$$y_val" ] && y_val="000000" || y_val=$$(printf "%06d" $$y_val); \
+		[ -z "$$a_val" ] && a_val="00" || a_val=$$(printf "%02d" $$(echo "$$a_val + 0.5" | bc | cut -d. -f1)); \
+		stats_filename="stats_r_$${r_val}_m_$${m_val}_c_$${c_val}_k_$${k_val}_y_$${y_val}_a_$${a_val}.txt"; \
+		./$(BUILD_DIR)/$(TEST) $$params -w $$WORKER_ID > /dev/null 2>&1; \
+		if [ -f "outputs_$${WORKER_ID}/stats.txt" ]; then \
+			mv "outputs_$${WORKER_ID}/stats.txt" "$(BATCH_DIR)/$$stats_filename"; \
+		fi; \
+		rm -rf outputs_$${WORKER_ID} inputs_$${WORKER_ID} archive_$${WORKER_ID} logs_$${WORKER_ID} 2>/dev/null; \
+		' \
+	; \
+	end_time=$$(date +%s); \
+	total_duration=$$((end_time - start_time)); \
+	total_min=$$((total_duration / 60)); \
+	total_sec=$$((total_duration % 60)); \
+	echo ""; \
+	echo "========================================"; \
+	echo "✅ Parallel batch testing completed"; \
+	echo "⏱️  Total time: $$total_min minutes $$total_sec seconds"; \
+	echo "📁 Results saved in: $(BATCH_DIR)"
 
 
 # Generate parameter combinations for grid search
@@ -359,7 +354,7 @@ $(PROGRESS_EXE): $(PROGRESS_SRC)
 clean:
 	rm -rf $(BUILD_DIR)/* $(TARGET) batch_test_*
 
-.PHONY: all clean run tests test progress build-test run-test quick-test batch-test generate-params debug-params
+.PHONY: all clean run tests test progress build-test run-test quick-test batch-test parallel-batch-test generate-params debug-params
 
 # Help target
 help:
@@ -376,7 +371,8 @@ help:
 	@echo "  make quick-test TEST=test_cl ARGS='...' - Build and run in one step"
 	@echo ""
 	@echo "=== Batch Testing ==="
-	@echo "  make batch-test TEST=test_cl PARAM_FILE=file.txt - Run from parameter file"
+	@echo "  make batch-test TEST=test_cl PARAM_FILE=file.txt - Run from parameter file (serial)"
+	@echo "  make parallel-batch-test TEST=test_cl PARAM_FILE=file.txt CORES=8 - Run in parallel"
 	@echo "  make generate-params OUTPUT=file.txt - Generate parameter combinations"
 	@echo "  make debug-params               - Test parameter extraction"
 	@echo ""
@@ -384,6 +380,7 @@ help:
 	@echo "  make test TEST=test_cl"
 	@echo "  make quick-test TEST=test_cl ARGS='-r 500 -m 180'"
 	@echo "  make batch-test TEST=test_cl PARAM_FILE=my_params.txt"
+	@echo "  make parallel-batch-test TEST=test_cl PARAM_FILE=my_params.txt CORES=8"
 	@echo ""
 	@echo "Parameter file format (my_params.txt):"
 	@echo "  -r 500 -m 170 -c 600 -k 0.7 -y 75000 -a 12"
