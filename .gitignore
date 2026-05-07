@@ -17,6 +17,20 @@ config.txt
 params.txt
 
 
+# Common executable extensions
+*exe
+*.dll
+*.so
+*.dylib
+*.bin
+*.out
+*.app
+*.msi
+*.deb
+*.rpm
+*.processed
+
+
 # Xcode
 *.xcworkspace
 *.xcuserdata
