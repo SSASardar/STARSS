@@ -168,7 +168,7 @@ void initialize_test_environment(
     
     // Initialize radars
     Radar* radar1 = create_radar(1, "C", "PPI", 0.0, 0.0, 100.0, 250000.0, 250.0, 1.0);
-    Radar* radar2 = create_radar(2, "X", "RHI", -50000.0, 50000.0, 25.0, 50000.0, 100.0, 0.5);
+    Radar* radar2 = create_radar(2, "X", "PPI", -50000.0, 50000.0, 25.0, 50000.0, 100.0, 1.0);
     
     radar_list[radar_count++] = radar1;
     radar_list[radar_count++] = radar2;
@@ -234,6 +234,44 @@ void init_stats_array(RainfallStats *stats_array, int num_scans) {
         stats_array[i].total_true_mm2 = NAN;
     }
 }
+int compute_and_store_stats_temp_interp(Vol_scan *vol, double rain_threshold, double cart_grid_res,
+                           double volume_duration_seconds, RainfallStats *stats, int scan_idx, int temp_interp_timesteps) {
+    if (!vol || !stats || scan_idx < 0) return -1;
+    
+    double mse, mae, bias;
+    double total_measured, total_true_masked;
+    double total_measured_mm2, total_true_mm2;
+    double total_true_unmasked, total_true_mm2_unmasked;
+    
+    // Compute rainfall statistics
+    if (compute_rainfall_statistics(vol, rain_threshold, cart_grid_res,
+                                    &mse, &mae, &bias,
+                                    &total_measured, &total_true_masked,
+                                    &total_measured_mm2, &total_true_mm2,
+                                    &total_true_unmasked, &total_true_mm2_unmasked) == 0) {
+        // Store computed statistics
+        stats[scan_idx].mse = mse;
+        stats[scan_idx].mae = mae;
+        stats[scan_idx].bias = bias;
+        stats[scan_idx].total_measured = total_measured;
+        stats[scan_idx].total_true = total_true_unmasked;
+        
+        // do not Divide by the actual volume duration
+       //stats[scan_idx].total_measured_mm2 = total_measured_mm2;
+        //stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked;
+        
+	// Divide multiply by the time to get to the accumulation in the timeperiod.
+        stats[scan_idx].total_measured_mm2 = total_measured_mm2* (volume_duration_seconds/3600);
+        stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked*( volume_duration_seconds/3600);
+        
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+
+
 int compute_and_store_stats(Vol_scan *vol, double rain_threshold, double cart_grid_res,
                            double volume_duration_seconds, RainfallStats *stats, int scan_idx) {
     if (!vol || !stats || scan_idx < 0) return -1;
@@ -256,9 +294,13 @@ int compute_and_store_stats(Vol_scan *vol, double rain_threshold, double cart_gr
         stats[scan_idx].total_measured = total_measured;
         stats[scan_idx].total_true = total_true_unmasked;
         
-        // Divide by the actual volume duration
-        stats[scan_idx].total_measured_mm2 = total_measured_mm2 / volume_duration_seconds;
-        stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked / volume_duration_seconds;
+        // do not Divide by the actual volume duration
+       //stats[scan_idx].total_measured_mm2 = total_measured_mm2;
+        //stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked;
+        
+	// Divide multiply by the time to get to the accumulation in the timeperiod.
+        stats[scan_idx].total_measured_mm2 = total_measured_mm2* (volume_duration_seconds/3600);
+        stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked*( volume_duration_seconds/3600);
         
         return 0;
     } else {

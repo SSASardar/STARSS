@@ -79,6 +79,8 @@ void cleanup_test_environment(
 
 // Function prototypes for statistics
 void init_stats_array(RainfallStats *stats_array, int num_scans);
+int compute_and_store_stats_temp_interp(Vol_scan *vol, double rain_threshold, double cart_grid_res, 
+                           double volume_duration_seconds, RainfallStats *stats, int scan_idx, int temp_interp_timesteps);
 
 int compute_and_store_stats(Vol_scan *vol, double rain_threshold, double cart_grid_res, 
                            double volume_duration_seconds, RainfallStats *stats, int scan_idx);

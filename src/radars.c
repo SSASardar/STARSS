@@ -275,17 +275,11 @@ int fill_polar_box(Polar_box* polar_box, double time,
     polar_box->range_resolution = get_range_res_radar(radar);
     polar_box->angular_resolution = get_angular_res_radar(radar);
 
-    double angle = atan2(diff_y, diff_x);
-    if (angle < 0) angle += 2 * M_PI;
-    angle = angle * RAD2DEG;
-
-    double del_angle = atan2(radius_stratiform, dist) * RAD2DEG;
-
     polar_box->radar_id = get_radar_id(radar);
 
     // Compute min/max gates and angles
-    polar_box->min_range_gate = floor((sin((fabs(dist_s - radius_stratiform))/kea_and_radar)*kea_and_radar/cos(polar_box->other_angle*DEG2RAD)) / polar_box->range_resolution);
     polar_box->max_range_gate = ceil((sin((fabs(dist_s + radius_stratiform))/kea_and_radar)*kea_and_radar/cos(polar_box->other_angle*DEG2RAD)) / polar_box->range_resolution);
+    polar_box->min_range_gate = floor((sin((fabs(dist_s - radius_stratiform))/kea_and_radar)*kea_and_radar/cos(polar_box->other_angle*DEG2RAD)) / polar_box->range_resolution);
 
 if (polar_box->min_range_gate > polar_box->max_range_gate) {
     int tmp = polar_box->min_range_gate;
@@ -293,10 +287,23 @@ if (polar_box->min_range_gate > polar_box->max_range_gate) {
     polar_box->max_range_gate = tmp;
 }
 
+    double angle = atan2(diff_y, diff_x);
+    if (angle < 0) angle += 2 * M_PI;
+    angle = angle * RAD2DEG;
+
+double del_angle = atan2(radius_stratiform, dist) * RAD2DEG;
+
 double padding_angle = 2.0;
     polar_box->min_angle = floor((angle - del_angle-padding_angle)/polar_box->angular_resolution);
     polar_box->max_angle = ceil((angle + del_angle+padding_angle)/polar_box->angular_resolution);
 
+
+
+if(dist_s<=radius_stratiform){
+polar_box->min_range_gate = 0;
+polar_box->min_angle = 0;
+polar_box->max_angle = 359;
+}
     // Dynamically compute sizes
     int num_ranges = (int)lround(polar_box->max_range_gate - polar_box->min_range_gate + 1);
 double span = polar_box->max_angle - polar_box->min_angle;
@@ -304,6 +311,12 @@ if (span < 0) span += 360.0;
 int num_angles = (int)ceil(span);
     //
  //int num_angles = (int)lround((polar_box->max_angle - polar_box->min_angle + 1 + 2*padding_angle_deg)/ polar_box->angular_resolution);
+
+
+
+
+
+
 
     // Only reallocate if size changed or not allocated yet
     if (!polar_box->grid || (int)polar_box->num_ranges != num_ranges || (int)polar_box->num_angles != num_angles) {
@@ -626,6 +639,23 @@ for (int i = 1; i < 5; ++i) {
     if (xs[i] > xmax) xmax = xs[i];
     if (ys[i] < ymin) ymin = ys[i];
     if (ys[i] > ymax) ymax = ys[i];
+}
+
+if(fabs(ymin-ymax)>8*fabs(xmin-xmax)){
+	double d_ABCy = fabs(ymin-ymax)*0.5;
+	double x_midpoint = (xmin+xmax)*0.5;
+
+	xmin = x_midpoint-d_ABCy;
+	xmax = x_midpoint+d_ABCy;
+
+}
+if(fabs(xmin-xmax)>8*fabs(ymin-ymax)){
+	double d_ABCx = fabs(xmin-xmax)*0.5;
+	double y_midpoint = (ymin+ymax)*0.5;
+
+	ymin = y_midpoint-d_ABCx;
+	ymax = y_midpoint+d_ABCx;
+
 }
 
 Point* pos_radar = get_position_radar(found_radar);
@@ -1442,6 +1472,23 @@ for (int i = 1; i < 5; ++i) {
 }
 
 
+if(fabs(ymin-ymax)>8*fabs(xmin-xmax)){
+	double d_ABCy = fabs(ymin-ymax)*0.5;
+	double x_midpoint = (xmin+xmax)*0.5;
+
+	xmin = x_midpoint-d_ABCy;
+	xmax = x_midpoint+d_ABCy;
+
+}
+if(fabs(xmin-xmax)>8*fabs(ymin-ymax)){
+	double d_ABCx = fabs(xmin-xmax)*0.5;
+	double y_midpoint = (ymin+ymax)*0.5;
+
+	ymin = y_midpoint-d_ABCx;
+	ymax = y_midpoint+d_ABCx;
+
+}
+
                                    
 Point* pos_radar = get_position_radar(radar);
                                    
@@ -1563,6 +1610,7 @@ double add_noise(const Radar* radar, double reflectivity) {
 
     if (strcmp(radar->frequency, "X") == 0) {
         noise_db = 3.0;
+        //noise_db = 1.5;
     } else if (strcmp(radar->frequency, "C") == 0) {
         noise_db = 1.0;
     } else {

@@ -104,7 +104,7 @@ def load_second_scan(filename):
             current.append(line)
     for block in scans:
         meta, data = parse_scan_block(block)
-        if int(meta.get('scan.index', -1)) == 1:
+        if int(meta.get('scan.index', -1)) == 4:
             return meta, data
     return None, None
 

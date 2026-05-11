@@ -203,10 +203,14 @@ int main(int argc, char *argv[]) {
     // Part 1: Run test_command_centre functionality
     // =========================================
     
-    int max_vol_scans = (int)((330.0 - sim_time) / 5);
+    //int max_vol_scans = (int)((330.0 - sim_time) / 5);
+    //int max_vol_scans = (int)((330.0 - sim_time) / 2.5);
+    int max_vol_scans = (int)((330.0 - sim_time) / 1.0);
     for (int i = 0; i < max_vol_scans; i++) {
         generate_commands_file(i, sim_time);
-        sim_time += 5.0;
+        //sim_time += 5.0;
+        //sim_time += 2.5;
+    	sim_time += 1.0;
     }
     
     // Start monitoring inputs
@@ -216,8 +220,19 @@ int main(int argc, char *argv[]) {
     // Part 2: Run test_eval_scan functionality
     // =========================================
     
-    #define NUM_SCANS 54
-    RainfallStats stats_array[NUM_SCANS];
+    //#define NUM_SCANS 54
+    //#define NUM_SCANS 108
+    #define NUM_SCANS 270
+//    RainfallStats stats_array[NUM_SCANS];
+  
+  // Allocate on heap instead of stack
+RainfallStats *stats_array = malloc(NUM_SCANS * sizeof(RainfallStats));
+if (!stats_array) {
+    fprintf(stderr, "ERROR: Failed to allocate stats_array for %d scans\n", NUM_SCANS);
+    return 1;
+}
+  
+  
     init_stats_array(stats_array, NUM_SCANS);
     
     // Determine stats file path based on worker ID
@@ -280,7 +295,9 @@ int main(int argc, char *argv[]) {
 
         compute_display_grid_KNMI_empirical(vol, -5.0, 0.5, 0);
 
-        double volume_duration = 5.0 * 60.0;
+        //double volume_duration = 5.0 * 60.0;
+        //double volume_duration = 2.5 * 60.0;
+        double volume_duration = 1.0 * 60.0;
         if (compute_and_store_stats(vol, -5.0, cart_grid_res, volume_duration, stats_array, scan_idx) == 0) {
             append_stats_to_file(stats_array, scan_idx, stats_path);
         }
@@ -294,6 +311,8 @@ int main(int argc, char *argv[]) {
     // =========================================
     // Cleanup
     // =========================================
+    free(stats_array);
+
     cleanup_test_environment(
         VPR_strat, VPR_conv, VPR_A_clima, VPR_A_gmd, VPR_A_d, VPR_dummy,
         params, raincell, s_raincell

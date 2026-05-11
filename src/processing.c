@@ -2210,6 +2210,7 @@ double compute_ground_to_altitude_diff_empirical(const Vol_scan *vol, double hei
       // printf("%.3e",Z_altitude); 
         if (!isnan(Z_ground) && !isnan(Z_altitude)) {
             return Z_ground - Z_altitude;
+            //return Z_altitude-Z_ground;
         }
     }
     
@@ -2290,7 +2291,8 @@ int n_unc_remaining = 0;
                 int idx = vol_index(vol, x, y, ppi);
                 double estim_pia = vol->grid_att[idx];
                 double atten_correction = 2 * estim_pia;
-                if (atten_correction > 10) atten_correction = 10;
+                //double atten_correction = 0.0;
+                if (atten_correction > 5) atten_correction = 5;
                 
                 double refl = vol->grid_refl[idx] + atten_correction;
                 double height = vol->grid_height[idx];

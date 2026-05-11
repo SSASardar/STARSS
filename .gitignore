@@ -15,6 +15,7 @@ videos/
 batch*/
 config.txt
 params.txt
+*Min*vol*/
 
 
 # Common executable extensions

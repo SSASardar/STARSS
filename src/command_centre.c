@@ -69,14 +69,18 @@ return;  // Just return immediately
 
 // ---------------------- Command Generation ----------------------
 
-#define FIVE_MINUTES 5.0  // minutes
+//#define FIVE_MINUTES 5.0  // minutes
 // #define FIVE_MINUTES 300.0  // seconds
-
+//#define FIVE_MINUTES 2.5 //minutes
+#define FIVE_MINUTES 1.0 //minutes			 //
+			 //
 // RHI THINGS
 //#define SCANS_PER_FILE 5 
 
 // VOLUME to CAPPI things
-#define SCANS_PER_FILE 15
+//#define SCANS_PER_FILE 15
+//#define SCANS_PER_FILE 10
+#define SCANS_PER_FILE 3
 
 void generate_commands_file(int file_index, double start_time) {
     char filename[256];
@@ -93,7 +97,7 @@ void generate_commands_file(int file_index, double start_time) {
     for (int i = 0; i < SCANS_PER_FILE; i++) {
         Command cmd;
         cmd.time = start_time + i * interval;
-        cmd.radar_id = 1; // make sure the radar id is correct.
+        cmd.radar_id = 2; // make sure the radar id is correct.
 
         // RHI THINGS    
         // snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
@@ -101,8 +105,11 @@ void generate_commands_file(int file_index, double start_time) {
 
         // VOL->PPI THINGS
         snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
-        double VCP_elevation_angles[SCANS_PER_FILE] = {12.0, 8.0, 4.5, 2.0, 0.8, 0.3, 25, 20, 15, 10, 6, 2.8, 1.2, 0.3, 0.3}; 
-        cmd.other_angle = VCP_elevation_angles[counter_A];
+        //double VCP_elevation_angles[SCANS_PER_FILE] = {12.0, 8.0, 4.5, 2.0, 0.8, 0.3, 25, 20, 15, 10, 6, 2.8, 1.2, 0.3, 0.3}; 
+       //double VCP_elevation_angles[SCANS_PER_FILE] = {12.0, 4.5, 2.0, 0.8, 0.3, 10, 6, 2.8, 1.2, 0.3}; 
+        double VCP_elevation_angles[SCANS_PER_FILE] = {1.2, 0.8, 0.3}; 
+        
+       	cmd.other_angle = VCP_elevation_angles[counter_A];
         cmd.raincell_id = 1;
         counter_A++;
 

@@ -128,6 +128,60 @@ CommandLineParams parse_command_line(int argc, char *argv[]) {
 */    
     return params;
 }
+int write_heights_for_point(Vol_scan *vol, int xi, int yi, const char *filename) {
+    if (!vol || !vol->grid_height || !vol->grid_refl) return -1;
+
+    FILE *fp = fopen(filename, "w");
+    if (!fp) return -1;
+
+//    size_t idx = xi * vol->num_y + yi;
+
+    fprintf(fp, "# Heights for point (%d, %d) across %d PPIs\n", xi, yi, vol->num_PPIs);
+    fprintf(fp, "# Format: PPI_index Reflectivity Height\n");
+
+    for (int ppi = 0; ppi < vol->num_PPIs; ppi++) {
+        //size_t grid_idx = idx + ppi * vol->num_elements;
+        size_t grid_idx = ppi * vol->num_x * vol->num_y + xi * vol->num_y + yi;
+	    double refl = vol->grid_refl[grid_idx];
+
+            double height = vol->grid_height[grid_idx];
+            //fprintf(fp, "%d %.2f\n", ppi, height);
+            fprintf(fp, "%d %.2f %.2f\n", ppi, refl, height);
+    }
+
+    fclose(fp);
+    return 0;
+}
+
+
+int write_VPR_to_file(const VPR *vpr, const char *label, int scan_idx) {
+    if (!vpr || !label) return -1;
+
+    char filename[256];
+    snprintf(filename, sizeof(filename), "outputs/VPR_%s_%04d.txt", label, scan_idx);
+
+    FILE *fp = fopen(filename, "w");
+    if (!fp) {
+        fprintf(stderr, "Failed to open file %s for writing\n", filename);
+        return -1;
+    }
+
+    fprintf(fp, "# VPR data (%s) for scan %04d\n", label, scan_idx);
+    fprintf(fp, "# Format: PointName Reflectivity Height\n");
+
+    fprintf(fp, "ET   %.3f %.3f\n", vpr->ET.reflectivity,   vpr->ET.height);
+    fprintf(fp, "BB_u %.3f %.3f\n", vpr->BB_u.reflectivity, vpr->BB_u.height);
+    fprintf(fp, "BB_m %.3f %.3f\n", vpr->BB_m.reflectivity, vpr->BB_m.height);
+    fprintf(fp, "BB_l %.3f %.3f\n", vpr->BB_l.reflectivity, vpr->BB_l.height);
+    fprintf(fp, "CB   %.3f %.3f\n", vpr->CB.reflectivity,   vpr->CB.height);
+    fprintf(fp, "GT   %.3f %.3f\n", vpr->GT.reflectivity,   vpr->GT.height);
+
+
+    fclose(fp);
+    return 0;
+}
+
+
 
 int main(int argc, char *argv[]) {
     // Parse command line arguments
@@ -182,7 +236,8 @@ int main(int argc, char *argv[]) {
     // =========================================
     //printf("\n=== Running Eval Scan Tests ===\n");
     
-    #define NUM_SCANS 54
+    //#define NUM_SCANS 54
+    #define NUM_SCANS 108
     RainfallStats stats_array[NUM_SCANS];
     init_stats_array(stats_array, NUM_SCANS);
     
@@ -219,6 +274,13 @@ int main(int argc, char *argv[]) {
         compute_average_empVPR(vol);
         compute_std_dev_empVPR(vol);
 
+int print_or_not = 1;
+if(print_or_not == 1) {
+print_vpr_detailed_with_std(vol, "outputs/vpr_emp_strat.txt", 1, 1);  // Append stratiform with std dev
+print_vpr_detailed_with_std(vol, "outputs/vpr_emp_conv.txt", 2, 1);  // Append convective with std dev
+}
+
+
         double true_time_min = radar_scans[scan_count-1].time +
                                (radar_scans[scan_count-1].time - radar_scans[scan_count-2].time);
         double true_time = true_time_min * 60.0;
@@ -238,6 +300,43 @@ int main(int argc, char *argv[]) {
         if (compute_and_store_stats(vol, -5.0, cart_grid_res, volume_duration, stats_array, scan_idx) == 0) {
             append_stats_to_file(stats_array, scan_idx, "outputs/stats.txt");
         }
+
+
+if(print_or_not == 1) {
+// --- Write display_grid to file ---
+char disp_filename[256];
+snprintf(disp_filename, sizeof(disp_filename), "outputs/disp_g_%04d.txt", scan_idx);
+if (write_display_grid_to_file(vol, disp_filename) != 0) {
+    fprintf(stderr, "Failed to write display grid to %s\n", disp_filename);
+}
+
+// --- Write true_grid to file ---
+char true_filename[256];
+snprintf(true_filename, sizeof(true_filename), "outputs/true_g_%04d.txt", scan_idx);
+if (write_true_grid_to_file(vol, true_filename) != 0) {
+    fprintf(stderr, "Failed to write true grid to %s\n", true_filename);
+}
+
+int xA = vol->num_x/2;
+int yA = vol->num_y/2;
+//int xA = 20;
+//int yA = 20;
+
+
+char point_height_file[256];
+snprintf(point_height_file, sizeof(point_height_file), "outputs/heights_point_%04d.txt", scan_idx);
+
+if (write_heights_for_point(vol, xA, yA, point_height_file) != 0) {
+    fprintf(stderr, "Failed to write heights for point (%d,%d)\n", xA, yA);
+}
+
+if(scan_idx == 0) write_VPR_to_file(VPR_strat, "strat", scan_idx);
+write_VPR_to_file(VPR_conv,  "conv",  scan_idx);
+}
+
+
+
+
 
         for (int i = 0; i < cg_count; i++)
             free_cart_grid(cart_grids[i]);
