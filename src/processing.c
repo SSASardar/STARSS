@@ -489,8 +489,6 @@ Vol_scan *init_vol_scan(Cart_grid **cart_grids, int num_PPIs) {
     return vol;
 }
 
-
-
 Cart_grid* interpolate_scan_NN(Polar_box *p_box, Radar *radar, double time, 
                                 double cart_grid_res, int scan_idx, int slice_idx) {
     if (!p_box || !radar) return NULL;
@@ -539,6 +537,93 @@ Cart_grid* interpolate_scan_NN(Polar_box *p_box, Radar *radar, double time,
             
             // Convert Cartesian to polar coordinates and get indices
             if (getPolarBoxIndex(p, radar->x, radar->y, p_box, &range_idx, &angle_idx)) {
+                valid_count++;
+                int p_grid_idx = range_idx * (int)p_box->num_angles + angle_idx;
+                
+                // Copy values from polar grid to Cartesian grid
+                cg->grid[idA] = p_box->grid[p_grid_idx];
+                cg->height_grid[idA] = p_box->height_grid[p_grid_idx];
+                cg->estimated_attenuation_grid[idA] = p_box->estimated_attenuation_grid[p_grid_idx];
+                cg->rain_type_grid[idA] = p_box->rain_type[p_grid_idx];
+            } else {
+                // Point is outside radar coverage
+                double dx = p.x - radar->x;
+                double dy = p.y - radar->y;
+                double r = sqrt(dx*dx + dy*dy);
+                
+                double r_min = p_box->min_range_gate * p_box->range_resolution;
+                double r_max = p_box->max_range_gate * p_box->range_resolution;
+                
+                if (r < r_min || r > r_max)
+                    invalid_range++;
+                else
+                    invalid_angle++;
+                
+                // Set to NAN for invalid points
+                cg->grid[idA] = NAN;
+                cg->height_grid[idA] = NAN;
+                cg->estimated_attenuation_grid[idA] = NAN;
+                cg->rain_type_grid[idA] = 9;  // 9 = undefined type
+            }
+        }
+    }
+    
+    // Print statistics if needed (optional)
+    // printf("Scan %d, Slice %d: Valid=%d, Invalid range=%d, Invalid angle=%d\n",
+    //        scan_idx, slice_idx, valid_count, invalid_range, invalid_angle);
+    
+    free(bbox);
+    return cg;
+}
+
+Cart_grid* interpolate_scan_NN_RHI(Polar_box *p_box, Radar *radar, double time, 
+                                double cart_grid_res, int scan_idx, int slice_idx) {
+    if (!p_box || !radar) return NULL;
+    
+    // Create bounding box from radar coverage
+    Bounding_box* bbox = bounding_box_from_textfile(p_box, radar);
+    if (!bbox) return NULL;
+    
+    // Calculate grid dimensions
+    int num_x = (int)(ceil((bbox->bottomRight.x - bbox->bottomLeft.x) / cart_grid_res));
+    int num_y = (int)(ceil((bbox->topLeft.y - bbox->bottomLeft.y) / cart_grid_res));
+    
+    if (num_x <= 0) num_x = 1;
+    if (num_y <= 0) num_y = 1;
+    
+    // Set reference point (bottom-left corner aligned to grid resolution)
+    Point ref_point = {
+        ceil(bbox->bottomLeft.x / cart_grid_res) * cart_grid_res,
+        ceil(bbox->bottomLeft.y / cart_grid_res) * cart_grid_res
+    };
+    
+    // Initialize Cartesian grid
+    Cart_grid *cg = Cart_grid_init(cart_grid_res, num_x, num_y, ref_point);
+    if (!cg) {
+        free(bbox);
+        return NULL;
+    }
+    
+    // Statistics for debugging
+    int valid_count = 0;
+    int invalid_range = 0;
+    int invalid_angle = 0;
+    
+    // Interpolate each point in the Cartesian grid
+    for (int xi = 0; xi < num_x; xi++) {
+        for (int yi = 0; yi < num_y; yi++) {
+            int idA = xi * num_y + yi;
+            
+            // Calculate Cartesian coordinates of this grid point
+            Point p = {
+                ref_point.x + xi * cart_grid_res,
+                ref_point.y + yi * cart_grid_res
+            };
+            
+            int range_idx, angle_idx;
+            
+            // Convert Cartesian to polar coordinates and get indices
+            if (getPolarBoxIndex(p, radar->x, radar->z, p_box, &range_idx, &angle_idx)) {
                 valid_count++;
                 int p_grid_idx = range_idx * (int)p_box->num_angles + angle_idx;
                 

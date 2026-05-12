@@ -15,6 +15,8 @@
 #include <time.h>
 #include <math.h>
 
+
+
 static int global_command_id = 0;
 
 // Worker ID support
@@ -32,7 +34,7 @@ void set_worker_id(const char *id) {
 FILE *log_file = NULL;
 
 FILE *open_log_file_with_timestamp() {
-    time_t now = time(NULL);
+/*    time_t now = time(NULL);
     struct tm *t = localtime(&now);
     if (!t) return NULL;
 
@@ -53,17 +55,36 @@ FILE *open_log_file_with_timestamp() {
         fprintf(stderr, "Failed to open log file %s\n", filename);
     }
     return log_file;
+*/ time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    if (!t) return NULL;
+
+    char filename[256];
+    char logs_dir[256];
+    snprintf(logs_dir, sizeof(logs_dir), "logs%s", g_worker_id);
+    
+    // This is wrong - strftime needs a format string and writes to filename
+    // But you're passing logs_dir as the format
+    char actual_filename[512];
+    strftime(actual_filename, sizeof(actual_filename), "control_centre_%Y-%m-%d_%H-%M-%S.log", t);
+    snprintf(filename, sizeof(filename), "%s/%s", logs_dir, actual_filename);
+
+    FILE *log_file = fopen(filename, "a");
+    if (!log_file) {
+        fprintf(stderr, "Failed to open log file %s\n", filename);
+    }
+    return log_file;
 }
 
 static void log_message(const char *format, ...) {
     if (!log_file) return;
 
-//    va_list args;
-//    va_start(args, format);
-//    vfprintf(log_file, format, args);
-//    fflush(log_file);
-//    va_end(args);
-return;  // Just return immediately
+    va_list args;
+    va_start(args, format);
+    vfprintf(log_file, format, args);
+    fflush(log_file);
+    va_end(args);
+//return;  // Just return immediately
 
 }
 
@@ -124,7 +145,79 @@ void generate_commands_file(int file_index, double start_time) {
     fclose(file);
 }
 
+
+void generate_commands_file_vol_rhi_A(int file_index, double start_time) {
+    char filename[256];
+    snprintf(filename, sizeof(filename), "inputs%s/commands_%04d.txt", g_worker_id, file_index);
+
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        fprintf(stderr, "Failed to create command file %s\n", filename);
+        return;
+    }
+    int scans_in_C_vol = 15;
+     
+    double VCP_elevation_angles_C_vol[15] = {12.0, 8.0, 4.5, 2.0, 0.8, 0.3, 25, 20, 15, 10, 6, 2.8, 1.2, 0.3, 0.3}; 
+    double interval = 5 / (double)scans_in_C_vol;  // frequency of scans (5 minutes divided by number of scans)
+    int counter_A = 0;
+    for (int i = 0; i < scans_in_C_vol; i++) {
+        Command cmd;
+        cmd.time = start_time + (double)i * interval;
+        cmd.radar_id = 0; // make sure the radar id is correct.
+
+        // RHI THINGS    
+        // snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
+        // cmd.other_angle = 0;
+
+        // VOL->PPI THINGS
+        snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
+        //double VCP_elevation_angles[SCANS_PER_FILE] = {12.0, 8.0, 4.5, 2.0, 0.8, 0.3, 25, 20, 15, 10, 6, 2.8, 1.2, 0.3, 0.3}; 
+       //double VCP_elevation_angles[SCANS_PER_FILE] = {12.0, 4.5, 2.0, 0.8, 0.3, 10, 6, 2.8, 1.2, 0.3}; 
+        //double VCP_elevation_angles[SCANS_PER_FILE] = {1.2, 0.8, 0.3}; 
+        
+       	cmd.other_angle = VCP_elevation_angles_C_vol[counter_A];
+        cmd.raincell_id = 1;
+        counter_A++;
+
+        fprintf(file, "%.2f %d %s %d %.5f\n",
+                cmd.time,
+                cmd.radar_id,
+                cmd.scan_mode,
+                cmd.raincell_id,
+                cmd.other_angle);
+    }
+
+    int scans_in_X_rhi = 3;
+    double other_angles_rhi[3] = {-1.0,1.0,0.0};
+    double interval_two = 1/(double)scans_in_X_rhi; // frequency of scans... 3 scans each minute.
+    double counter_B = 0;
+    for (int i = 0; i<scans_in_X_rhi;i++){
+    Command cmd;
+    cmd.time = start_time + (double)counter_A*interval - (3-i)*interval_two;
+    cmd.radar_id = 3;
+    snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
+    cmd.other_angle = other_angles_rhi[i];
+    counter_B++;
+    cmd.raincell_id = 1;
+     fprintf(file, "%.2f %d %s %d %.5f\n",
+                cmd.time,
+                cmd.radar_id,
+                cmd.scan_mode,
+                cmd.raincell_id,
+                cmd.other_angle); 
+    }
+
+        
+
+
+    fclose(file);
+}
+
+
+
 // ---------------------- Command Validation ----------------------
+/*
+
 bool validate_command(const Command *cmd) {
     if (cmd->radar_id != 1 && cmd->radar_id != 2) {
         log_message("Validation Error: Radar ID %d does not exist. Command ID %d.\n",
@@ -143,7 +236,26 @@ bool validate_command(const Command *cmd) {
     }
     return true;
 }
-
+*/
+bool validate_command(const Command *cmd) {
+    // Accept radar IDs 0, 1, 2, and 3 (or whatever range your system uses)
+    if (cmd->radar_id < 0 || cmd->radar_id > 3) {  // Adjust max ID as needed
+        log_message("Validation Error: Radar ID %d does not exist. Command ID %d.\n",
+                    cmd->radar_id, cmd->command_id);
+        return false;
+    }
+    if (strcmp(cmd->scan_mode, "PPI") != 0 && strcmp(cmd->scan_mode, "RHI") != 0) {
+        log_message("Validation Error: Invalid scan mode '%s'. Command ID %d.\n",
+                    cmd->scan_mode, cmd->command_id);
+        return false;
+    }
+    if (cmd->raincell_id != 1) {
+        log_message("Validation Error: Raincell ID %d does not exist. Command ID %d.\n",
+                    cmd->raincell_id, cmd->command_id);
+        return false;
+    }
+    return true;
+}
 // ---------------------- Command Execution ----------------------
 void printCommand(const Command* cmd) {
     if (!cmd) return;
@@ -251,6 +363,134 @@ bool read_command_file_once(const char *filename, const VPR *vpr_strat, const VP
     return true;
 }
 
+/*
+bool read_command_file_once_multi_radar(const char *filename, const VPR *vpr_strat, const VPR_params *params, VPR *vpr_conv) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        log_message("Error opening file '%s': %s\n", filename, strerror(errno));
+        return false;
+    }
+
+    // Allocate one Polar_box and reuse it
+    Polar_box* box = init_polar_box();
+    if (!box) {
+        fclose(file);
+        log_message("Failed to initialize polar box\n");
+        return false;
+    }
+
+
+    int counter_scans_radars[MAX_RADARS] = {0};
+    Command cmd;
+    //cmd.command_id = atoi(filename + strlen(filename) - 4);
+    // Option B: Or extract correctly
+const char* num_start = filename + strlen(filename) - 8;  // commands_0000.txt -> start at 'c'
+cmd.command_id = atoi(num_start + 9);  // Skip "commands_"
+    while (fscanf(file, "%lf %d %3s %d %lf",
+                  &cmd.time,
+                  &cmd.radar_id,
+                  cmd.scan_mode,
+                  &cmd.raincell_id,
+                  &cmd.other_angle) == 5) {
+
+	counter_scans_radars[cmd.radar_id]++;
+	cmd.local_scan_id = counter_scans_radars[cmd.radar_id];
+
+        log_message("Processing command ID %d: scan = %d, time=%.2f, radar_id=%d, scan_mode=%s, raincell_id=%d, angle=%.2f\n",
+                    cmd.command_id, cmd.local_scan_id, cmd.time, cmd.radar_id, cmd.scan_mode, cmd.raincell_id, cmd.other_angle);
+
+        if (!validate_command(&cmd)) {
+            log_message("Command ID %d failed validation. Skipping.\n", cmd.command_id);
+            continue;
+        }
+
+        // Safe output file name with worker ID support
+        char filenameA[256];
+        snprintf(filenameA, sizeof(filenameA), "outputs%s/radar_%.2d_scan_%.4d.txt", g_worker_id, cmd.radar_id, cmd.command_id);
+
+        // Execute the command safely
+        execute_command(&cmd, box, filenameA, vpr_strat, params, vpr_conv);
+    }
+
+    // Free polar box once after all commands are done
+    free_polar_box(box);
+    fclose(file);
+
+    log_message("Finished processing file: %s\n", filename);
+    return true;
+}
+*/
+
+
+
+bool read_command_file_once_multi_radar(const char *filename, const VPR *vpr_strat, const VPR_params *params, VPR *vpr_conv) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        log_message("Error opening file '%s': %s\n", filename, strerror(errno));
+        return false;
+    }
+
+    Polar_box* box = init_polar_box();
+    if (!box) {
+        fclose(file);
+        log_message("Failed to initialize polar box\n");
+        return false;
+    }
+
+    // Extract command_id from filename properly
+    // filename format: "inputs_worker1/commands_1234.txt" or "inputs/commands_1234.txt"
+    const char* commands_pos = strstr(filename, "commands_");
+    if (!commands_pos) {
+        log_message("Error: Cannot find 'commands_' in filename: %s\n", filename);
+        free_polar_box(box);
+        fclose(file);
+        return false;
+    }
+    
+    int command_id = atoi(commands_pos + 9); // Skip "commands_"
+    log_message("Extracted command_id: %d from filename: %s\n", command_id, filename);
+
+    int counter_scans_radars[MAX_RADARS] = {0};
+    Command cmd;
+    
+    while (fscanf(file, "%lf %d %3s %d %lf",
+                  &cmd.time,
+                  &cmd.radar_id,
+                  cmd.scan_mode,
+                  &cmd.raincell_id,
+                  &cmd.other_angle) == 5) {
+
+        counter_scans_radars[cmd.radar_id]++;
+        cmd.local_scan_id = counter_scans_radars[cmd.radar_id];
+        cmd.command_id = command_id;  // Use extracted ID for all commands in this file
+
+        log_message("Processing command: command_id=%d, scan=%d, time=%.2f, radar_id=%d, scan_mode=%s, angle=%.2f\n",
+                    cmd.command_id, cmd.local_scan_id, cmd.time, cmd.radar_id, cmd.scan_mode, cmd.other_angle);
+
+        if (!validate_command(&cmd)) {
+            log_message("Command failed validation. Skipping.\n");
+            continue;
+        }
+
+        // FIXED: Correct filename format
+        char filenameA[256];
+        snprintf(filenameA, sizeof(filenameA), "outputs%s/radar_%02d_scan_%04d.txt", 
+                 g_worker_id, cmd.radar_id, cmd.command_id);
+
+        log_message("Writing to: %s\n", filenameA);  // Debug output
+        
+        execute_command(&cmd, box, filenameA, vpr_strat, params, vpr_conv);
+    }
+
+    free_polar_box(box);
+    fclose(file);
+
+    log_message("Finished processing file: %s\n", filename);
+    return true;
+}
+
+
+
 // ---------------------- Monitor Inputs ----------------------
 void monitor_and_process_inputs(const VPR *vpr_strat, const VPR_params *params, VPR *vpr_conv) {
     int file_index = 0;
@@ -293,6 +533,71 @@ void monitor_and_process_inputs(const VPR *vpr_strat, const VPR_params *params, 
             log_message("Detected file: %s. Beginning processing...\n", filename);
 
             if (read_command_file_once(filename, vpr_strat, params, vpr_conv)) {
+                log_message("Successfully processed file: %s\n", filename);
+            } else {
+                log_message("Failed to process file: %s\n", filename);
+            }
+
+            if (rename(filename, archive_filename) != 0) {
+                log_message("Failed to archive file %s: %s\n", filename, strerror(errno));
+            } else {
+                log_message("Archived file %s to %s\n", filename, archive_filename);
+            }
+
+            file_index++;
+        } else {
+            log_message("No file found for: %s. Stopping monitoring.\n", filename);
+            break;
+        }
+    }
+
+    log_message("Monitoring ended.\n");
+    fclose(log_file);
+    log_file = NULL;
+}
+
+
+void monitor_and_process_inputs_multi_radar(const VPR *vpr_strat, const VPR_params *params, VPR *vpr_conv) {
+    int file_index = 0;
+
+    // Create worker-specific directories
+    char inputs_dir[256];
+    char archive_dir[256];
+    char logs_dir[256];
+    
+    snprintf(inputs_dir, sizeof(inputs_dir), "inputs%s", g_worker_id);
+    snprintf(archive_dir, sizeof(archive_dir), "archive%s", g_worker_id);
+    snprintf(logs_dir, sizeof(logs_dir), "logs%s", g_worker_id);
+
+    if (mkdir(inputs_dir, 0755) == -1 && errno != EEXIST) {
+        fprintf(stderr, "Failed to create %s directory: %s\n", inputs_dir, strerror(errno));
+    }
+    if (mkdir(archive_dir, 0755) == -1 && errno != EEXIST) {
+        fprintf(stderr, "Failed to create %s directory: %s\n", archive_dir, strerror(errno));
+    }
+    if (mkdir(logs_dir, 0755) == -1 && errno != EEXIST) {
+        fprintf(stderr, "Failed to create %s directory: %s\n", logs_dir, strerror(errno));
+    }
+
+    log_file = open_log_file_with_timestamp();
+    if (!log_file) {
+        fprintf(stderr, "Failed to open log file\n");
+        return;
+    }
+
+    log_message("Monitoring started...\n");
+
+    while (1) {
+        char filename[256];
+        snprintf(filename, sizeof(filename), "inputs%s/commands_%04d.txt", g_worker_id, file_index);
+
+        char archive_filename[256];
+        snprintf(archive_filename, sizeof(archive_filename), "archive%s/commands_%04d.txt", g_worker_id, file_index);
+
+        if (access(filename, F_OK) == 0) {
+            log_message("Detected file: %s. Beginning processing...\n", filename);
+
+            if (read_command_file_once_multi_radar(filename, vpr_strat, params, vpr_conv)) {
                 log_message("Successfully processed file: %s\n", filename);
             } else {
                 log_message("Failed to process file: %s\n", filename);

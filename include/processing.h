@@ -25,6 +25,7 @@ typedef struct Cart_grid {
 	int num_x;/**< storing the number in axis 1 (x)*/
 	int num_y;/**< storing the number in axis 2 (y or z)*/
 	Point ref_point;/**< storing the left bottom corner of the cartesian box*/
+
 } Cart_grid;
 
 
@@ -110,6 +111,9 @@ static inline int vol_index(const Vol_scan *vol, int x, int y, int ppi) {
 
 Cart_grid* interpolate_scan_NN(Polar_box *p_box, Radar *radar, double time, 
                                 double cart_grid_res, int scan_idx, int slice_idx);
+Cart_grid* interpolate_scan_NN_RHI(Polar_box *p_box, Radar *radar, double time, 
+                                double cart_grid_res, int scan_idx, int slice_idx);
+
 
 int add_cart_grid_to_volscan(Vol_scan *vol, Cart_grid *grid, int ppi_index);
 

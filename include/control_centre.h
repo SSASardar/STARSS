@@ -37,12 +37,21 @@ void printCommand(const Command *cmd);
 
 // File handling
 bool read_command_file_once(const char *filename, const VPR *vpr_strat, const VPR_params *params, VPR *vpr_conv);
+bool read_command_file_once_multi_radar(const char *filename, const VPR *vpr_strat, const VPR_params *params, VPR *vpr_conv);
+
+
+
 
 // Command generation
 void generate_commands_file(int file_index, double start_time);
 
+void generate_commands_file_vol_rhi_A(int file_index, double start_time);
+
+
+
 // Monitoring
 void monitor_and_process_inputs(const VPR *vpr_strat,const VPR_params *params, VPR *vpr_conv);
+void monitor_and_process_inputs_multi_radar(const VPR *vpr_strat,const VPR_params *params, VPR *vpr_conv);
 
 #endif // CONTROL_CENTRE_H
 
