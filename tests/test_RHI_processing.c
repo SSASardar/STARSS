@@ -95,7 +95,7 @@ int main() {
         7.0, //8000.0,
 	     2000.0, 3000.0,        // Echo top
         45.0, 1.0, 1.0, 2.0,         // Bright band Z
-        3000.0, 100.0, 50.0,       // Bright band heights
+        3500.0, 100.0, 50.0,       // Bright band heights
         15.0, 2.0, 1.0,              // Width Z
         750.0, 500.0, 250.0,       // Width H
         0.65,-0.4, -0.15,-0.1,           // Ratio
@@ -121,10 +121,10 @@ int main() {
     compute_average_VPR(VPR_A_d, params, t3, t2, 60.0, VPR_dummy);
 
 
-    Raincell* raincell = create_raincell(1, 0.5, 10000.0, -0.5);   
-Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,3);
+    Raincell* raincell = create_raincell(1, 0.2, 10000.0, -0.5);   
+Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,8.75);
 
-    double cart_grid_res = 25;
+    double cart_grid_res = 50;
 
     for (int scan_idx = 0; scan_idx < NUM_SCANS; scan_idx++) {
     char filename[256];

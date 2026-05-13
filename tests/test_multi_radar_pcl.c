@@ -223,19 +223,33 @@ int main(int argc, char *argv[]) {
   
   // Allocate on heap instead of stack
 RainfallStats *stats_array = malloc(NUM_SCANS * sizeof(RainfallStats));
+RainfallStats *ad_stats_array = malloc(NUM_SCANS * sizeof(RainfallStats));
+if (!ad_stats_array) {
+    fprintf(stderr, "ERROR: Failed to allocate stats_array for %d scans\n", NUM_SCANS);
+    return 1;
+}
 if (!stats_array) {
     fprintf(stderr, "ERROR: Failed to allocate stats_array for %d scans\n", NUM_SCANS);
     return 1;
 }
   
     init_stats_array(stats_array, NUM_SCANS);
-    
+    init_stats_array(ad_stats_array, NUM_SCANS);
+
+double vpr_emp_strat[120];
+double vpr_emp_conv[120];
+
+
+
     // Determine stats file path based on worker ID
     char stats_path[256];
+    char ad_stats_path[256];
     if (cmd_params.worker_id[0] != '\0') {
         snprintf(stats_path, sizeof(stats_path), "outputs_%s/stats.txt", cmd_params.worker_id);
+        snprintf(ad_stats_path, sizeof(ad_stats_path), "outputs_%s/ad_stats.txt", cmd_params.worker_id);
     } else {
         snprintf(stats_path, sizeof(stats_path), "outputs/stats.txt");
+        snprintf(ad_stats_path, sizeof(ad_stats_path), "outputs/ad_stats.txt");
     }
     
     for (int scan_idx = 0; scan_idx < NUM_SCANS; scan_idx++) {
@@ -246,8 +260,6 @@ if (!stats_array) {
 			   //
 			   //
 			   //
-double vpr_emp_strat[120];
-double vpr_emp_conv[120];
 
 for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {   
 
@@ -286,26 +298,43 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
         }
 	} else if (radar_id == 3) {
 printf("the scan count for radar %.2d in command %.4d is %.3d\n",radar_id, scan_idx, scan_count);
-/*        cart_grids = malloc(scan_count * sizeof(Cart_grid*));
+        cart_grids = malloc(scan_count * sizeof(Cart_grid*));
         if (!cart_grids) exit(1);
 
         int cg_count = 0;
 
+	init_polar_vpr_arrays(vpr_emp_strat, vpr_emp_conv);
         for (int i = 0; i < scan_count; i++) {
             Polar_box* p_box = radar_scans[i].box;
             Radar* radar = radar_scans[i].radar;
             double time = radar_scans[i].time;
             double time_s_2 = time * 60;
-
-            update_VPR(VPR_strat, params, time_s_2, VPR_conv);
-
-            Cart_grid *cg = interpolate_scan_NN_RHI(p_box, radar, time, cart_grid_res, scan_idx, i);
-            if (cg) cart_grids[cg_count++] = cg;
+		        if (p_box != NULL) {
+            process_polar_box_for_vpr(p_box, vpr_emp_strat, vpr_emp_conv);
         }
-*/
+//            update_VPR(VPR_strat, params, time_s_2, VPR_conv);
 
+//            Cart_grid *cg = interpolate_scan_NN_RHI(p_box, radar, time, cart_grid_res, scan_idx, i);
+//            if (cg) cart_grids[cg_count++] = cg;
+        }
 
-	continue;
+    // Compute averages (will be stored back into indices 40-79)
+    compute_polar_vpr_averages_inplace(vpr_emp_strat);
+    compute_polar_vpr_averages_inplace(vpr_emp_conv);
+    
+    // SECOND PASS: Compute sum of squared differences for standard deviation
+    for (int s = 0; s < scan_count; s++) {
+        Polar_box* box = radar_scans[s].box;
+        if (box != NULL) {
+            process_polar_box_for_std_dev(box, vpr_emp_strat);
+            process_polar_box_for_std_dev(box, vpr_emp_conv);
+        }
+    }
+    
+    // Compute final standard deviations (stored back into indices 80-119)
+    compute_polar_vpr_std_dev_inplace(vpr_emp_strat);
+    compute_polar_vpr_std_dev_inplace(vpr_emp_conv);
+    
 	}
 	}
 }
@@ -333,6 +362,36 @@ printf("the scan count for radar %.2d in command %.4d is %.3d\n",radar_id, scan_
             append_stats_to_file(stats_array, scan_idx, stats_path);
         }
 
+    // Process adaptive volume scan if empirical VPRs are available
+        // Create a deep copy of the volume scan for adaptive processing
+ 	    int print_or_not = 1;
+if(print_or_not == 1) {
+print_vpr_detailed_with_std(vol, "outputs/vpr_emp_strat.txt", 1, 1);  // Append stratiform with std dev
+print_vpr_detailed_with_std(vol, "outputs/vpr_emp_conv.txt", 2, 1);  // Append convective with std dev
+}
+     
+	    
+	    memcpy(vol->emp_vpr_strat, vpr_emp_strat, 120 * sizeof(double));
+	    memcpy(vol->emp_vpr_conv, vpr_emp_conv, 120 * sizeof(double));
+	    
+
+if(print_or_not == 1) {
+print_vpr_detailed_with_std(vol, "outputs/vpr_emp_strat_ad.txt", 1, 1);  // Append stratiform with std dev
+print_vpr_detailed_with_std(vol, "outputs/vpr_emp_conv_ad.txt", 2, 1);  // Append convective with std dev
+}
+
+ 
+            // Process adaptive volume scan (you may need to re-run some steps with empirical VPRs)
+            //process_volume_scan_VPR(ad_vol);
+            //compute_average_empVPR(ad_vol);
+            //compute_std_dev_empVPR(ad_vol);
+                        compute_display_grid_KNMI_empirical(vol, -5.0, 0.5, 0);
+            
+            // Compute and store adaptive statistics
+            if (compute_and_store_stats(vol, -5.0, cart_grid_res, volume_duration, ad_stats_array, scan_idx) == 0) {
+                append_stats_to_file(ad_stats_array, scan_idx, ad_stats_path);
+            }
+
         for (int i = 0; i < cg_count; i++)
             free_cart_grid(cart_grids[i]);
         free(cart_grids);
@@ -343,6 +402,7 @@ printf("the scan count for radar %.2d in command %.4d is %.3d\n",radar_id, scan_
     // Cleanup
     // =========================================
     free(stats_array);
+    free(ad_stats_array);
 
     cleanup_test_environment(
         VPR_strat, VPR_conv, VPR_A_clima, VPR_A_gmd, VPR_A_d, VPR_dummy,

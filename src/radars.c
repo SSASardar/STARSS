@@ -766,12 +766,12 @@ box->num_angles = num_angles;
     Point* pos_raincell = get_position_raincell(time, s_raincell);
     double h0 = get_height_of_radar(radar);
 
-    
-    double refl_dBZ = 0.0;
+  double refl_dBZ = 0.0;
     double att = 0.0;
     double noisy_att = 0.0;
 
-
+   
+   
 if(strcmp(get_scanning_mode(radar), "PPI") == 0){
     for (int ri = 0; ri < num_ranges; ri++) {
         double r1 = (box->min_range_gate + ri) * box->range_resolution;
@@ -786,6 +786,10 @@ if (ri != 0) {
         idp_min_one = (ri-1) * num_angles + ai;
 }
 
+ refl_dBZ = 0.0;
+ att = 0.0;
+ noisy_att = 0.0;
+
 
 if (sample == 0) { //raincell shape is always convex, so no strange things need to happen.
         box->grid[idp] = 0.0;
@@ -797,7 +801,7 @@ if (sample == 0) { //raincell shape is always convex, so no strange things need 
         refl_dBZ = get_reflectivity_at_height(vpr_strat, sample_height);
 refl_dBZ = add_noise_VPR(refl_dBZ);
 
-if(sample_height < vpr_strat->CB.height) { 
+if(sample_height < vpr_strat->BB_m.height) { 
 	att = compute_specific_attenuation(refl_dBZ, radar);
 	noisy_att = add_noise_SA(radar,att);
 }
@@ -816,7 +820,7 @@ if(sample_height < vpr_strat->CB.height) {
         refl_dBZ = get_reflectivity_at_height(vpr_conv, sample_height);
 
 refl_dBZ = add_noise_VPR(refl_dBZ);
-if(sample_height < vpr_conv->CB.height) { 
+if(sample_height < vpr_conv->BB_m.height) { 
         att = compute_specific_attenuation(refl_dBZ, radar); 
         	noisy_att = add_noise_SA(radar,att);
 }
@@ -850,6 +854,12 @@ for (int ri = 0; ri <num_ranges;ri++){
 		if (ri !=0){
 			idp_min_one = (ri-1) * num_angles+ai;
 		}	
+ refl_dBZ = 0.0;
+ att = 0.0;
+ noisy_att = 0.0;
+
+
+
 		if (sample == 0) { //raincell shape is always convex, so no strange things need to happen.
 	box->rain_type[idp] = 0;       
         box->grid[idp] = 0.0;
@@ -860,7 +870,7 @@ for (int ri = 0; ri <num_ranges;ri++){
         refl_dBZ = get_reflectivity_at_height(vpr_strat, sample_height);
 
 refl_dBZ = add_noise_VPR(refl_dBZ);
-if(sample_height < vpr_strat->CB.height) { 
+if(sample_height < vpr_strat->BB_m.height) { 
 	att = compute_specific_attenuation(refl_dBZ, radar);
 	noisy_att = add_noise_SA(radar,att);
 }
@@ -877,7 +887,7 @@ if(idp == idp_min_one) {
         refl_dBZ = get_reflectivity_at_height(vpr_conv, sample_height);
 
 refl_dBZ = add_noise_VPR(refl_dBZ);
-if(sample_height < vpr_conv->CB.height) { 
+if(sample_height < vpr_conv->BB_m.height) { 
         att = compute_specific_attenuation(refl_dBZ, radar); 
         	noisy_att = add_noise_SA(radar,att);
 
@@ -1544,9 +1554,9 @@ if(strcmp(p_box->scanning_mode,"RHI")== 0){
 	bbox->bottomRight.x = smax;
 	bbox->bottomRight.y /* height or z coord */ = h_min;
 
-	printf("*(%.1lf,%.1lf)________*(%.1lf,%.1lf)\n",bbox->topLeft.x,bbox->topLeft.y,bbox->topRight.x,bbox->topRight.y);
-	printf("|      |\n|      |\n|      |\n|      |\n|      |\n|      |\n");
-	printf("*(%.1lf,%.1lf)________*(%.1lf,%.1lf)\n",bbox->bottomLeft.x,bbox->bottomLeft.y,bbox->bottomRight.x,bbox->bottomRight.y);
+//	printf("*(%.1lf,%.1lf)________*(%.1lf,%.1lf)\n",bbox->topLeft.x,bbox->topLeft.y,bbox->topRight.x,bbox->topRight.y);
+//	printf("|      |\n|      |\n|      |\n|      |\n|      |\n|      |\n");
+//	printf("*(%.1lf,%.1lf)________*(%.1lf,%.1lf)\n",bbox->bottomLeft.x,bbox->bottomLeft.y,bbox->bottomRight.x,bbox->bottomRight.y);
 }
 return bbox;                       
 }                                  
@@ -1609,8 +1619,8 @@ double add_noise(const Radar* radar, double reflectivity) {
     double noise_db = 0.0;
 
     if (strcmp(radar->frequency, "X") == 0) {
-        noise_db = 3.0;
-        //noise_db = 1.5;
+       // noise_db = 3.0;
+       noise_db = 1.5;
     } else if (strcmp(radar->frequency, "C") == 0) {
         noise_db = 1.0;
     } else {
@@ -1635,7 +1645,8 @@ double add_noise_SA(const Radar* radar, double attenuation) {
     double noise_db_p_km = 0.0;
 
     if (strcmp(radar->frequency, "X") == 0) {
-        noise_db_p_km = 1.5;
+       // noise_db_p_km = 1.5;
+        noise_db_p_km = 0.075;
     } else if (strcmp(radar->frequency, "C") == 0) {
         noise_db_p_km = 0.05;
     } else {
@@ -1658,6 +1669,8 @@ double a, b;
     if (strcmp(radar->frequency, "X") == 0) {
         a = A_COEFF_X;
         b = B_COEFF_X;
+//a = A_COEFF_C;
+//b = B_COEFF_C;
     } else if (strcmp(radar->frequency, "C") == 0) {
         a = A_COEFF_C;
         b = B_COEFF_C;

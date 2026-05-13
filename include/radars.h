@@ -110,7 +110,7 @@ typedef struct RadarScan {
 	double time;/**< The time at which the PPI scan was made*/
 	Radar* radar;/**< The radar used for the PPI scan */
         Polar_box* box;/**< the filled polar box for the PPI scan */
-	struct Cart_grid* c_grid;/**< The interpolated cartesian grid around the Polar_box of the PPI scan*/
+//	struct Cart_grid* c_grid;/**< The interpolated cartesian grid around the Polar_box of the PPI scan*/
 } RadarScan;
 
 

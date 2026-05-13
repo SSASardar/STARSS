@@ -97,7 +97,9 @@ double r2(double theta, double k_eA, double h);
 double r_diff(double theta, double s, double k_eA, double h);
 double solve_theta(double s, double k_eA, double h,
                    double theta_min, double theta_max);
-
+double solve_theta_with_expansion(double s, double k_eA, double h,
+                                   double theta_min, double theta_max,
+                                   double tolerance);
 bool getPolarBoxIndex(Point p, double c_x, double c_y,const Polar_box* box, int *range_idx, int *angle_idx);
 
 
@@ -189,8 +191,41 @@ int compute_display_grid_KNMI_empirical(Vol_scan *vol, double threshold, double 
 int print_vpr_detailed_with_std(const Vol_scan *vs, const char *filename, int profile_type, int append);
 
 
+/**
+ * @brief Initializes VPR arrays for empirical VPR calculation from polar data
+ * @param vpr_strat Array for stratiform VPR (size 120)
+ * @param vpr_conv Array for convective VPR (size 120)
+ */
+void init_polar_vpr_arrays(double vpr_strat[120], double vpr_conv[120]);
 
+/**
+ * @brief Processes a single Polar_box and accumulates reflectivity into VPR bins
+ * @param box Pointer to the Polar_box structure
+ * @param vpr_strat Array for stratiform VPR (size 120)
+ * @param vpr_conv Array for convective VPR (size 120)
+ */
+void process_polar_box_for_vpr(Polar_box *box, double vpr_strat[120], double vpr_conv[120]);
 
+/**
+ * @brief Computes average reflectivity for each bin in-place (stores in indices 40-79)
+ * @param vpr_array Array of size 120 containing counts (0-39) and sums (40-79)
+ */
+void compute_polar_vpr_averages_inplace(double vpr_array[120]);
 
+/**
+ * @brief Processes a single Polar_box for standard deviation (accumulates squared differences)
+ * @param box Pointer to the Polar_box structure
+ * @param vpr_array Array of size 120 containing counts (0-39), averages (40-79)
+ */
+void process_polar_box_for_std_dev(Polar_box *box, double vpr_array[120]);
+
+/**
+ * @brief Computes standard deviation for each bin in-place (stores in indices 80-119)
+ * @param vpr_array Array of size 120 containing counts (0-39), averages (40-79), and sum_sq (80-119)
+ */
+void compute_polar_vpr_std_dev_inplace(double vpr_array[120]);
+
+Vol_scan* create_adaptive_vol_scan(Vol_scan *original_vol, double *emp_vpr_strat, double *emp_vpr_conv);
+ 
 
 #endif /* PROCESSING_H  */

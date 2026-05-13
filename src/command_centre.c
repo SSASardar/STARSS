@@ -90,18 +90,18 @@ static void log_message(const char *format, ...) {
 
 // ---------------------- Command Generation ----------------------
 
-//#define FIVE_MINUTES 5.0  // minutes
+#define FIVE_MINUTES 5.0  // minutes
 // #define FIVE_MINUTES 300.0  // seconds
 //#define FIVE_MINUTES 2.5 //minutes
-#define FIVE_MINUTES 1.0 //minutes			 //
+//#define FIVE_MINUTES 1.0 //minutes			 //
 			 //
 // RHI THINGS
 //#define SCANS_PER_FILE 5 
 
 // VOLUME to CAPPI things
-//#define SCANS_PER_FILE 15
+#define SCANS_PER_FILE 15
 //#define SCANS_PER_FILE 10
-#define SCANS_PER_FILE 3
+//#define SCANS_PER_FILE 3
 
 void generate_commands_file(int file_index, double start_time) {
     char filename[256];
@@ -118,18 +118,18 @@ void generate_commands_file(int file_index, double start_time) {
     for (int i = 0; i < SCANS_PER_FILE; i++) {
         Command cmd;
         cmd.time = start_time + i * interval;
-        cmd.radar_id = 2; // make sure the radar id is correct.
+        cmd.radar_id = 0; // make sure the radar id is correct.
 
         // RHI THINGS    
-        // snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
-        // cmd.other_angle = 0;
+//         snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
+//         cmd.other_angle = 0;
 
         // VOL->PPI THINGS
-        snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
-        //double VCP_elevation_angles[SCANS_PER_FILE] = {12.0, 8.0, 4.5, 2.0, 0.8, 0.3, 25, 20, 15, 10, 6, 2.8, 1.2, 0.3, 0.3}; 
+        //snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
+        double VCP_elevation_angles[SCANS_PER_FILE] = {12.0, 8.0, 4.5, 2.0, 0.8, 0.3, 25, 20, 15, 10, 6, 2.8, 1.2, 0.3, 0.3}; 
        //double VCP_elevation_angles[SCANS_PER_FILE] = {12.0, 4.5, 2.0, 0.8, 0.3, 10, 6, 2.8, 1.2, 0.3}; 
-        double VCP_elevation_angles[SCANS_PER_FILE] = {1.2, 0.8, 0.3}; 
-        
+        //double VCP_elevation_angles[SCANS_PER_FILE] = {1.2, 0.8, 0.3}; 
+	//
        	cmd.other_angle = VCP_elevation_angles[counter_A];
         cmd.raincell_id = 1;
         counter_A++;
@@ -188,7 +188,7 @@ void generate_commands_file_vol_rhi_A(int file_index, double start_time) {
     }
 
     int scans_in_X_rhi = 3;
-    double other_angles_rhi[3] = {-1.0,1.0,0.0};
+    double other_angles_rhi[3] = {0.0,1.0,-1.0};
     double interval_two = 1/(double)scans_in_X_rhi; // frequency of scans... 3 scans each minute.
     double counter_B = 0;
     for (int i = 0; i<scans_in_X_rhi;i++){

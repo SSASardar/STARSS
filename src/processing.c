@@ -133,6 +133,8 @@ double solve_theta(double s, double k_eA, double h,
     double fc = fb;
 
     if (fa * fb >= 0.0) {
+	    fprintf(stderr,"|  a  |  b  |  c  |  fa |  fb |  fc |\n");
+	    fprintf(stderr,"| %.3e| %.3e| %.3e| %.3e| %.3e| %.3e|\n", a, b, c, fa, fb,fc);
         fprintf(stderr, "Root not bracketed\n");
        	exit(EXIT_FAILURE);
     }
@@ -204,6 +206,159 @@ double solve_theta(double s, double k_eA, double h,
 }
 
 
+double solve_theta_with_expansion(double s, double k_eA, double h,
+                                   double theta_min, double theta_max,
+                                   double tolerance) {
+
+    const int max_expansions = 20;
+    const double expansion_factor = 1.5;
+    const int max_iter = 100;
+
+    double a = theta_min;
+    double b = theta_max;
+    double fa = r_diff(a, s, k_eA, h);
+    double fb = r_diff(b, s, k_eA, h);
+
+    // Check if already at root
+    if (fabs(fa) < tolerance) return a;
+    if (fabs(fb) < tolerance) return b;
+
+    // Expand bracket until sign change found or max expansions reached
+    int expansions = 0;
+    while (fa * fb > 0 && expansions < max_expansions) {
+        double range = b - a;
+
+        // Expand in the direction where function is smaller (closer to zero)
+        if (fabs(fa) < fabs(fb)) {
+            // Expand left
+            a = a - range * expansion_factor;
+            fa = r_diff(a, s, k_eA, h);
+        } else {
+            // Expand right
+            b = b + range * expansion_factor;
+            fb = r_diff(b, s, k_eA, h);
+        }
+
+        expansions++;
+
+        // Check if we hit root during expansion
+        if (fabs(fa) < tolerance) return a;
+        if (fabs(fb) < tolerance) return b;
+    }
+
+    // If still no sign change, try scanning for any sign change
+    if (fa * fb > 0) {
+        double scan_start = -M_PI_2;  // -90 degrees
+        double scan_end = M_PI_2;      // +90 degrees
+        int num_scans = 100;
+        double step = (scan_end - scan_start) / num_scans;
+
+        double prev_theta = scan_start;
+        double prev_val = r_diff(prev_theta, s, k_eA, h);
+
+        for (int i = 1; i <= num_scans; i++) {
+            double curr_theta = scan_start + i * step;
+            double curr_val = r_diff(curr_theta, s, k_eA, h);
+
+            if (prev_val * curr_val < 0) {
+                a = prev_theta;
+                b = curr_theta;
+                fa = prev_val;
+                fb = curr_val;
+                break;
+            }
+
+            if (fabs(curr_val) < tolerance) return curr_theta;
+
+            prev_theta = curr_theta;
+            prev_val = curr_val;
+        }
+    }
+
+    // Final check - if still no sign change, function may have no root
+    if (fa * fb > 0) {
+        fprintf(stderr, "Warning: No sign change found after expansion\n");
+        fprintf(stderr, "Returning best guess (midpoint)\n");
+        return (a + b) / 2.0;
+    }
+
+    // Brent's method with adaptive tolerance
+    double c = b;
+    double fc = fb;
+    double d = 0.0, e = 0.0;
+
+    for (int iter = 0; iter < max_iter; iter++) {
+        // Use larger tolerance for larger values
+        double adaptive_tol = tolerance * fmax(1.0, fabs(b));
+
+        if ((fb > 0 && fc > 0) || (fb < 0 && fc < 0)) {
+            c = a;
+            fc = fa;
+            d = e = b - a;
+        }
+
+        if (fabs(fc) < fabs(fb)) {
+            a = b;  b = c;  c = a;
+            fa = fb; fb = fc; fc = fa;
+        }
+
+        double tol1 = 2.0 * adaptive_tol * fabs(b) + 0.5 * adaptive_tol;
+        double xm = 0.5 * (c - b);
+
+        if (fabs(xm) <= tol1 || fb == 0.0) {
+            return b;
+        }
+
+        if (fabs(e) >= tol1 && fabs(fa) > fabs(fb)) {
+            double s_val = fb / fa;
+            double p, q;
+
+            if (a == c) {
+                p = 2.0 * xm * s_val;
+                q = 1.0 - s_val;
+            } else {
+                double q1 = fa / fc;
+                double r1 = fb / fc;
+                p = s_val * (2.0 * xm * q1 * (q1 - r1) - (b - a) * (r1 - 1.0));
+                q = (q1 - 1.0) * (r1 - 1.0) * (s_val - 1.0);
+            }
+
+            if (p > 0.0) q = -q;
+            p = fabs(p);
+
+            if (2.0 * p < fmin(3.0 * xm * q - fabs(tol1 * q), fabs(e * q))) {
+                e = d;
+                d = p / q;
+            } else {
+                d = xm;
+                e = d;
+            }
+        } else {
+            d = xm;
+            e = d;
+        }
+
+        a = b;
+        fa = fb;
+
+        if (fabs(d) > tol1) {
+            b += d;
+        } else {
+            b += (xm > 0 ? tol1 : -tol1);
+        }
+
+        fb = r_diff(b, s, k_eA, h);
+
+        // Early exit if we're close enough
+        if (fabs(fb) < tolerance) {
+            return b;
+        }
+    }
+
+    fprintf(stderr, "Warning: Max iterations reached, returning best guess\n");
+    return b;
+}
+
 
 bool getPolarBoxIndex(Point p,
                       double c_x,
@@ -269,8 +424,11 @@ bool getPolarBoxIndex(Point p,
 	double s = p.x;
 //	printf("(s,h) = (%.2lf, %.2lf)\n", s,h);
 	if(s>1e6) return false;
-	double angle_elevation = solve_theta(s,KEA,h,-1.5,1.5);
-
+//	double angle_elevation = solve_theta(s,KEA,h,-1.5,1.5);
+	double angle_elevation = solve_theta_with_expansion(s,KEA,h,-1.5,1.5,1e-8);
+	if(angle_elevation>1.58 || angle_elevation<-1.58 || angle_elevation == 0.0){
+		printf("%.2lf in radians 1.5 rad is 86 degree\n", angle_elevation);
+	}
 	//angle_elevation = acos(sin(s/KEA) * (KEA + h)/(box->min_range_gate*box->range_resolution));	
 
 //FILE *fp = fopen("outputs/elevation_angles.txt", "a");
@@ -596,7 +754,12 @@ Cart_grid* interpolate_scan_NN_RHI(Polar_box *p_box, Radar *radar, double time,
         ceil(bbox->bottomLeft.x / cart_grid_res) * cart_grid_res,
         ceil(bbox->bottomLeft.y / cart_grid_res) * cart_grid_res
     };
-    
+   
+	printf("====================\n==================\n");
+	printf("reference point (x,z)= (%.2lf,%.2lf)\n",ref_point.x,ref_point.y);
+ 
+
+
     // Initialize Cartesian grid
     Cart_grid *cg = Cart_grid_init(cart_grid_res, num_x, num_y, ref_point);
     if (!cg) {
@@ -2567,4 +2730,179 @@ int print_vpr_detailed_with_std(const Vol_scan *vs, const char *filename, int pr
     fclose(file);
 
     return 0;
+}
+
+
+/**
+ * @brief Initializes VPR arrays for empirical VPR calculation from polar data
+ */
+void init_polar_vpr_arrays(double vpr_strat[120], double vpr_conv[120]) {
+    for (int i = 0; i < 120; i++) {
+        vpr_strat[i] = 0.0;
+        vpr_conv[i] = 0.0;
+    }
+}
+
+/**
+ * @brief Processes a single Polar_box and accumulates reflectivity into VPR bins
+ */
+void process_polar_box_for_vpr(Polar_box *box, double vpr_strat[120], double vpr_conv[120]) {
+    if (box == NULL) return;
+
+    const int NUM_BINS = 40;
+    const double MIN_HEIGHT = 0.0;
+    const double MAX_HEIGHT = 20000.0;
+    const double BIN_SIZE = 500.0;
+
+    for (int r = 0; r < box->num_ranges; r++) {
+        for (int a = 0; a < box->num_angles; a++) {
+            int idx = a * box->num_ranges + r;
+
+            int rain_type = box->rain_type[idx];
+            if (rain_type != 1 && rain_type != 2) continue;
+
+            double height_m = box->height_grid[idx];
+            if (height_m < MIN_HEIGHT || height_m > MAX_HEIGHT) continue;
+
+            int bin_index = (int)(height_m / BIN_SIZE);
+            if (bin_index < 0 || bin_index >= NUM_BINS) continue;
+
+            double reflectivity = box->grid[idx];
+            double atten = box->estimated_attenuation_grid[idx];
+            double doubled_atten = 2.0 * atten;
+            if (doubled_atten > 10.0) doubled_atten = 10.0;
+
+            double effective_refl = reflectivity + doubled_atten;
+
+            double *vpr_array = (rain_type == 1) ? vpr_strat : vpr_conv;
+
+            // Increment point count (indices 0-39)
+            vpr_array[bin_index] += 1.0;
+
+            // Add to cumulative reflectivity (indices 40-79)
+            vpr_array[NUM_BINS + bin_index] += effective_refl;
+        }
+    }
+}
+
+/**
+ * @brief Computes average reflectivity for each bin in-place (stores in indices 40-79)
+ */
+void compute_polar_vpr_averages_inplace(double vpr_array[120]) {
+    const int NUM_BINS = 40;
+
+    for (int bin = 0; bin < NUM_BINS; bin++) {
+        double point_count = vpr_array[bin];
+
+        if (point_count > 0) {
+            vpr_array[NUM_BINS + bin] /= point_count;
+        } else {
+            vpr_array[NUM_BINS + bin] = 0.0;
+        }
+    }
+}
+
+/**
+ * @brief Processes a single Polar_box for standard deviation (accumulates squared differences)
+ */
+void process_polar_box_for_std_dev(Polar_box *box, double vpr_array[120]) {
+    if (box == NULL) return;
+
+    const int NUM_BINS = 40;
+    const double MIN_HEIGHT = 0.0;
+    const double MAX_HEIGHT = 20000.0;
+    const double BIN_SIZE = 500.0;
+
+    for (int r = 0; r < box->num_ranges; r++) {
+        for (int a = 0; a < box->num_angles; a++) {
+            int idx = a * box->num_ranges + r;
+
+            int rain_type = box->rain_type[idx];
+            if (rain_type != 1 && rain_type != 2) continue;
+
+            double height_m = box->height_grid[idx];
+            if (height_m < MIN_HEIGHT || height_m > MAX_HEIGHT) continue;
+
+            int bin_index = (int)(height_m / BIN_SIZE);
+            if (bin_index < 0 || bin_index >= NUM_BINS) continue;
+
+            double reflectivity = box->grid[idx];
+            double atten = box->estimated_attenuation_grid[idx];
+            double doubled_atten = 2.0 * atten;
+            if (doubled_atten > 10.0) doubled_atten = 10.0;
+
+            double effective_refl = reflectivity + doubled_atten;
+
+            // Get the average for this bin (stored at index 40+bin_index)
+            double avg_refl = vpr_array[NUM_BINS + bin_index];
+
+            // Accumulate sum of squared differences (indices 80-119)
+            double diff = effective_refl - avg_refl;
+            vpr_array[2 * NUM_BINS + bin_index] += (diff * diff);
+        }
+    }
+}
+
+/**
+ * @brief Computes standard deviation for each bin in-place (stores in indices 80-119)
+ */
+void compute_polar_vpr_std_dev_inplace(double vpr_array[120]) {
+    const int NUM_BINS = 40;
+
+    for (int bin = 0; bin < NUM_BINS; bin++) {
+        double point_count = vpr_array[bin];
+        double sum_sq_diff = vpr_array[2 * NUM_BINS + bin];
+
+        if (point_count > 1) {
+            double variance = sum_sq_diff / (point_count - 1.0);
+            vpr_array[2 * NUM_BINS + bin] = sqrt(variance);
+        } else {
+            vpr_array[2 * NUM_BINS + bin] = 0.0;
+        }
+    }
+}
+
+// Add this function to create an adaptive volume scan using empirical VPRs
+Vol_scan* create_adaptive_vol_scan(Vol_scan *original_vol, double *emp_vpr_strat, double *emp_vpr_conv) {
+    if (!original_vol) return NULL;
+
+    // Create a deep copy of the volume scan
+    Vol_scan *ad_vol = malloc(sizeof(Vol_scan));
+    if (!ad_vol) return NULL;
+
+    // Copy basic properties
+    ad_vol->num_PPIs = original_vol->num_PPIs;
+    ad_vol->num_elements = original_vol->num_elements;
+    ad_vol->num_x = original_vol->num_x;
+    ad_vol->num_y = original_vol->num_y;
+    ad_vol->ref_point = original_vol->ref_point;
+    ad_vol->resolution = original_vol->resolution;
+
+    // Allocate and copy arrays
+    size_t total_elements = ad_vol->num_elements * ad_vol->num_PPIs;
+
+    ad_vol->grid_refl = malloc(total_elements * sizeof(double));
+    ad_vol->grid_height = malloc(total_elements * sizeof(double));
+    ad_vol->grid_att = malloc(total_elements * sizeof(double));
+    ad_vol->grid_rain_type = malloc(total_elements * sizeof(int));
+    ad_vol->display_grid = malloc(ad_vol->num_elements * sizeof(double));
+    ad_vol->refl_ALA = malloc(ad_vol->num_elements * sizeof(double));
+
+    if (!ad_vol->grid_refl || !ad_vol->grid_height || !ad_vol->grid_att ||
+        !ad_vol->grid_rain_type || !ad_vol->display_grid || !ad_vol->refl_ALA) {
+        free_vol_scan(ad_vol);
+        return NULL;
+    }
+
+    // Copy data
+    memcpy(ad_vol->grid_refl, original_vol->grid_refl, total_elements * sizeof(double));
+    memcpy(ad_vol->grid_height, original_vol->grid_height, total_elements * sizeof(double));
+    memcpy(ad_vol->grid_att, original_vol->grid_att, total_elements * sizeof(double));
+    memcpy(ad_vol->grid_rain_type, original_vol->grid_rain_type, total_elements * sizeof(int));
+
+    // Copy the empirical VPRs
+    memcpy(ad_vol->emp_vpr_strat, emp_vpr_strat, 120 * sizeof(double));
+    memcpy(ad_vol->emp_vpr_conv, emp_vpr_conv, 120 * sizeof(double));
+
+    return ad_vol;
 }

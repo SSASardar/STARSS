@@ -170,7 +170,7 @@ void initialize_test_environment(
     Radar* radar0 = create_radar(0, "C", "PPI", 0.0, 0.0, 100.0, 250000.0, 250.0, 1.0);
     Radar* radar1 = create_radar(1, "C", "PPI", 0.0, 0.0, 100.0, 250000.0, 250.0, 1.0);
     Radar* radar2 = create_radar(2, "X", "PPI", -50000.0, 50000.0, 25.0, 50000.0, 100.0, 1.0);
-    Radar* radar3 = create_radar(3, "X", "RHI", -50000.0, 50000.0, 25.0, 50000.0, 100.0, 1.0);
+    Radar* radar3 = create_radar(3, "X", "RHI", -50000.0, 50000.0, 25.0, 50000.0, 250.0, 1.0);
     
     radar_list[radar_count++] = radar0;
     radar_list[radar_count++] = radar1;

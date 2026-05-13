@@ -24,6 +24,8 @@
 
 int main() {
 
+srand(1);
+
     //clock_t start = clock();
    double sim_time = 60.0; 
    int max_vol_scans = (int)((330.0-sim_time)/5);
@@ -37,9 +39,9 @@ int main() {
 
 	// Setting up rainfall
     // Create raincell and spatial_raincell
-    Raincell* raincell = create_raincell(1, 0.5, 15000.0, -0.5);   
+    Raincell* raincell = create_raincell(1, 0.2, 15000.0, -0.5);   
    raincell_list[raincell_count] = raincell; 
-    Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,80000.0,10);
+    Spatial_raincell* s_raincell = create_spatial_raincell(1, -80000.0,70000.0,8.75);
 	
    s_raincell_list[raincell_count++] = s_raincell; 
 
@@ -54,7 +56,7 @@ init_VPR_params(params);
         7.0, //8000.0,
 	     2000.0, 3000.0,        // Echo top
         45.0, 1.0, 1.0, 2.0,         // Bright band Z
-        3000.0, 100.0, 50.0,       // Bright band heights
+        3500.0, 100.0, 50.0,       // Bright band heights
         15.0, 2.0, 1.0,              // Width Z
         750.0, 500.0, 250.0,       // Width H
         0.65,-0.4, -0.15,-0.1,           // Ratio
@@ -92,10 +94,11 @@ compute_average_VPR(VPR_A_d,   params, t3, t2, 60.0, VPR_dummy);
 	// Create radar list
     Radar* radar1 = create_radar(1, "C", "PPI", 0.0, 0.0, 100.0, 250000.0, 250.0, 1.0);
     Radar* radar2 = create_radar(2, "X", "RHI", -50000.0, 50000.0, 25.0, 50000.0, 100.0, 0.5);
+    Radar* radar3 = create_radar(3, "X", "RHI", -50000.0, 50000.0, 25.0, 50000.0, 100.0, 1.0);
 // Assuming radar_count starts at 0
 radar_list[radar_count++] = radar1;  // Add radar1 to the list
 radar_list[radar_count++] = radar2;  // Add radar2 to the list
-
+radar_list[radar_count++] = radar3;  // Add radar2 to the list
 
 //	Radar* radar_test = radar1;
 

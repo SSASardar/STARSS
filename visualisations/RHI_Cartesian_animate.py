@@ -9,8 +9,8 @@ from matplotlib.animation import FuncAnimation, FFMpegWriter
 # File handling
 # ------------------------------------------------------------
 def list_output_files(folder="outputs"):
-    #pattern = os.path.join(folder, "*cartesian_grid*.txt")
-    pattern = os.path.join(folder, "disp_g*.txt")
+    pattern = os.path.join(folder, "*cartesian_grid*.txt")
+#    pattern = os.path.join(folder, "disp_g*.txt")
     return glob.glob(pattern)
 
 def extract_index(filename):
