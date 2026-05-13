@@ -278,3 +278,13 @@ Then to generate the statistical analysis run 'python3 results_analysis/complete
 
 
 AND BOOOM!!! 
+
+
+
+To run a combined processing, have a params.txt file in the home directory in the form of -r 1000 -m 170 -c 500 -k .2000000000 -y 15000.0000000000 -a 8.7500000000
+ (It should be one line). 
+
+Then you run make test test_multi_radar_pcl.c
+
+And you should be good. Here the noise in the true attenuation per km, the noise in the radar, and the attenuation sensitivities parameters (climatorlogyically determined) have an effect on the result. The stdev should never be more than 5dB in the vertical profile. Otherwise the results are garbage. 
+
