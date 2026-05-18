@@ -375,7 +375,15 @@ int num_angles = (int)ceil(span);
    //double other_angle = atan2(diff_x, diff_y);
     //if (other_angle < 0) other_angle += 2 * M_PI;
 
-    polar_box->other_angle = other_angle * RAD2DEG;
+    int which_angle = (int)polar_box->other_angle;
+    if (which_angle == 0) {
+	    polar_box->other_angle = other_angle * RAD2DEG;
+    } else if (which_angle == 1) {
+	    polar_box->other_angle = other_angle * RAD2DEG + polar_box->angular_resolution;
+    } else if (which_angle == -1) {
+	    polar_box->other_angle = other_angle * RAD2DEG - polar_box->angular_resolution;
+    }
+
 
 /*
  FILE *debug = fopen("outputs/aDEBUG.txt", "a");
