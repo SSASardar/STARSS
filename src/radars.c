@@ -376,7 +376,8 @@ int num_angles = (int)ceil(span);
     //if (other_angle < 0) other_angle += 2 * M_PI;
 
     int which_angle = (int)polar_box->other_angle;
-    if (which_angle == 0) {
+// printf("polar_box->other_angle is retrieved as %lf and is made an integer %d\n", polar_box->other_angle, which_angle);
+    	 if (which_angle == 0) {
 	    polar_box->other_angle = other_angle * RAD2DEG;
     } else if (which_angle == 1) {
 	    polar_box->other_angle = other_angle * RAD2DEG + polar_box->angular_resolution;

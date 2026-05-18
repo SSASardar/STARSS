@@ -227,5 +227,7 @@ void compute_polar_vpr_std_dev_inplace(double vpr_array[120]);
 
 Vol_scan* create_adaptive_vol_scan(Vol_scan *original_vol, double *emp_vpr_strat, double *emp_vpr_conv);
  
+void combine_vpr_M1(Vol_scan *vol, double vpr_strat[120], double vpr_conv[120]);
+
 
 #endif /* PROCESSING_H  */

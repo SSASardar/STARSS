@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 void init_VPR_params(VPR_params *params) {
     if (!params) return; // safety check
@@ -427,4 +428,61 @@ void compute_climatology_VPR(VPR *vpr_clima,
     return;
 }
 
+/**
+ * @brief Prints the VPR interpolated reflectivity at standard height bins to a file.
+ *        Format: For each bin: bin_index bin_center_height_km reflectivity_dBZ
+ *
+ * @param vpr Pointer to the VPR structure
+ * @param filename Name of the file to write to
+ * @param append If non-zero, append to file; if 0, overwrite file
+ * @return 0 on success, -1 on error
+ */
+int print_vpr_interpolated(const VPR *vpr, const char *filename, int append) {
+    if (vpr == NULL || filename == NULL) {
+        return -1;
+    }
 
+    const int NUM_BINS = 40;
+    const double BIN_SIZE = 0.5;  // km
+    const double BIN_CENTER_OFFSET = BIN_SIZE / 2.0;  // 0.25 km
+    const double START_HEIGHT = 0.0;  // km
+    const double END_HEIGHT = 20.0;   // km
+
+    const char *mode = append ? "a" : "w";
+
+    // Open file
+    FILE *file = fopen(filename, mode);
+    if (file == NULL) {
+        fprintf(stderr, "Error: Could not open file '%s' for writing.\n", filename);
+        return -1;
+    }
+
+    // Write header (only if not appending or file is new)
+    if (!append || ftell(file) == 0) {
+        fprintf(file, "# Interpolated Vertical Profile Reflectivity (VPR)\n");
+        fprintf(file, "# Format: bin_index bin_center_height_km reflectivity_dBZ\n");
+        fprintf(file, "# Height bins: 0-20 km in 0.5 km increments\n");
+        fprintf(file, "# Bins 0-39: interpolated from 6-point VPR model\n");
+        fprintf(file, "#\n");
+    }
+
+    // Write data for each bin
+    for (int bin = 0; bin < NUM_BINS; bin++) {
+        double bin_center = bin * BIN_SIZE + BIN_CENTER_OFFSET;
+        
+        // Get interpolated reflectivity at this height
+        double reflectivity = get_reflectivity_at_height(vpr, bin_center*1000);
+        
+        // Check if reflectivity is valid (not NaN)
+        if (isnan(reflectivity)) {
+            fprintf(file, "%d %.2f %s\n", bin, bin_center, "NaN");
+        } else {
+            fprintf(file, "%d %.2f %.6f\n", bin, bin_center, reflectivity);
+        }
+    }
+
+    fprintf(file, "\n");  // Add empty line between profiles if appending
+
+    fclose(file);
+    return 0;
+}

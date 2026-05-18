@@ -371,13 +371,18 @@ print_vpr_detailed_with_std(vol, "outputs/vpr_emp_conv.txt", 2, 1);  // Append c
 }
      
 	    
-	    memcpy(vol->emp_vpr_strat, vpr_emp_strat, 120 * sizeof(double));
-	    memcpy(vol->emp_vpr_conv, vpr_emp_conv, 120 * sizeof(double));
-	    
+//	    memcpy(vol->emp_vpr_strat, vpr_emp_strat, 120 * sizeof(double));
+//	    memcpy(vol->emp_vpr_conv, vpr_emp_conv, 120 * sizeof(double));
+
+combine_vpr_M1(vol, vpr_emp_strat, vpr_emp_conv);
+
 
 if(print_or_not == 1) {
 print_vpr_detailed_with_std(vol, "outputs/vpr_emp_strat_ad.txt", 1, 1);  // Append stratiform with std dev
 print_vpr_detailed_with_std(vol, "outputs/vpr_emp_conv_ad.txt", 2, 1);  // Append convective with std dev
+
+print_vpr_interpolated(VPR_strat, "outputs/vpr_true_strat.txt", 1); 
+print_vpr_interpolated(VPR_conv, "outputs/vpr_true_conv.txt", 1); 
 }
 
  

@@ -2906,3 +2906,57 @@ Vol_scan* create_adaptive_vol_scan(Vol_scan *original_vol, double *emp_vpr_strat
 
     return ad_vol;
 }
+
+
+
+void combine_vpr_M1(Vol_scan *vol, double vpr_strat[120], double vpr_conv[120]) {
+      // Combine emp_vpr_strat with vpr_strat
+    for (int i = 0; i < 40; i++) {
+        double vol_count = vol->emp_vpr_strat[i];
+        double ext_count = vpr_strat[i];
+        double total_count = vol_count + ext_count;
+        
+        // Calculate weights based on sample proportions
+        double weight_vol = vol_count / total_count;
+        double weight_ext = ext_count / total_count;
+        
+        // Combine counts (just add)
+        vol->emp_vpr_strat[i] = total_count;
+        
+        // Combine means (weighted average)
+        double vol_mean = vol->emp_vpr_strat[40 + i];
+        double ext_mean = vpr_strat[40 + i];
+        vol->emp_vpr_strat[40 + i] = (weight_vol * vol_mean) + (weight_ext * ext_mean);
+        
+        // Combine standard deviations (weighted)
+        double vol_sd = vol->emp_vpr_strat[80 + i];
+        double ext_sd = vpr_strat[80 + i];
+        vol->emp_vpr_strat[80 + i] = (weight_vol * vol_sd) + (weight_ext * ext_sd);
+    }
+    
+    // Combine emp_vpr_conv with vpr_conv
+    for (int i = 0; i < 40; i++) {
+        double vol_count = vol->emp_vpr_conv[i];
+        double ext_count = vpr_conv[i];
+        double total_count = vol_count + ext_count;
+        
+        // Calculate weights based on sample proportions
+        double weight_vol = vol_count / total_count;
+        double weight_ext = ext_count / total_count;
+        
+        // Combine counts (just add)
+        vol->emp_vpr_conv[i] = total_count;
+        
+        // Combine means (weighted average)
+        double vol_mean = vol->emp_vpr_conv[40 + i];
+        double ext_mean = vpr_conv[40 + i];
+        vol->emp_vpr_conv[40 + i] = (weight_vol * vol_mean) + (weight_ext * ext_mean);
+        
+        // Combine standard deviations (weighted)
+        double vol_sd = vol->emp_vpr_conv[80 + i];
+        double ext_sd = vpr_conv[80 + i];
+        vol->emp_vpr_conv[80 + i] = (weight_vol * vol_sd) + (weight_ext * ext_sd);
+    }
+}
+
+

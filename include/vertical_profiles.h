@@ -259,4 +259,6 @@ void compute_climatology_VPR(VPR *vpr_clima, VPR_params *params,
                              VPR *scratch);
 
 /** @} */ // end of VPRArithmetic
+
+int print_vpr_interpolated(const VPR *vpr, const char *filename, int append); 
 #endif // VERTICAL_PROFILES_H

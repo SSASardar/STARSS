@@ -287,16 +287,22 @@ void execute_command(const Command *cmd, Polar_box *box, const char *filename, c
 
     double time_in_min = cmd->time;
     double time_in_sec = cmd->time * 60.0;
-    
+
+
+    if (strcmp(get_scanning_mode(radar), "PPI") == 0) {
+        update_other_angle(box, cmd->other_angle);
+    }
+    if (strcmp(get_scanning_mode(radar), "RHI") == 0) {
+	    update_other_angle(box, cmd->other_angle);
+    }
+
+
     // Fill and compute polar box
     if (fill_polar_box(box, time_in_sec, s_rc, radar, rc, params) != 0) {
         log_message("Failed to fill polar box for command ID %d\n", cmd->command_id);
         return;
     }
 
-    if (strcmp(get_scanning_mode(radar), "PPI") == 0) {
-        update_other_angle(box, cmd->other_angle);
-    }
 
     Point* pos_raincell = get_position_raincell(time_in_sec, s_rc);
     log_message("Radar=(%.1f, %.1f), Raincell=(%.1f, %.1f), time=%.1f, angle=%.3f rad\n",
