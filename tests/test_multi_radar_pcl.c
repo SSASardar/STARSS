@@ -236,8 +236,8 @@ if (!stats_array) {
     init_stats_array(stats_array, NUM_SCANS);
     init_stats_array(ad_stats_array, NUM_SCANS);
 
-double vpr_emp_strat[120];
-double vpr_emp_conv[120];
+double vpr_emp_strat[120] = {0};
+double vpr_emp_conv[120] = {0};
 
 
 

@@ -270,6 +270,9 @@ int fill_polar_box(Polar_box* polar_box, double time,
     double diff_y = centre->y - radar_point->y;
     double dist_s = sqrt(diff_x * diff_x + diff_y * diff_y);
     double dist = sin(dist_s / kea_and_radar) * kea_and_radar / cos(polar_box->other_angle*DEG2RAD);
+    		if (dist > radar->maximum_range + raincell->radius_stratiform) {
+			return -1;
+		}
     double radius_stratiform = raincell->radius_stratiform;
 
     polar_box->range_resolution = get_range_res_radar(radar);
@@ -353,7 +356,7 @@ int num_angles = (int)ceil(span);
     if (strcmp(get_scanning_mode(radar), "RHI") == 0) {
 
 	strcmp(polar_box->scanning_mode,"RHI");
-   // double kea_and_radar = KEA + radar->z;
+    double kea_and_radar = KEA + radar->z;
 
     Point* centre = get_position_raincell(time, s_raincell);//time in seconds.
     Point* radar_point = get_position_radar(radar);
@@ -362,14 +365,44 @@ int num_angles = (int)ceil(span);
     //double diff_x = centre->x + offset_core_in_absolute - radar_point->x; 
     
     double diff_x = centre->x - raincell->offset_centre_core - radar_point->x;
+    double diff_x_PPI = centre->x - radar_point->x;
     
     double diff_y = centre->y - radar_point->y;
-    //double dist_s = sqrt(diff_x * diff_x + diff_y * diff_y);
-  //  double dist = sin(dist_s / kea_and_radar) * kea_and_radar / cos(polar_box->other_angle*DEG2RAD);
+    double dist_s = sqrt(diff_x_PPI * diff_x_PPI + diff_y * diff_y);
+    double dist = sin(dist_s / kea_and_radar) * kea_and_radar / cos(polar_box->other_angle*DEG2RAD);
     //double radius_stratiform = raincell->radius_stratiform;
 
     polar_box->range_resolution = get_range_res_radar(radar);
     polar_box->angular_resolution = get_angular_res_radar(radar);
+
+/*
+printf("DEBUG: radar at (%.2f, %.2f, %.2f)\n", radar_point->x, radar_point->y, radar_point->z);
+printf("DEBUG: raincell centre at (%.2f, %.2f, %.2f)\n", centre->x, centre->y, centre->z);
+printf("DEBUG: horizontal distance = %.2f km\n", dist_s/1000.0);
+printf("DEBUG: vertical difference = %.2f km\n", fabs(centre->z - radar_point->z)/1000.0);
+printf("DEBUG: calculated slant range = %.2f km\n", dist/1000.0);
+printf("DEBUG: radar max range = %.2f km\n", radar->maximum_range/1000.0);
+*/
+
+/*    
+printf("ABSOLUTE raincell position BEFORE any processing: (%.2f, %.2f)\n",
+       centre->x, centre->y);
+printf("Radar position: (%.2f, %.2f)\n",
+       radar_list[3]->x, radar_list[3]->y);
+printf("RELATIVE position: (%.2f, %.2f)\n",
+       centre->x - radar_list[3]->x,
+       centre->y - radar_list[3]->y);
+
+*/
+
+if (dist > radar->maximum_range + raincell->radius_stratiform) {
+//printf("OUT_RANGE :: dist = %lf, max range = %lf, max_radius = %lf\n", dist,radar->maximum_range, raincell->radius_stratiform);
+
+	return -1;
+		} else {
+//printf("IN__RANGE :: dist = %lf, max range = %lf, max_radius = %lf\n", dist,radar->maximum_range, raincell->radius_stratiform);
+		
+		}
 
     double other_angle = atan2(diff_y, diff_x);
    //double other_angle = atan2(diff_x, diff_y);
