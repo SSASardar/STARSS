@@ -48,7 +48,8 @@ def load_scan(filename):
 # ---------------------------------------------------------
 # Load ALL scan files
 # ---------------------------------------------------------
-files = sorted(glob.glob("outputs/radar_scan_*.txt"))
+#files = sorted(glob.glob("outputs/radar_scan_*.txt"))
+files = sorted(glob.glob("outputs/radar_03_scan_*.txt"))
 print(f"Found {len(files)} scan files.")
 
 grids = [load_scan(f) for f in files]

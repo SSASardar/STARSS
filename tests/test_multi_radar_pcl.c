@@ -59,10 +59,10 @@ CommandLineParams parse_command_line(int argc, char *argv[]) {
     CommandLineParams params = {
         .x1 = 1000.0,      // default: 1 km resolution
         .x2 = 170.0,       // default: 170 minutes
-        .x3 = 500.0,       // default: 500 m cloud base
-        .x4 = 0.5,         // default: 0.5 ratio
-        .x5 = 80000.0,     // default: 80 km
-        .x6 = 10.0,        // default: 10 (units?)
+        .x3 = 501.0,       // default: 500 m cloud base
+        .x4 = 0.5,//0.5,         // default: 0.5 ratio
+        .x5 = 186666.0, //80000.0,     // default: 80 km
+        .x6 = 8.0,//10.0,        // default: 10 (units?)
         .worker_id = ""     // default: empty (original behavior)
     };
     
@@ -200,7 +200,8 @@ int main(int argc, char *argv[]) {
         cmd_params.x1, cmd_params.x2, cmd_params.x3, cmd_params.x4, 
         cmd_params.x5, cmd_params.x6
     );
-    
+   
+   printf("Parameters in order are: %lf, %lf, %lf, %lf, %lf, %lf\n",cmd_params.x1, cmd_params.x2, cmd_params.x3, cmd_params.x4, cmd_params.x5, cmd_params.x6); 
     // =========================================
     // Part 1: Run test_command_centre functionality
     // =========================================
@@ -239,6 +240,8 @@ if (!stats_array) {
 double vpr_emp_strat[120] = {0};
 double vpr_emp_conv[120] = {0};
 
+double vpr_tremp_strat[120] = {0};
+double vpr_tremp_conv[120] = {0};
 
 
     // Determine stats file path based on worker ID
@@ -260,6 +263,11 @@ double vpr_emp_conv[120] = {0};
 			   //
 			   //
 			   //
+
+		    // Reset arrays explicitly
+    memset(vpr_emp_strat, 0, sizeof(vpr_emp_strat));
+    memset(vpr_emp_conv, 0, sizeof(vpr_emp_conv));
+	
 
 for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {   
 
@@ -297,7 +305,8 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
             add_cart_grid_to_volscan(vol, cart_grids[i], i);
         }
 	} else if (radar_id == 3) {
-printf("the scan count for radar %.2d in command %.4d is %.3d\n",radar_id, scan_idx, scan_count);
+	
+		//printf("the scan count for radar %.2d in command %.4d is %.3d\n",radar_id, scan_idx, scan_count);
         cart_grids = malloc(scan_count * sizeof(Cart_grid*));
         if (!cart_grids) exit(1);
 
@@ -386,13 +395,25 @@ print_vpr_interpolated(VPR_conv, "outputs/vpr_true_conv.txt", 1);
 }
 
  
-            // Process adaptive volume scan (you may need to re-run some steps with empirical VPRs)
-            //process_volume_scan_VPR(ad_vol);
-            //compute_average_empVPR(ad_vol);
-            //compute_std_dev_empVPR(ad_vol);
                         compute_display_grid_KNMI_empirical(vol, -5.0, 0.5, 0);
-            
-            // Compute and store adaptive statistics
+/*
+if(print_or_not == 1) {
+// --- Write display_grid to file ---
+char disp_filename[256];
+snprintf(disp_filename, sizeof(disp_filename), "outputs/disp_g_%04d.txt", scan_idx);
+if (write_display_grid_to_file(vol, disp_filename) != 0) {
+    fprintf(stderr, "Failed to write display grid to %s\n", disp_filename);
+}
+
+// --- Write true_grid to file ---
+char true_filename[256];
+snprintf(true_filename, sizeof(true_filename), "outputs/true_g_%04d.txt", scan_idx);
+if (write_true_grid_to_file(vol, true_filename) != 0) {
+    fprintf(stderr, "Failed to write true grid to %s\n", true_filename);
+}
+}
+  */
+	      		// Compute and store adaptive statistics
             if (compute_and_store_stats(vol, -5.0, cart_grid_res, volume_duration, ad_stats_array, scan_idx) == 0) {
                 append_stats_to_file(ad_stats_array, scan_idx, ad_stats_path);
             }

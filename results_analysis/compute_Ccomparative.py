@@ -34,8 +34,48 @@ class Tee:
         self.terminal.flush()
         self.log.flush()
 
+def sanitize_filename(text):
+    """Sanitize text for use in filename"""
+    return text.lower().replace(' ', '_').replace('(', '').replace(')', '')
+
+def ensure_plots_dir(output_dir):
+    """Create plots subdirectory if it doesn't exist"""
+    plots_dir = os.path.join(output_dir, 'plots')
+    os.makedirs(plots_dir, exist_ok=True)
+    return plots_dir
+
 def detect_file_type(filepath):
     """Detect whether the file is MSE, EMD, or Bias results based on content"""
+    with open(filepath, 'r') as f:
+        # Read first few non-comment lines AND comment lines
+        content = []
+        for i, line in enumerate(f):
+            if i < 20:  # Read first 20 lines
+                content.append(line.strip())
+                if len(content) >= 10 and not any(line.startswith('#') for line in content[-5:]):
+                    # Got enough data lines
+                    pass
+    
+    # Check comment lines first (more reliable)
+    with open(filepath, 'r') as f:
+        header_lines = []
+        for line in f:
+            if line.startswith('#'):
+                header_lines.append(line.lower())
+            else:
+                break  # Stop at first data line
+    
+    # Check headers for keywords
+    header_text = ' '.join(header_lines)
+    
+    if 'mse' in header_text:
+        return 'MSE'
+    elif 'bias' in header_text:
+        return 'Bias'
+    elif 'emd' in header_text:
+        return 'EMD'
+    
+    # If headers don't work, check data lines
     with open(filepath, 'r') as f:
         first_lines = []
         for i, line in enumerate(f):
@@ -47,17 +87,16 @@ def detect_file_type(filepath):
     # Check sample data for keywords
     sample_text = ' '.join(first_lines).lower()
     
-    if 'mse' in sample_text or ('regular_mse' in sample_text) or ('adaptive_mse' in sample_text):
+    if 'mse' in sample_text or 'regular_mse' in sample_text or 'adaptive_mse' in sample_text:
         return 'MSE'
-    elif 'bias' in sample_text or ('regular_bias' in sample_text) or ('adaptive_bias' in sample_text):
+    elif 'bias' in sample_text or 'regular_bias' in sample_text or 'adaptive_bias' in sample_text:
         return 'Bias'
-    elif 'emd' in sample_text or ('regular_emd' in sample_text) or ('adaptive_emd' in sample_text):
+    elif 'emd' in sample_text or 'regular_emd' in sample_text or 'adaptive_emd' in sample_text:
         return 'EMD'
     else:
         # Default to EMD if can't detect
         print("Warning: Could not detect file type, defaulting to EMD")
         return 'EMD'
-
 def read_results(filepath, filter_params=None):
     """Read consolidated results file with dynamic column detection"""
     # First detect file type
@@ -232,7 +271,10 @@ def main_effects_plot(df, output_dir, response_col, response_name='EMD', suffix=
         axes[-1].set_visible(False)
     
     plt.tight_layout()
-    output_file = os.path.join(output_dir, f'main_effects_plots{suffix}.png')
+    # Use response name in filename
+    resp_name_clean = sanitize_filename(response_name)
+    plots_dir = ensure_plots_dir(output_dir)
+    output_file = os.path.join(plots_dir, f'main_effects_plots_{resp_name_clean}{suffix}.png')
     plt.savefig(output_file, dpi=150)
     plt.close()
     print(f"✓ Main effects plots for {response_name} saved to: {output_file}")
@@ -326,7 +368,10 @@ def interaction_plots(df, output_dir, response_col, response_name='EMD', suffix=
         axes[idx].set_visible(False)
     
     plt.tight_layout()
-    output_file = os.path.join(output_dir, f'interaction_plots{suffix}.png')
+    # Use response name in filename
+    resp_name_clean = sanitize_filename(response_name)
+    plots_dir = ensure_plots_dir(output_dir)
+    output_file = os.path.join(plots_dir, f'interaction_plots_{resp_name_clean}{suffix}.png')
     plt.savefig(output_file, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"✓ Interaction plots for {response_name} saved to: {output_file}")
@@ -434,7 +479,10 @@ def pareto_ranking(df, output_dir, response_col, response_name='EMD', suffix='')
                     textcoords="offset points", ha='center', fontsize=8)
     
     plt.tight_layout()
-    output_file = os.path.join(output_dir, f'pareto_chart{suffix}.png')
+    # Use response name in filename
+    resp_name_clean = sanitize_filename(response_name)
+    plots_dir = ensure_plots_dir(output_dir)
+    output_file = os.path.join(plots_dir, f'pareto_chart_{resp_name_clean}{suffix}.png')
     plt.savefig(output_file, dpi=150)
     plt.close()
     print(f"✓ Pareto chart for {response_name} saved to: {output_file}")
@@ -545,7 +593,10 @@ def response_surface_overview(df, output_dir, response_col, response_name='EMD',
         fig.colorbar(surf, ax=ax, shrink=0.5, aspect=10)
     
     plt.tight_layout()
-    output_file = os.path.join(output_dir, f'response_surfaces_overview{suffix}.png')
+    # Use response name in filename
+    resp_name_clean = sanitize_filename(response_name)
+    plots_dir = ensure_plots_dir(output_dir)
+    output_file = os.path.join(plots_dir, f'response_surfaces_overview_{resp_name_clean}{suffix}.png')
     plt.savefig(output_file, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"✓ Response surface overview for {response_name} saved to: {output_file}")
@@ -595,7 +646,7 @@ def response_surface_overview(df, output_dir, response_col, response_name='EMD',
         axes[idx].set_visible(False)
     
     plt.tight_layout()
-    contour_file = os.path.join(output_dir, f'contour_plots_overview{suffix}.png')
+    contour_file = os.path.join(plots_dir, f'contour_plots_overview_{resp_name_clean}{suffix}.png')
     plt.savefig(contour_file, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"✓ Contour plot overview for {response_name} saved to: {contour_file}")
@@ -615,7 +666,10 @@ def correlation_matrix(df, output_dir, response_col, response_name='EMD', suffix
     ax.set_title(f'Correlation Matrix: Parameters vs {response_name}')
     
     plt.tight_layout()
-    output_file = os.path.join(output_dir, f'correlation_matrix{suffix}.png')
+    # Use response name in filename
+    resp_name_clean = sanitize_filename(response_name)
+    plots_dir = ensure_plots_dir(output_dir)
+    output_file = os.path.join(plots_dir, f'correlation_matrix_{resp_name_clean}{suffix}.png')
     plt.savefig(output_file, dpi=150)
     plt.close()
     print(f"✓ Correlation matrix for {response_name} saved to: {output_file}")
@@ -656,7 +710,9 @@ def find_optimal_combination(df, output_dir, response_col, response_name='EMD', 
 
 def save_summary(df, model, percentages, best, worst, output_dir, response_col, response_name='EMD', suffix=''):
     """Save complete summary to text file"""
-    summary_file = os.path.join(output_dir, f'analysis_summary_{response_name.lower()}{suffix}.txt')
+    # Use response name in filename
+    resp_name_clean = sanitize_filename(response_name)
+    summary_file = os.path.join(output_dir, f'analysis_summary_{resp_name_clean}{suffix}.txt')
     
     with open(summary_file, 'w') as f:
         f.write("="*80 + "\n")
@@ -711,7 +767,7 @@ def save_summary(df, model, percentages, best, worst, output_dir, response_col, 
     
     print(f"✓ Complete summary for {response_name} saved to: {summary_file}")
 
-def analyze_response(df, output_dir, response_col, response_name, suffix, filter_desc=""):
+def analyze_response(df, output_dir, response_col, response_name, suffix="", filter_desc=""):
     """Run complete analysis for a given response type"""
     print("\n" + "="*80)
     print(f"ANALYZING {response_name}{filter_desc}")
@@ -833,7 +889,7 @@ def main():
         df_adaptive = df[df[adaptive_col].notna()].copy()
         
         if len(df_adaptive) > 0:
-            analyze_response(df_adaptive, batch_folder, adaptive_col, f"Adaptive {response_name}", f"_adaptive{filter_desc}", f" (Adaptive){filter_desc}")
+            analyze_response(df_adaptive, batch_folder, adaptive_col, f"Adaptive_{response_name}", f"_adaptive{filter_desc}", f" (Adaptive){filter_desc}")
         else:
             print(f"No valid adaptive {response_name} data found")
     
@@ -877,7 +933,9 @@ def main():
         ax2.grid(True, alpha=0.3)
         
         plt.tight_layout()
-        comparison_file = os.path.join(batch_folder, f'regular_vs_adaptive_comparison_{response_name.lower()}{filter_desc}.png')
+        resp_name_clean = sanitize_filename(response_name)
+        plots_dir = ensure_plots_dir(batch_folder)
+        comparison_file = os.path.join(plots_dir, f'regular_vs_adaptive_comparison_{resp_name_clean}{filter_desc}.png')
         plt.savefig(comparison_file, dpi=150)
         plt.close()
         print(f"\n✓ Regular vs Adaptive comparison plot saved to: {comparison_file}")
@@ -889,29 +947,31 @@ def main():
     print(f"\nAll outputs saved to: {batch_folder}")
     print("\nGenerated files:")
     
+    resp_name_clean = sanitize_filename(response_name)
+    
     if analyze_regular:
         print(f"\nRegular {response_name} analysis:")
-        print(f"  - analysis_summary_{response_name.lower()}{filter_desc}.txt")
-        print(f"  - main_effects_plots{filter_desc}.png")
-        print(f"  - interaction_plots{filter_desc}.png")
-        print(f"  - correlation_matrix{filter_desc}.png")
-        print(f"  - pareto_chart{filter_desc}.png")
-        print(f"  - response_surfaces_overview{filter_desc}.png")
-        print(f"  - contour_plots_overview{filter_desc}.png")
+        print(f"  - analysis_summary_{resp_name_clean}{filter_desc}.txt")
+        print(f"  - main_effects_plots_{resp_name_clean}{filter_desc}.png")
+        print(f"  - interaction_plots_{resp_name_clean}{filter_desc}.png")
+        print(f"  - correlation_matrix_{resp_name_clean}{filter_desc}.png")
+        print(f"  - pareto_chart_{resp_name_clean}{filter_desc}.png")
+        print(f"  - response_surfaces_overview_{resp_name_clean}{filter_desc}.png")
+        print(f"  - contour_plots_overview_{resp_name_clean}{filter_desc}.png")
     
     if analyze_adaptive:
         print(f"\nAdaptive {response_name} analysis:")
-        print(f"  - analysis_summary_adaptive_{response_name.lower()}{filter_desc}.txt")
-        print(f"  - main_effects_plots_adaptive{filter_desc}.png")
-        print(f"  - interaction_plots_adaptive{filter_desc}.png")
-        print(f"  - correlation_matrix_adaptive{filter_desc}.png")
-        print(f"  - pareto_chart_adaptive{filter_desc}.png")
-        print(f"  - response_surfaces_overview_adaptive{filter_desc}.png")
-        print(f"  - contour_plots_overview_adaptive{filter_desc}.png")
+        print(f"  - analysis_summary_adaptive_{resp_name_clean}{filter_desc}.txt")
+        print(f"  - main_effects_plots_adaptive_{resp_name_clean}{filter_desc}.png")
+        print(f"  - interaction_plots_adaptive_{resp_name_clean}{filter_desc}.png")
+        print(f"  - correlation_matrix_adaptive_{resp_name_clean}{filter_desc}.png")
+        print(f"  - pareto_chart_adaptive_{resp_name_clean}{filter_desc}.png")
+        print(f"  - response_surfaces_overview_adaptive_{resp_name_clean}{filter_desc}.png")
+        print(f"  - contour_plots_overview_adaptive_{resp_name_clean}{filter_desc}.png")
     
     if analyze_regular and analyze_adaptive:
         print(f"\nComparison:")
-        print(f"  - regular_vs_adaptive_comparison_{response_name.lower()}{filter_desc}.png")
+        print(f"  - regular_vs_adaptive_comparison_{resp_name_clean}{filter_desc}.png")
     
     print("="*80)
     

@@ -375,14 +375,14 @@ int num_angles = (int)ceil(span);
     polar_box->range_resolution = get_range_res_radar(radar);
     polar_box->angular_resolution = get_angular_res_radar(radar);
 
-/*
+
 printf("DEBUG: radar at (%.2f, %.2f, %.2f)\n", radar_point->x, radar_point->y, radar_point->z);
 printf("DEBUG: raincell centre at (%.2f, %.2f, %.2f)\n", centre->x, centre->y, centre->z);
 printf("DEBUG: horizontal distance = %.2f km\n", dist_s/1000.0);
 printf("DEBUG: vertical difference = %.2f km\n", fabs(centre->z - radar_point->z)/1000.0);
 printf("DEBUG: calculated slant range = %.2f km\n", dist/1000.0);
 printf("DEBUG: radar max range = %.2f km\n", radar->maximum_range/1000.0);
-*/
+
 
 /*    
 printf("ABSOLUTE raincell position BEFORE any processing: (%.2f, %.2f)\n",
@@ -396,7 +396,7 @@ printf("RELATIVE position: (%.2f, %.2f)\n",
 */
 
 if (dist > radar->maximum_range + raincell->radius_stratiform) {
-//printf("OUT_RANGE :: dist = %lf, max range = %lf, max_radius = %lf\n", dist,radar->maximum_range, raincell->radius_stratiform);
+printf("OUT_RANGE :: dist = %lf, max range = %lf, max_radius = %lf\n", dist,radar->maximum_range, raincell->radius_stratiform);
 
 	return -1;
 		} else {

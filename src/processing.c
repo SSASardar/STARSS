@@ -2115,7 +2115,7 @@ void compute_std_dev_empVPR(Vol_scan *vs) {
         if (point_count > 1) {
             // Sample standard deviation: sqrt( sum((x - mean)²) / (n-1) )
             double variance = sum_sq_diff / (point_count - 1.0);
-            vs->emp_vpr_strat[2 * NUM_BINS + bin] = sqrt(variance);
+            vs->emp_vpr_strat[2 * NUM_BINS + bin] = (1/point_count)*sqrt(variance);
         } else if (point_count == 1) {
             vs->emp_vpr_strat[2 * NUM_BINS + bin] = 0.0;
         } else {
@@ -2130,7 +2130,7 @@ void compute_std_dev_empVPR(Vol_scan *vs) {
         
         if (point_count > 1) {
             double variance = sum_sq_diff / (point_count - 1.0);
-            vs->emp_vpr_conv[2 * NUM_BINS + bin] = sqrt(variance);
+            vs->emp_vpr_conv[2 * NUM_BINS + bin] =  (1/point_count)*sqrt(variance);
         } else if (point_count == 1) {
             vs->emp_vpr_conv[2 * NUM_BINS + bin] = 0.0;
         } else {
@@ -2540,7 +2540,7 @@ int n_unc_remaining = 0;
                 double estim_pia = vol->grid_att[idx];
                 double atten_correction = 2 * estim_pia;
                 //double atten_correction = 0.0;
-                if (atten_correction > 5) atten_correction = 5;
+                if (atten_correction > 10) atten_correction = 10;
                 
                 double refl = vol->grid_refl[idx] + atten_correction;
                 double height = vol->grid_height[idx];
@@ -2855,7 +2855,7 @@ void compute_polar_vpr_std_dev_inplace(double vpr_array[120]) {
 
         if (point_count > 1) {
             double variance = sum_sq_diff / (point_count - 1.0);
-            vpr_array[2 * NUM_BINS + bin] = sqrt(variance);
+            vpr_array[2 * NUM_BINS + bin] = (1/point_count)*sqrt(variance);
         } else {
             vpr_array[2 * NUM_BINS + bin] = 0.0;
         }
