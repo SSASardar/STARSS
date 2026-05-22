@@ -272,10 +272,13 @@ To run a single process with a single set of parameters with all the data produc
 
 To generate a list of parameters you want to test, run './generate_parameters.sh' then once you have that, then run 'make parallel-batch-test TEST=test_pcl PARAM_FILE=params.txt CORES=8' and then you get some results in a batch folder. 
 
-THEN: to generate the emd (distance metric) file run './compute_emd batch_test_20260507_135918/' in the right batch_test folder.
-
+THEN: to generate the emd (distance metric) file run './compute_emd batch_test_20260507_135918' in the right batch_test folder.
+./compute_mse_exec batch_test_20260518_153537 for the MSE
+./compute_mse_exec batch_test_20260518_153537 for the Bias
 Then to generate the statistical analysis run 'python3 results_analysis/complete_analysis.py batch_test_20260507_135918/emd_results.txt '
+change the text file name to change the analysis being done for either emd, mse or bias. 
 
+You can also add flags, for doing the analysis within a certain range of one of the parameters... 
 
 AND BOOOM!!! 
 
@@ -288,3 +291,16 @@ Then you run make test test_multi_radar_pcl.c
 
 And you should be good. Here the noise in the true attenuation per km, the noise in the radar, and the attenuation sensitivities parameters (climatorlogyically determined) have an effect on the result. The stdev should never be more than 5dB in the vertical profile. Otherwise the results are garbage. 
 
+
+Commands used today: 
+
+Changing multi_radar_pcl test and src/analysis for changing the location of radar 3, and changing the standard parameters when you just run make test 7. 
+$ ./combi_test.sh 
+python visualisations/emp_vpr_adaptive_animation.py 
+renaming the ad_stats.txt files and the stats.txt files to something better.
+python results_analysis/plot_stats_comparison.py outputs/
+
+
+
+
+To compute 
