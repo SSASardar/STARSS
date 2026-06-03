@@ -115,7 +115,7 @@ disp_files = sorted(glob.glob("outputs/disp_g_*.txt"))
 true_files = sorted(glob.glob("outputs/true_g_*.txt"))
 point_files = sorted(glob.glob("outputs/heights_point_*.txt"))
 vpr_files   = sorted(glob.glob("outputs/VPR_conv_*.txt"))
-radar_files = sorted(glob.glob("outputs/radar_scan_*.txt"))
+radar_files = sorted(glob.glob("outputs/radar_00_scan_*.txt"))
 
 disp_grids_raw = [load_grid(f) for f in disp_files]
 true_grids_raw = [load_grid(f) for f in true_files]
@@ -193,7 +193,7 @@ ax_stats.plot(time, total_measured_mm2, marker='o', color='purple', label='Measu
 ax_stats.plot(time, total_true_mm2, marker='o', color='orange', label='True mm²')
 ax_stats.set_title("True vs Measured over time")
 ax_stats.set_xlabel("Time (min)")
-ax_stats.set_ylabel("Rainfall rate [mm per sec per m²]")
+ax_stats.set_ylabel("Rainfall Accumulation \n[mm per 5 min per unit area]")
 ax_stats.legend()
 ax_stats.grid(True)
 time_line = ax_stats.axvline(time[0], color="black", linestyle="--")
@@ -302,5 +302,5 @@ def update(frame):
 ani = FuncAnimation(fig, update, frames=num_frames, blit=False)
 os.makedirs("outputs", exist_ok=True)
 writer = FFMpegWriter(fps=5, metadata=dict(artist='Radar Anim'), bitrate=1800)
-ani.save("outputs/dashboard_animationB.mp4", writer=writer)
-print("Saved animation to outputs/dashboard_animationB.mp4")
+ani.save("outputs/AAFIGUREdashboard_animationB.mp4", writer=writer)
+print("Saved animation to outputs/AAFIGUREdashboard_animationB.mp4")

@@ -118,14 +118,14 @@ void generate_commands_file(int file_index, double start_time) {
     for (int i = 0; i < SCANS_PER_FILE; i++) {
         Command cmd;
         cmd.time = start_time + i * interval;
-        cmd.radar_id = 0; // make sure the radar id is correct.
+        cmd.radar_id = 1; // make sure the radar id is correct.
 
         // RHI THINGS    
 //         snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
 //         cmd.other_angle = 0;
 
         // VOL->PPI THINGS
-        //snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
+        snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
         double VCP_elevation_angles[SCANS_PER_FILE] = {12.0, 8.0, 4.5, 2.0, 0.8, 0.3, 25, 20, 15, 10, 6, 2.8, 1.2, 0.3, 0.3}; 
        //double VCP_elevation_angles[SCANS_PER_FILE] = {12.0, 4.5, 2.0, 0.8, 0.3, 10, 6, 2.8, 1.2, 0.3}; 
         //double VCP_elevation_angles[SCANS_PER_FILE] = {1.2, 0.8, 0.3}; 

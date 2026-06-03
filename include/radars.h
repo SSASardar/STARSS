@@ -432,7 +432,10 @@ double add_noise(const Radar* radar, double reflectivity);
 
 double add_noise_VPR(double reflectivity);
 double add_noise_SA(const Radar* radar, double attenuation); 
+double add_noise_SA_alpha(const Radar* radar, double attenuation); 
+double add_noise_SA_beta(const Radar* radar, double attenuation); 
 double compute_specific_attenuation(double refl_dBZ, const Radar* radar);
+double compute_specific_attenuation_noisy(double refl_dBZ, const Radar* radar);
 
 double normalize_angle(double angle_deg);
 

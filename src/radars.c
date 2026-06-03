@@ -845,7 +845,8 @@ refl_dBZ = add_noise_VPR(refl_dBZ);
 
 if(sample_height < vpr_strat->BB_m.height) { 
 	att = compute_specific_attenuation(refl_dBZ, radar);
-	noisy_att = add_noise_SA(radar,att);
+        //	noisy_att = add_noise_SA(radar,att);
+	noisy_att = compute_specific_attenuation_noisy(refl_dBZ,radar);
 }
      
 	if(idp == idp_min_one) {
@@ -864,7 +865,8 @@ if(sample_height < vpr_strat->BB_m.height) {
 refl_dBZ = add_noise_VPR(refl_dBZ);
 if(sample_height < vpr_conv->BB_m.height) { 
         att = compute_specific_attenuation(refl_dBZ, radar); 
-        	noisy_att = add_noise_SA(radar,att);
+        //	noisy_att = add_noise_SA(radar,att);
+	noisy_att = compute_specific_attenuation_noisy(refl_dBZ,radar);
 }
         if(idp == idp_min_one) {
         	box->attenuation_grid[idp] = noisy_att;
@@ -914,7 +916,8 @@ for (int ri = 0; ri <num_ranges;ri++){
 refl_dBZ = add_noise_VPR(refl_dBZ);
 if(sample_height < vpr_strat->BB_m.height) { 
 	att = compute_specific_attenuation(refl_dBZ, radar);
-	noisy_att = add_noise_SA(radar,att);
+	//noisy_att = add_noise_SA(radar,att);
+	noisy_att = compute_specific_attenuation_noisy(refl_dBZ,radar);
 }
 if(idp == idp_min_one) {
         	box->attenuation_grid[idp] = noisy_att;
@@ -931,7 +934,8 @@ if(idp == idp_min_one) {
 refl_dBZ = add_noise_VPR(refl_dBZ);
 if(sample_height < vpr_conv->BB_m.height) { 
         att = compute_specific_attenuation(refl_dBZ, radar); 
-        	noisy_att = add_noise_SA(radar,att);
+        //	noisy_att = add_noise_SA(radar,att);
+	noisy_att = compute_specific_attenuation_noisy(refl_dBZ,radar);
 
 }
 if(idp == idp_min_one) {
@@ -1661,8 +1665,8 @@ double add_noise(const Radar* radar, double reflectivity) {
     double noise_db = 0.0;
 
     if (strcmp(radar->frequency, "X") == 0) {
-       // noise_db = 3.0;
-       noise_db = 1.5;
+        noise_db = 3.0;
+       //noise_db = 1.5;
     } else if (strcmp(radar->frequency, "C") == 0) {
         noise_db = 1.0;
     } else {
@@ -1680,8 +1684,6 @@ double add_noise_VPR(double reflectivity) {
     // Add Gaussian noise with 0 mean and noise_db as standard deviation
     return reflectivity + gaussian_noise(0.0, noise_db);
 }
-
-
 // Function to add noise based on frequency
 double add_noise_SA(const Radar* radar, double attenuation) {
     double noise_db_p_km = 0.0;
@@ -1700,6 +1702,39 @@ double add_noise_SA(const Radar* radar, double attenuation) {
     return attenuation + gaussian_noise(0.0, noise_db_p_km/3);
 }
 
+// Function to add noise based on frequency
+double add_noise_SA_alpha(const Radar* radar, double attenuation) {
+    double noise_db_p_km = 0.0;
+
+    if (strcmp(radar->frequency, "X") == 0) {
+        noise_db_p_km = 1.38e-5;
+    } else if (strcmp(radar->frequency, "C") == 0) {
+        noise_db_p_km = 2.93e-7;
+    } else {
+        // Unknown frequency, no noise added
+        return attenuation;
+    }
+
+    // Add Gaussian noise with 0 mean and noise_db_p_km as three times the standard deviation
+    return attenuation + gaussian_noise(0.0, noise_db_p_km/3);
+}
+
+// Function to add noise based on frequency
+double add_noise_SA_beta(const Radar* radar, double attenuation) {
+    double noise_db_p_km = 0.0;
+
+    if (strcmp(radar->frequency, "X") == 0) {
+        noise_db_p_km = 2.75e-2;
+    } else if (strcmp(radar->frequency, "C") == 0) {
+        noise_db_p_km = 4e-3;
+    } else {
+        // Unknown frequency, no noise added
+        return attenuation;
+    }
+
+    // Add Gaussian noise with 0 mean and noise_db_p_km as three times the standard deviation
+    return attenuation + gaussian_noise(0.0, noise_db_p_km/3);
+}
 
 // Compute specific attenuation [dB/km] using power law
 double compute_specific_attenuation(double refl_dBZ, const Radar* radar) {
@@ -1716,6 +1751,35 @@ double a, b;
     } else if (strcmp(radar->frequency, "C") == 0) {
         a = A_COEFF_C;
         b = B_COEFF_C;
+    } else {
+        // Default: assume no attenuation
+        return 0.0;
+    }
+// Avoid zero to negative exponent
+if (Z_lin <= 0.0 && b < 0.0) return 0.0;  
+
+double att = a * pow(Z_lin, b);
+if (isnan(att) || isinf(att)) return 0.0;   // Safe fallback
+
+    return (att*radar->range_resolution*0.001); // [dB]
+}
+
+
+// Compute specific attenuation [dB/km] using power law
+double compute_specific_attenuation_noisy(double refl_dBZ, const Radar* radar) {
+if (isnan(refl_dBZ) || isinf(refl_dBZ)) return 0.0;  // Already partially done
+
+double Z_lin = pow(10.0, refl_dBZ / 10.0);
+
+double a, b;
+    if (strcmp(radar->frequency, "X") == 0) {
+        a = add_noise_SA_alpha(radar,A_COEFF_X);
+        b = add_noise_SA_beta(radar,B_COEFF_X);
+//a = A_COEFF_C;
+//b = B_COEFF_C;
+    } else if (strcmp(radar->frequency, "C") == 0) {
+        a = add_noise_SA_alpha(radar,A_COEFF_C);
+        b = add_noise_SA_beta(radar,B_COEFF_C);
     } else {
         // Default: assume no attenuation
         return 0.0;

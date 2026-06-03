@@ -241,12 +241,12 @@ def create_vpr_animation(output_video='vpr_animation.mp4',
     ax1.set_xlabel('Reflectivity (dBZ)')
     ax1.set_ylabel('Height (km)')
     ax1.grid(True, alpha=0.3)
-    ax1.legend(loc='upper left')
+    ax1.legend(loc='upper right')
     
     ax2.set_xlabel('Reflectivity (dBZ)')
     ax2.set_ylabel('Height (km)')
     ax2.grid(True, alpha=0.3)
-    ax2.legend(loc='upper left')
+    ax2.legend(loc='upper right')
     
     # Set reasonable axis limits (will be adjusted dynamically)
     ax1.set_xlim(0, 60)
@@ -640,7 +640,7 @@ def plot_static_comparison(output_image='vpr_comparison.png'):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Create VPR animation from fixed file names')
-    parser.add_argument('--output', type=str, default='vpr_animation.mp4',
+    parser.add_argument('--output', type=str, default='outputs/AAFIGUREvpr_animation.mp4',
                         help='Output video filename')
     parser.add_argument('--fps', type=float, default=2,
                         help='Frames per second (default: 2)')

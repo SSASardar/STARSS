@@ -115,7 +115,7 @@ disp_files = sorted(glob.glob("outputs/disp_g_*.txt"))
 true_files = sorted(glob.glob("outputs/true_g_*.txt"))
 point_files = sorted(glob.glob("outputs/heights_point_*.txt"))
 vpr_files   = sorted(glob.glob("outputs/VPR_conv_*.txt"))
-radar_files = sorted(glob.glob("outputs/radar_scan_*.txt"))
+radar_files = sorted(glob.glob("outputs/radar_00_scan_*.txt"))
 
 disp_grids_raw = [load_grid(f) for f in disp_files]
 true_grids_raw = [load_grid(f) for f in true_files]
