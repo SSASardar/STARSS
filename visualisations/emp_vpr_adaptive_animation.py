@@ -160,12 +160,12 @@ def create_vpr_animation(output_video='vpr_animation.mp4',
     """
     
     # Fixed filenames
-    strat_file = 'outputs/vpr_emp_strat.txt'
-    conv_file = 'outputs/vpr_emp_conv.txt'
-    strat_ad_file = 'outputs/vpr_emp_strat_ad.txt'
-    conv_ad_file = 'outputs/vpr_emp_conv_ad.txt'
-    strat_true_file = 'outputs/vpr_true_strat.txt'
-    conv_true_file = 'outputs/vpr_true_conv.txt'
+    strat_file = 'outputs/75km away/vpr_emp_strat.txt'
+    conv_file = 'outputs/75km away/vpr_emp_conv.txt'
+    strat_ad_file = 'outputs/75km away/vpr_emp_strat_ad.txt'
+    conv_ad_file = 'outputs/75km away/vpr_emp_conv_ad.txt'
+    strat_true_file = 'outputs/75km away/vpr_true_strat.txt'
+    conv_true_file = 'outputs/75km away/vpr_true_conv.txt'
     
     # Read the profiles (both non-adaptive and adaptive have std dev)
     print(f"Reading stratiform profiles from {strat_file}...")

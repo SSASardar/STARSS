@@ -856,8 +856,8 @@ if(sample_height < vpr_strat->BB_m.height) {
                 box->attenuation_grid[idp] = noisy_att + box->attenuation_grid[idp_min_one];
 		box->estimated_attenuation_grid[idp] = att + box->estimated_attenuation_grid[idp_min_one];
 	}
-        //box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
-        box->grid[idp] = add_noise(radar, refl_dBZ);
+        box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+       // box->grid[idp] = add_noise(radar, refl_dBZ);
 } else {
 	box->rain_type[idp] = 2;
         refl_dBZ = get_reflectivity_at_height(vpr_conv, sample_height);
@@ -875,8 +875,8 @@ if(sample_height < vpr_conv->BB_m.height) {
                 box->attenuation_grid[idp] = noisy_att + box->attenuation_grid[idp_min_one];
 			box->estimated_attenuation_grid[idp] = att + box->estimated_attenuation_grid[idp_min_one];
 	}
-        //box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
-        box->grid[idp] = add_noise(radar, refl_dBZ);
+        box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+        //box->grid[idp] = add_noise(radar, refl_dBZ);
 }
 
             // Flattened grid write

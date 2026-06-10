@@ -61,7 +61,7 @@ CommandLineParams parse_command_line(int argc, char *argv[]) {
         .x2 = 170.0,       // default: 170 minutes
         .x3 = 500.0,       // default: 500 m cloud base
         .x4 = 0.5,//0.5,         // default: 0.5 ratio
-        .x5 = 180000.0,     // default: 80 km
+        .x5 = 75000.0,     // default: 80 km
         .x6 = 4.0,//10.0,        // default: 10 (units?)
         .worker_id = ""     // default: empty (original behavior)
     };
