@@ -194,7 +194,7 @@ void generate_commands_file_vol_rhi_A(int file_index, double start_time) {
     for (int i = 0; i<scans_in_X_rhi;i++){
     Command cmd;
     cmd.time = start_time + (double)counter_A*interval - (3-i)*interval_two;
-    cmd.radar_id = 2;
+    cmd.radar_id = 3;
     snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
     cmd.other_angle = other_angles_rhi[i];
     counter_B++;
