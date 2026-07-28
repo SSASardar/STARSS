@@ -4,12 +4,13 @@ Doxyfile
 docs/
 *.DS_Store
 *.ps
-outputs/
+outputs/*
 Aoutputs/
 *.log
+logs/*
 plots/
-archive/
-inputs/
+archive/*
+inputs/*
 videos/
 *.mp4
 batch*/
