@@ -61,7 +61,7 @@ CommandLineParams parse_command_line(int argc, char *argv[]) {
         .x2 = 170.0,       // default: 170 minutes
         .x3 = 500.0,       // default: 500 m cloud base
         .x4 = 0.5,//0.5,         // default: 0.5 ratio
-        .x5 = 180000.0,     // default: 80 km
+        .x5 = 25000.0,     // default: 25 km from origin
         .x6 = 4.0,//10.0,        // default: 10 (units?)
         .worker_id = ""     // default: empty (original behavior)
     };
@@ -273,11 +273,11 @@ int main(int argc, char *argv[]) {
     
     int max_vol_scans = (int)((330.0 - sim_time) / 5);
     for (int i = 0; i < max_vol_scans; i++) {
-        generate_commands_file_vol_rhi_A(i, sim_time);
+        generate_commands_file_model_description(i, sim_time);
         sim_time += 5.0;
     }
     
-    // Start monitoring inputs
+    // Generate the radar data.
     monitor_and_process_inputs_multi_radar(VPR_strat, params, VPR_conv);
     
     // =========================================
@@ -289,6 +289,7 @@ int main(int argc, char *argv[]) {
   
   // Allocate on heap instead of stack
 RainfallStats *stats_array = malloc(NUM_SCANS * sizeof(RainfallStats));
+RainfallStats *stats_array_X = malloc(NUM_SCANS * sizeof(RainfallStats));
 RainfallStats *ad_stats_array = malloc(NUM_SCANS * sizeof(RainfallStats));
 if (!ad_stats_array) {
     fprintf(stderr, "ERROR: Failed to allocate stats_array for %d scans\n", NUM_SCANS);
@@ -300,30 +301,32 @@ if (!stats_array) {
 }
   
     init_stats_array(stats_array, NUM_SCANS);
+    init_stats_array(stats_array_X, NUM_SCANS);
     init_stats_array(ad_stats_array, NUM_SCANS);
 
 double vpr_emp_strat[120] = {0};
 double vpr_emp_conv[120] = {0};
 
-double vpr_tremp_strat[120] = {0};
-double vpr_tremp_conv[120] = {0};
-
 int print_or_not = 1;
 
     // Determine stats file path based on worker ID
     char stats_path[256];
+    char stats_path_X[256];
     char ad_stats_path[256];
     if (cmd_params.worker_id[0] != '\0') {
         snprintf(stats_path, sizeof(stats_path), "outputs_%s/stats.txt", cmd_params.worker_id);
+        snprintf(stats_path_X, sizeof(stats_path), "outputs_%s/stats_X.txt", cmd_params.worker_id);
         snprintf(ad_stats_path, sizeof(ad_stats_path), "outputs_%s/ad_stats.txt", cmd_params.worker_id);
     } else {
         snprintf(stats_path, sizeof(stats_path), "outputs/stats.txt");
+        snprintf(stats_path_X, sizeof(stats_path_X), "outputs/stats_X.txt");
         snprintf(ad_stats_path, sizeof(ad_stats_path), "outputs/ad_stats.txt");
     }
     
     for (int scan_idx = 0; scan_idx < NUM_SCANS; scan_idx++) {
         char filename[256];
         Vol_scan *vol = NULL;  // Declare vol here
+        Vol_scan *vol_1 = NULL;  // Declare vol here
         Cart_grid **cart_grids = NULL;  // Declare cart_grids here
         int cg_count = 0;  // Declare cg_count here
 			   //
@@ -345,8 +348,8 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
         if (access(filename, F_OK) == 0) {  // Check if file exists (requires #include <unistd.h>)
             read_radar_scans(filename);
         
-        
-	if(radar_id ==0){
+        //the the PPI volume scan radars... 
+	if(radar_id ==0 || radar_id==1){
 	if (scan_count == 0) continue;
 
         cart_grids = malloc(scan_count * sizeof(Cart_grid*));
@@ -365,12 +368,19 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
             Cart_grid *cg = interpolate_scan_NN(p_box, radar, time, cart_grid_res, scan_idx, i);
             if (cg) cart_grids[cg_count++] = cg;
         }
-
+	
+	if(radar_id == 0){
         vol = init_vol_scan(cart_grids, cg_count);
         for (int i = 0; i < cg_count; i++) {
             add_cart_grid_to_volscan(vol, cart_grids[i], i);
         }
-	} else if (radar_id == 3) {
+	} else if (radar_id == 1) {
+	vol_1 = init_vol_scan(cart_grids, cg_count);
+        for (int i = 0; i < cg_count; i++) {
+            add_cart_grid_to_volscan(vol_1, cart_grids[i], i);
+        }
+	}
+	} else if (radar_id == 3) /*RHI baesd volume scan */ { 
 	
 		//printf("the scan count for radar %.2d in command %.4d is %.3d\n",radar_id, scan_idx, scan_count);
         cart_grids = malloc(scan_count * sizeof(Cart_grid*));
@@ -413,7 +423,13 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
 	}
 	}
 }
-        process_volume_scan_VPR(vol);
+	//process X-band volume scan	
+        process_volume_scan_VPR(vol_1);
+        compute_average_empVPR(vol_1);
+        compute_std_dev_empVPR(vol_1);
+
+	//process C-band volume scan
+	process_volume_scan_VPR(vol);
         compute_average_empVPR(vol);
         compute_std_dev_empVPR(vol);
 
@@ -430,11 +446,22 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
             exit(EXIT_FAILURE);
         }
 
+
+        if (fill_refl_ALA_grid(vol_1, raincell_pos, raincell, VPR_strat, VPR_conv) != 0) {
+            exit(EXIT_FAILURE);
+        }
+
+
         compute_display_grid_KNMI_empirical(vol, -5.0, 0.5, 0);
+        compute_display_grid_KNMI_empirical(vol_1, -5.0, 0.5, 0);
 
         double volume_duration = 5.0 * 60.0;
         if (compute_and_store_stats(vol, -5.0, cart_grid_res, volume_duration, stats_array, scan_idx) == 0) {
             append_stats_to_file(stats_array, scan_idx, stats_path);
+        }
+
+if (compute_and_store_stats(vol_1, -5.0, cart_grid_res, volume_duration, stats_array_X, scan_idx) == 0) {
+            append_stats_to_file(stats_array_X, scan_idx, stats_path_X);
         }
 
     // Process adaptive volume scan if empirical VPRs are available
@@ -442,14 +469,24 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
 if(print_or_not == 1) {
 print_vpr_detailed_with_std(vol, "outputs/vpr_emp_strat.txt", 1, 1);  // Append stratiform with std dev
 print_vpr_detailed_with_std(vol, "outputs/vpr_emp_conv.txt", 2, 1);  // Append convective with std dev
+
+print_vpr_detailed_with_std(vol_1, "outputs/vpr_emp_strat_X.txt", 1, 1);  // Append stratiform with std dev
+print_vpr_detailed_with_std(vol_1, "outputs/vpr_emp_conv_X.txt", 2, 1);  // Append convective with std dev
+
 }
  
 if(print_or_not == 1) {
 // --- Write display_grid to file ---
 char disp_filename[256];
+char disp_filename_1[256];
 snprintf(disp_filename, sizeof(disp_filename), "outputs/disp_g_%04d.txt", scan_idx);
+snprintf(disp_filename_1, sizeof(disp_filename), "outputs/disp_1_g_%04d.txt", scan_idx);
 if (write_display_grid_to_file(vol, disp_filename) != 0) {
     fprintf(stderr, "Failed to write display grid to %s\n", disp_filename);
+}
+
+if (write_display_grid_to_file(vol_1, disp_filename_1) != 0) {
+    fprintf(stderr, "Failed to write display grid to %s\n", disp_filename_1);
 }
 
 // --- Write true_grid to file ---
@@ -523,6 +560,7 @@ if (write_display_grid_to_file(vol, disp_filename) != 0) {
     // Cleanup
     // =========================================
     free(stats_array);
+    free(stats_array_X);
     free(ad_stats_array);
 
     cleanup_test_environment(

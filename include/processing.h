@@ -181,7 +181,7 @@ void compute_std_dev_empVPR(Vol_scan *vs);
 
 int print_vpr_profile(const Vol_scan *vs, const char *filename, int profile_type);
 int print_vpr_detailed(const Vol_scan *vs, const char *filename, int profile_type, int append); 
-
+int print_vpr_detailed_no_vol(const double vpr[120], const char *filename, int profile_type, int append); 
 
 double get_reflectivity_from_empirical_vpr_interp(const double *emp_vpr, double height, double bin_size_km, double ground_height_km); 
 double get_stdev_from_empirical_vpr_interp(const double *emp_vpr, double height, double bin_size_km, double ground_height_km);
@@ -227,6 +227,7 @@ void compute_polar_vpr_std_dev_inplace(double vpr_array[120]);
 
 Vol_scan* create_adaptive_vol_scan(Vol_scan *original_vol, double *emp_vpr_strat, double *emp_vpr_conv);
  
+
 void combine_vpr_M1(Vol_scan *vol, double vpr_strat[120], double vpr_conv[120]);
 
 

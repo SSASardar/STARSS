@@ -214,6 +214,94 @@ void generate_commands_file_vol_rhi_A(int file_index, double start_time) {
 }
 
 
+void generate_commands_file_model_description(int file_index, double start_time) {
+    char filename[256];
+    snprintf(filename, sizeof(filename), "inputs%s/commands_%04d.txt", g_worker_id, file_index);
+
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        fprintf(stderr, "Failed to create command file %s\n", filename);
+        return;
+    }
+
+// DEFINING THE SCANNING FOR RADAR 0
+    int scans_in_C_vol = 15;
+     
+    double VCP_elevation_angles_C_vol[15] = {12.0, 8.0, 4.5, 2.0, 0.8, 0.3, 25, 20, 15, 10, 6, 2.8, 1.2, 0.3, 0.3}; 
+    double interval_C_vol = 5 / (double)scans_in_C_vol;  // frequency of scans (5 minutes divided by number of scans)
+    int counter_A = 0;
+    for (int i = 0; i < scans_in_C_vol; i++) {
+        Command cmd;
+        cmd.time = start_time + (double)i * interval_C_vol;
+        cmd.radar_id = 0; // make sure the radar id is correct.
+	snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
+        
+       	cmd.other_angle = VCP_elevation_angles_C_vol[counter_A];
+        cmd.raincell_id = 1;
+        counter_A++;
+
+        fprintf(file, "%.2f %d %s %d %.5f\n",
+                cmd.time,
+                cmd.radar_id,
+                cmd.scan_mode,
+                cmd.raincell_id,
+                cmd.other_angle);
+    }
+
+
+// DEFINING THE SCANNING FOR RADAR 1
+    int scans_in_X_vol = 15;
+     
+    double VCP_elevation_angles_X_vol[15] = {12.0, 8.0, 4.5, 2.0, 0.8, 0.3, 25, 20, 15, 10, 6, 2.8, 1.2, 0.3, 0.3}; 
+    double interval_X_vol = 5 / (double)scans_in_X_vol;  // frequency of scans (5 minutes divided by number of scans)
+    int counter_D = 0;
+    for (int i = 0; i < scans_in_X_vol; i++) {
+        Command cmd;
+        cmd.time = start_time + (double)i * interval_X_vol;
+        cmd.radar_id = 1; // make sure the radar id is correct.
+	snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
+        
+       	cmd.other_angle = VCP_elevation_angles_X_vol[counter_D];
+        cmd.raincell_id = 1;
+        counter_D++;
+
+        fprintf(file, "%.2f %d %s %d %.5f\n",
+                cmd.time,
+                cmd.radar_id,
+                cmd.scan_mode,
+                cmd.raincell_id,
+                cmd.other_angle);
+    }
+
+
+// DEFINING THE SCANNING FOR RADAR 2 (the last three intervals of the Volume scanning pattern, RHI's are made.)
+    int scans_in_X_rhi = 3;
+    double other_angles_rhi[3] = {0.0,1.0,-1.0};
+    double interval_two = 1/(double)scans_in_X_rhi; // frequency of scans... 3 scans each minute.
+    double counter_B = 0;
+    for (int i = 0; i<scans_in_X_rhi;i++){
+    Command cmd;
+    cmd.time = start_time + (double)counter_A*interval_C_vol - (3-i)*interval_two;
+    cmd.radar_id = 2; //make sure the radar id is correct
+    snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
+    cmd.other_angle = other_angles_rhi[i];
+    counter_B++;
+    cmd.raincell_id = 1;
+     fprintf(file, "%.2f %d %s %d %.5f\n",
+                cmd.time,
+                cmd.radar_id,
+                cmd.scan_mode,
+                cmd.raincell_id,
+                cmd.other_angle); 
+    }
+
+        
+
+
+    fclose(file);
+}
+
+
 
 // ---------------------- Command Validation ----------------------
 /*

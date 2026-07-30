@@ -303,4 +303,27 @@ python results_analysis/plot_stats_comparison.py outputs/
 
 
 
-To compute 
+30-07-2026
+NOTE: you need to add the following directories within your local repository:  "archive/", "build/", "inputs/", "outputs/",  "logs/".   
+
+
+STEP 1:	DEFINE RADAR AND RAINCELL PARAMETERS
+	in src/analysis.c in the function intial_test_environment():
+	setup the correct radars (position, resolutions, frequencies, etc.) using the create_radar() function
+		add each radar to the radar list.
+	setup the correction rain evolution parameters when the function fill_VPR_params() is called
+	setup the material and spatial descriptions of the rain in create_raincell() and create_spatial_raincell()
+		add each raincell to the raincell list.
+
+
+STEP 2: DEFINE RADAR SCANNING PATTERN.
+	in src/command_centre.c create a generate_commands_file_*() function which suits your needs.
+	for each radar defined previously, define a scanning pattern done in the 5 minute interval.
+	The existing generate_commands_file*() functions can be used as guidance.
+	Do not forget to also define the new function prototype in the include/control_centre.h file. (the "void function(arguments);" not anything within the curly brackets.)
+
+STEP 3: RUN THE SIMULATION TO GENERATE RADAR DATA AND THE PRODUCT DATA
+	run the following code to make an executable bash script: 
+		chmod +x combi_test.sh
+	then run the script using 
+		./combi_text.sh

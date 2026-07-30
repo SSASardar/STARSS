@@ -2268,6 +2268,65 @@ int print_vpr_detailed(const Vol_scan *vs, const char *filename, int profile_typ
     return 0;
 }
 
+
+int print_vpr_detailed_no_vol(const double vpr[120], const char *filename, int profile_type, int append) {
+
+    const int NUM_BINS = 40;
+    const double BIN_SIZE = 0.5;  // km
+    const double BIN_CENTER_OFFSET = BIN_SIZE / 2.0;  // 0.25 km
+
+    const char *mode = append ? "a" : "w";
+
+    // Open file
+    FILE *file = fopen(filename, mode);
+    if (file == NULL) {
+        fprintf(stderr, "Error: Could not open file '%s' for writing.\n", filename);
+        return -1;
+    }
+	char p1[6] = "strat";
+	char p2[6] = "conv";
+	char *profile_name;
+    if(profile_type == 1){
+    profile_name = p1;
+    }
+if(profile_type == 2){
+    profile_name = p2;
+    }
+    // Write header (only if not appending or file is new)
+    if (!append || ftell(file) == 0) {
+        fprintf(file, "# %s Vertical Profile Reflectivity (VPR) with Standard Deviation\n", profile_name);
+        fprintf(file, "# Format: bin_index bin_center_height_km point_count avg_reflectivity_dBZ std_deviation_dBZ\n");
+        fprintf(file, "# Height bins: 0-20 km in 0.5 km increments\n");
+        fprintf(file, "# Bins 0-39: %s\n", (profile_type == 1) ? "stratiform" : "convective");
+        fprintf(file, "# Standard deviation is sample standard deviation (dividing by n-1)\n");
+        fprintf(file, "#\n");
+    }
+
+    // Write data for each bin
+    for (int bin = 0; bin < NUM_BINS; bin++) {
+        double bin_center = bin * BIN_SIZE + BIN_CENTER_OFFSET;
+        double point_count = vpr[bin];
+        double avg_reflectivity = vpr[NUM_BINS + bin];
+        double std_deviation = vpr[2 * NUM_BINS + bin];
+
+        // Check if standard deviation is valid (not NaN)
+        if (isnan(std_deviation)) {
+            fprintf(file, "%d %.2f %.0f %.6f %s\n", bin, bin_center, point_count, avg_reflectivity, "NaN");
+        } else {
+            fprintf(file, "%d %.2f %.0f %.6f %.6f\n", bin, bin_center, point_count, avg_reflectivity, std_deviation);
+        }
+    }
+
+    fprintf(file, "\n");  // Add empty line between profiles if appending
+
+    fclose(file);
+
+    return 0;
+}
+
+
+
+
 double get_reflectivity_from_empirical_vpr_interp(const double *emp_vpr, double height, double bin_size_km, double ground_height_km) {
     const int NUM_BINS = 40;
     const double BIN_SIZE = bin_size_km*1000;
@@ -2906,6 +2965,7 @@ Vol_scan* create_adaptive_vol_scan(Vol_scan *original_vol, double *emp_vpr_strat
 
     return ad_vol;
 }
+
 
 
 
