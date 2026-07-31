@@ -1749,7 +1749,7 @@ void free_cart_grid(Cart_grid *cg) {
 }
 
 static inline double dBZ_to_R(double dBZ) {
-    double Z = pow(10.0, dBZ / 10.0);
+	double Z = pow(10.0, dBZ / 10.0);
     return pow(Z / 200.0, 1.0 / 1.6);
 }
 // Compute radar statistics and also unmasked total true rainfall
@@ -1764,7 +1764,8 @@ int compute_rainfall_statistics(const Vol_scan *vol,
                                 double *total_measured_mm2,
                                 double *total_true_mm2,
                                 double *total_true_unmasked,
-                                double *total_true_mm2_unmasked)
+                                double *total_true_mm2_unmasked,
+				double *total_unmasked_area_km2) // <-- Add this parameter)
 {
     if (!vol || !vol->display_grid || !vol->refl_ALA) return -1;
 
@@ -1777,7 +1778,7 @@ int compute_rainfall_statistics(const Vol_scan *vol,
     int count = 0, count_all = 0;
 
     double cell_area_km2 = cart_grid_res*0.001 * cart_grid_res*0.001;
-
+    double unmasked_area_accum = 0.0; // <-- Track active area
     for (int i = 0; i < (int)vol->num_elements; ++i) {
         double dBZ_disp = vol->display_grid[i];
         double dBZ_true = vol->refl_ALA[i];
@@ -1788,6 +1789,7 @@ int compute_rainfall_statistics(const Vol_scan *vol,
             sum_true_all += Rtrue;
             sum_true_mm2_all += Rtrue * cell_area_km2;
             count_all++;
+	    unmasked_area_accum += cell_area_km2; // <-- Accumulate area
         }
 
         // --- Masked stats for error metrics ---
@@ -1825,7 +1827,7 @@ int compute_rainfall_statistics(const Vol_scan *vol,
 
     *total_true_unmasked = sum_true_all;
     *total_true_mm2_unmasked = sum_true_mm2_all;
-
+*total_unmasked_area_km2 = unmasked_area_accum; // <-- Pass it out
     return 0;
 }
 
@@ -2966,6 +2968,42 @@ Vol_scan* create_adaptive_vol_scan(Vol_scan *original_vol, double *emp_vpr_strat
     return ad_vol;
 }
 
+
+
+
+void combine_vpr_M0(Vol_scan *vol, double vpr_strat[120], double vpr_conv[120]) {
+      // replace emp_vpr_strat with vpr_strat
+    for (int i = 0; i < 40; i++) {
+        double ext_count = vpr_strat[i];
+        
+        // replace count (just add)
+        vol->emp_vpr_strat[i] =ext_count;;
+        
+        // replace mean
+	double ext_mean = vpr_strat[40 + i];
+        vol->emp_vpr_strat[40 + i] = ext_mean;
+       
+       // replace standard deviations	
+        double ext_sd = vpr_strat[80 + i];
+        vol->emp_vpr_strat[80 + i] = ext_sd;
+    }
+    
+    // replace emp_vpr_conv with vpr_conv
+    for (int i = 0; i < 40; i++) {
+        double ext_count = vpr_conv[i];
+        
+        // replace counts (just add)
+        vol->emp_vpr_conv[i] = ext_count;
+        
+        // replace means (weighted average)
+        double ext_mean = vpr_conv[40 + i];
+        vol->emp_vpr_conv[40 + i] = ext_mean;
+        
+        //  replacestandard deviations (weighted)
+        double ext_sd = vpr_conv[80 + i];
+        vol->emp_vpr_conv[80 + i] = ext_sd;
+    }
+}
 
 
 

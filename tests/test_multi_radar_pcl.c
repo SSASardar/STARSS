@@ -60,9 +60,9 @@ CommandLineParams parse_command_line(int argc, char *argv[]) {
         .x1 = 1000.0,      // default: 1 km resolution
         .x2 = 170.0,       // default: 170 minutes
         .x3 = 500.0,       // default: 500 m cloud base
-        .x4 = 0.5,//0.5,         // default: 0.5 ratio
+        .x4 = 0.5,         // default: 0.5 ratio
         .x5 = 25000.0,     // default: 25 km from origin
-        .x6 = 4.0,//10.0,        // default: 10 (units?)
+        .x6 = 4.0,        // default: 10m
         .worker_id = ""     // default: empty (original behavior)
     };
     
@@ -267,6 +267,7 @@ int main(int argc, char *argv[]) {
     );
    
    printf("Parameters in order are: %lf, %lf, %lf, %lf, %lf, %lf\n",cmd_params.x1, cmd_params.x2, cmd_params.x3, cmd_params.x4, cmd_params.x5, cmd_params.x6); 
+   printf("Raincell is  %lf m in radius.\n", raincell_list[0]->radius_stratiform); 
     // =========================================
     // Part 1: Run test_command_centre functionality
     // =========================================
@@ -314,11 +315,11 @@ int print_or_not = 1;
     char stats_path_X[256];
     char ad_stats_path[256];
     if (cmd_params.worker_id[0] != '\0') {
-        snprintf(stats_path, sizeof(stats_path), "outputs_%s/stats.txt", cmd_params.worker_id);
+        snprintf(stats_path, sizeof(stats_path), "outputs_%s/stats_C.txt", cmd_params.worker_id);
         snprintf(stats_path_X, sizeof(stats_path), "outputs_%s/stats_X.txt", cmd_params.worker_id);
         snprintf(ad_stats_path, sizeof(ad_stats_path), "outputs_%s/ad_stats.txt", cmd_params.worker_id);
     } else {
-        snprintf(stats_path, sizeof(stats_path), "outputs/stats.txt");
+        snprintf(stats_path, sizeof(stats_path), "outputs/stats_C.txt");
         snprintf(stats_path_X, sizeof(stats_path_X), "outputs/stats_X.txt");
         snprintf(ad_stats_path, sizeof(ad_stats_path), "outputs/ad_stats.txt");
     }
@@ -380,7 +381,7 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
             add_cart_grid_to_volscan(vol_1, cart_grids[i], i);
         }
 	}
-	} else if (radar_id == 3) /*RHI baesd volume scan */ { 
+	} else if (radar_id == 2) /*RHI baesd volume scan */ { 
 	
 		//printf("the scan count for radar %.2d in command %.4d is %.3d\n",radar_id, scan_idx, scan_count);
         cart_grids = malloc(scan_count * sizeof(Cart_grid*));
@@ -456,19 +457,19 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
         compute_display_grid_KNMI_empirical(vol_1, -5.0, 0.5, 0);
 
         double volume_duration = 5.0 * 60.0;
-        if (compute_and_store_stats(vol, -5.0, cart_grid_res, volume_duration, stats_array, scan_idx) == 0) {
+        if (compute_and_store_stats(vol, 5.0, cart_grid_res, volume_duration, stats_array, scan_idx,  raincell_list[0]) == 0) {
             append_stats_to_file(stats_array, scan_idx, stats_path);
         }
 
-if (compute_and_store_stats(vol_1, -5.0, cart_grid_res, volume_duration, stats_array_X, scan_idx) == 0) {
+if (compute_and_store_stats(vol_1, 5.0, cart_grid_res, volume_duration, stats_array_X, scan_idx,  raincell_list[0]) == 0) {
             append_stats_to_file(stats_array_X, scan_idx, stats_path_X);
         }
 
     // Process adaptive volume scan if empirical VPRs are available
         // Create a deep copy of the volume scan for adaptive processing
 if(print_or_not == 1) {
-print_vpr_detailed_with_std(vol, "outputs/vpr_emp_strat.txt", 1, 1);  // Append stratiform with std dev
-print_vpr_detailed_with_std(vol, "outputs/vpr_emp_conv.txt", 2, 1);  // Append convective with std dev
+print_vpr_detailed_with_std(vol, "outputs/vpr_emp_strat_C.txt", 1, 1);  // Append stratiform with std dev
+print_vpr_detailed_with_std(vol, "outputs/vpr_emp_conv_C.txt", 2, 1);  // Append convective with std dev
 
 print_vpr_detailed_with_std(vol_1, "outputs/vpr_emp_strat_X.txt", 1, 1);  // Append stratiform with std dev
 print_vpr_detailed_with_std(vol_1, "outputs/vpr_emp_conv_X.txt", 2, 1);  // Append convective with std dev
@@ -479,8 +480,8 @@ if(print_or_not == 1) {
 // --- Write display_grid to file ---
 char disp_filename[256];
 char disp_filename_1[256];
-snprintf(disp_filename, sizeof(disp_filename), "outputs/disp_g_%04d.txt", scan_idx);
-snprintf(disp_filename_1, sizeof(disp_filename), "outputs/disp_1_g_%04d.txt", scan_idx);
+snprintf(disp_filename, sizeof(disp_filename), "outputs/disp_C_g_%04d.txt", scan_idx);
+snprintf(disp_filename_1, sizeof(disp_filename), "outputs/disp_X_g_%04d.txt", scan_idx);
 if (write_display_grid_to_file(vol, disp_filename) != 0) {
     fprintf(stderr, "Failed to write display grid to %s\n", disp_filename);
 }
@@ -521,12 +522,12 @@ write_VPR_to_file(VPR_conv,  "conv",  scan_idx);
 //	    memcpy(vol->emp_vpr_strat, vpr_emp_strat, 120 * sizeof(double));
 //	    memcpy(vol->emp_vpr_conv, vpr_emp_conv, 120 * sizeof(double));
 
-combine_vpr_M1(vol, vpr_emp_strat, vpr_emp_conv);
+combine_vpr_M0(vol, vpr_emp_strat, vpr_emp_conv);
 
 
 if(print_or_not == 1) {
-print_vpr_detailed_with_std(vol, "outputs/vpr_emp_strat_ad.txt", 1, 1);  // Append stratiform with std dev
-print_vpr_detailed_with_std(vol, "outputs/vpr_emp_conv_ad.txt", 2, 1);  // Append convective with std dev
+print_vpr_detailed_with_std(vol, "outputs/vpr_emp_strat_rhi.txt", 1, 1);  // Append stratiform with std dev
+print_vpr_detailed_with_std(vol, "outputs/vpr_emp_conv_rhi.txt", 2, 1);  // Append convective with std dev
 
 print_vpr_interpolated(VPR_strat, "outputs/vpr_true_strat.txt", 1); 
 print_vpr_interpolated(VPR_conv, "outputs/vpr_true_conv.txt", 1); 
@@ -534,7 +535,7 @@ print_vpr_interpolated(VPR_conv, "outputs/vpr_true_conv.txt", 1);
 
  
                         compute_display_grid_KNMI_empirical(vol, -5.0, 0.5, 0);
-
+/*
 if(print_or_not == 1) {
 // --- Write display_grid to file ---
 char disp_filename[256];
@@ -549,7 +550,7 @@ if (write_display_grid_to_file(vol, disp_filename) != 0) {
             if (compute_and_store_stats(vol, -5.0, cart_grid_res, volume_duration, ad_stats_array, scan_idx) == 0) {
                 append_stats_to_file(ad_stats_array, scan_idx, ad_stats_path);
             }
-
+*/
         for (int i = 0; i < cg_count; i++)
             free_cart_grid(cart_grids[i]);
         free(cart_grids);

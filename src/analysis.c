@@ -44,7 +44,7 @@ void initialize_test_environment(
     double x1, double x2, double x3, double x4, double x5, double x6
 ) {
     // Initialize simulation time
-    *sim_time = 60.0;
+    *sim_time = 00.0;
     
     // Initialize cartesian grid resolution (in meters)
     *cart_grid_res = x1;  // Now using x1 from command line
@@ -89,7 +89,7 @@ void initialize_test_environment(
     compute_average_VPR(*VPR_A_d, *params, t3, t2, 60.0, *VPR_dummy);
     
     // Initialize raincell and spatial_raincell with command line parameters
-    *raincell = create_raincell(1, x4, 20000.0, -0.5);  // x4 is the core ratio
+    *raincell = create_raincell(1, x4, 10000.0, -0.5);  // x4 is the core ratio
     *s_raincell = create_spatial_raincell(1, -80000.0, x5, x6);  // x5 y-distance, x6 apparent motion
     
     // Add to global lists (if your test functions expect them)
@@ -175,13 +175,13 @@ int compute_and_store_stats_temp_interp(Vol_scan *vol, double rain_threshold, do
     double total_measured, total_true_masked;
     double total_measured_mm2, total_true_mm2;
     double total_true_unmasked, total_true_mm2_unmasked;
-    
+   double total_unmasked_area_km2; 
     // Compute rainfall statistics
     if (compute_rainfall_statistics(vol, rain_threshold, cart_grid_res,
                                     &mse, &mae, &bias,
                                     &total_measured, &total_true_masked,
                                     &total_measured_mm2, &total_true_mm2,
-                                    &total_true_unmasked, &total_true_mm2_unmasked) == 0) {
+                                    &total_true_unmasked, &total_true_mm2_unmasked,&total_unmasked_area_km2) == 0) {
         // Store computed statistics
         stats[scan_idx].mse = mse;
         stats[scan_idx].mae = mae;
@@ -206,20 +206,23 @@ int compute_and_store_stats_temp_interp(Vol_scan *vol, double rain_threshold, do
 
 
 int compute_and_store_stats(Vol_scan *vol, double rain_threshold, double cart_grid_res,
-                           double volume_duration_seconds, RainfallStats *stats, int scan_idx) {
+                          double volume_duration_seconds, RainfallStats *stats, int scan_idx, Raincell *raincell) {
     if (!vol || !stats || scan_idx < 0) return -1;
     
     double mse, mae, bias;
     double total_measured, total_true_masked;
     double total_measured_mm2, total_true_mm2;
     double total_true_unmasked, total_true_mm2_unmasked;
-    
+double total_unmasked_area_km2; // <-- Variable to hold the area
+
     // Compute rainfall statistics
     if (compute_rainfall_statistics(vol, rain_threshold, cart_grid_res,
                                     &mse, &mae, &bias,
                                     &total_measured, &total_true_masked,
                                     &total_measured_mm2, &total_true_mm2,
-                                    &total_true_unmasked, &total_true_mm2_unmasked) == 0) {
+                                    &total_true_unmasked, &total_true_mm2_unmasked,&total_unmasked_area_km2) == 0) {
+	    //double area = vol->num_x*vol->resolution*vol->num_y*vol->resolution*1e-3;
+	    //double area = M_PI*raincell->radius_stratiform*raincell->radius_stratiform*1e-6;
         // Store computed statistics
         stats[scan_idx].mse = mse;
         stats[scan_idx].mae = mae;
@@ -232,9 +235,25 @@ int compute_and_store_stats(Vol_scan *vol, double rain_threshold, double cart_gr
         //stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked;
         
 	// Divide multiply by the time to get to the accumulation in the timeperiod.
-        stats[scan_idx].total_measured_mm2 = total_measured_mm2* (volume_duration_seconds/3600);
-        stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked*( volume_duration_seconds/3600);
+        //stats[scan_idx].total_measured_mm2 = total_measured_mm2* (volume_duration_seconds/3600);
+        //stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked*( volume_duration_seconds/3600);
         
+        // --- OPTION A IMPLEMENTATION ---
+        // Calculate the raw volumetric accumulations over the time interval
+       //double measured_volume = total_measured_mm2 * (volume_duration_seconds / 3600.0);
+      // double true_volume     = total_true_mm2_unmasked * (volume_duration_seconds / 3600.0);
+        
+        // Divide by the total active area to get true AVERAGE RAINFALL DEPTH (in mm)
+      //stats[scan_idx].total_measured_mm2 = measured_volume / total_unmasked_area_km2;
+     // stats[scan_idx].total_true_mm2     = true_volume / total_unmasked_area_km2;
+
+	// --- OPTION B: standard hydrological volume.
+	//
+ stats[scan_idx].total_measured_mm2 = total_measured_mm2* (volume_duration_seconds/3600)*1000;
+        stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked*( volume_duration_seconds/3600)*1000;
+        	
+
+
         return 0;
     } else {
         return -1;

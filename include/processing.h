@@ -164,7 +164,8 @@ int compute_rainfall_statistics(const Vol_scan *vol,
                                 double *total_measured_mm2,
                                 double *total_true_mm2,
                                 double *total_true_unmasked,
-                                double *total_true_mm2_unmasked);
+                                double *total_true_mm2_unmasked,
+					double *total_unmasked_area_km2);
 
 
 void free_cart_grid(Cart_grid *cg);
@@ -228,6 +229,7 @@ void compute_polar_vpr_std_dev_inplace(double vpr_array[120]);
 Vol_scan* create_adaptive_vol_scan(Vol_scan *original_vol, double *emp_vpr_strat, double *emp_vpr_conv);
  
 
+void combine_vpr_M0(Vol_scan *vol, double vpr_strat[120], double vpr_conv[120]);
 void combine_vpr_M1(Vol_scan *vol, double vpr_strat[120], double vpr_conv[120]);
 
 

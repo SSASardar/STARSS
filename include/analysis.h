@@ -83,7 +83,7 @@ int compute_and_store_stats_temp_interp(Vol_scan *vol, double rain_threshold, do
                            double volume_duration_seconds, RainfallStats *stats, int scan_idx, int temp_interp_timesteps);
 
 int compute_and_store_stats(Vol_scan *vol, double rain_threshold, double cart_grid_res, 
-                           double volume_duration_seconds, RainfallStats *stats, int scan_idx);
+                           double volume_duration_seconds, RainfallStats *stats, int scan_idx, Raincell *raincell);
 void append_stats_to_file(const RainfallStats *stats_array, int scan_idx, const char *filename);
 void print_stats_summary(const RainfallStats *stats_array, int num_scans);
 void print_scan_stats_console(const RainfallStats *stats, int scan_idx);
