@@ -429,10 +429,6 @@ fclose(debug);
     double m = diff_y/diff_x;
 double c = radar_point->y - m * radar_point->x;
 
-//double A = 1 + (m * m);
-//double B = -2*centre->x + 2 * radar_point->y * m - 2 * centre->x * m * m - 2 * centre->y * m;
-//double C = centre->x * centre->x + radar_point->y * radar_point->y - 2 * radar_point->x * radar_point->y * m + radar_point->x * radar_point->x * m * m - 2 * radar_point->y * centre->y + 2 * radar_point->x * centre->y * m + centre->y * centre->y -  raincell->radius_stratiform * raincell->radius_stratiform;
-
 double A = 1 + (m*m);
 double B = (-2*centre->x + 2 * c * m - 2 * m * centre->y);
 double C = (centre->x * centre->x) + (c*c) - (2 * c * centre->y) + (centre->y * centre->y) - (raincell->radius_stratiform * raincell->radius_stratiform);
@@ -440,8 +436,6 @@ double C = (centre->x * centre->x) + (c*c) - (2 * c * centre->y) + (centre->y * 
 double x_1 = (-B + sqrt(B * B - 4 * A * C))/ (2 * A);
 double x_2 = (-B - sqrt(B * B - 4 * A * C))/ (2 * A);
 
-//double y_1 = sqrt(raincell->radius_stratiform - (x_1 - centre->x) * (x_1 - centre->x)) + centre->y;
-//double y_2 = sqrt(raincell->radius_stratiform - (x_2 - centre->x) * (x_2 - centre->x)) + centre->y;
 double y_1 = m*x_1+c;
 double y_2 = m*x_2+c;
 /*
@@ -472,17 +466,6 @@ y_rmax = x_rmax*m + c;
 
 
 double r_min, r_a, r_max;
-
-/*
-r_min = sqrt((x_rmin - radar_point->x)*(x_rmin - radar_point->x) + (y_rmin - radar_point->y)*(y_rmin - radar_point->y));
-
-r_a = sqrt((x_rmax - radar_point->x)*(x_rmax - radar_point->x) + (y_rmax - radar_point->y)*(y_rmax - radar_point->y));
-
-r_max = r_a + params->h_et_0;
-
-//r_min = 0.0;
-//r_max = radar->maximum_range;
-*/
 
 double r1, r2;
 
@@ -1491,10 +1474,8 @@ if(p_box==NULL){printf("create_bounding+box_for_polar_plot\n You are trying to c
 
 
 	if(strcmp(p_box->scanning_mode, "PPI")==0){
-//double rmin = p_box->min_range_gate * p_box->range_resolution;
 double rmin = (p_box->min_range_gate * p_box->range_resolution);
 double curvature_correction_min = cos(p_box->other_angle*DEG2RAD + atan2(rmin*cos(p_box->other_angle*DEG2RAD),(KEA+rmin*sin(p_box->other_angle*DEG2RAD))));
-//double rmax = p_box->max_range_gate * p_box->range_resolution;
 double rmax = p_box->max_range_gate * p_box->range_resolution;
 double curvature_correction_max = cos(p_box->other_angle*DEG2RAD + atan2(rmax*cos(p_box->other_angle*DEG2RAD),(KEA+rmax*sin(p_box->other_angle*DEG2RAD))));
 double anglemin = p_box->min_angle * p_box->angular_resolution * DEG2RAD;

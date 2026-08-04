@@ -32,9 +32,18 @@ STEPS
 		in src/command_centre.c create a generate_commands_file_*() function which suits your needs.
 		for each radar defined previously, define a scanning pattern done in the 5 minute interval.
 		The existing generate_commands_file*() functions can be used as guidance.
-		Do not forget to also define the new function prototype in the include/control_centre.h file. (the "void function(arguments);" not anything within the curly brackets.)
+		Do not forget to also define the new function prototype in the include/control_centre.h file. (the "function_type function(arguments);" not anything within the curly brackets in the .c file.)
 
-	STEP 3: RUN THE SIMULATION TO GENERATE RADAR DATA AND THE PRODUCT DATA
+	STEP 3: DEFINE THE SUBSEQUENT PROCESSING CHAIN(S) USING THE PRODUCED RADAR DATA
+		in src/processing.c create a compute_display_grid_*() function which suits your needs.
+		the processing takes interpolated radar scans, and populates a Vol_scan structure with height, reflectivity, true and estimated attenuation, and rain-type.
+		the Vol_scan structure is then used as an arguement in the compute_display_grid*() function. 
+		follow the KNMI example as inspiration. 
+		if necessary, implement helper functions.
+		Do not forget to also define any new function prototypes in the include/processing.h file as above.
+		
+	
+	STEP 4: RUN THE SIMULATION TO GENERATE RADAR DATA AND THE PRODUCT DATA
 		run the following code to make an executable bash script: 
 			chmod +x combi_test.sh
 		then run the script using 
@@ -54,7 +63,7 @@ STEPS
 
 
 
-	STEP 4: RUN THE DATA VISUALISATION CODE. 
+	STEP 5: RUN THE DATA VISUALISATION CODE. 
 		run the following code to generate the ground-reflectivity comparison between the C-band and X-band radars and the true values as seen by the PPI-based volume scans:
 			python data_vis/gridded_qpe_product.py
 			

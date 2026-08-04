@@ -34,28 +34,8 @@ void set_worker_id(const char *id) {
 FILE *log_file = NULL;
 
 FILE *open_log_file_with_timestamp() {
-/*    time_t now = time(NULL);
-    struct tm *t = localtime(&now);
-    if (!t) return NULL;
 
-    char filename[256];
-    char logs_dir[256];
-    snprintf(logs_dir, sizeof(logs_dir), "logs%s", g_worker_id);
-    snprintf(filename, sizeof(filename), "%s/control_centre_%Y-%m-%d_%H-%M-%S.log", logs_dir, t);
-
-    // This is a simplified version - use strftime properly
-    strftime(filename, sizeof(filename), logs_dir, t);
-    // Actually, simpler approach:
-    char actual_filename[512];
-    strftime(actual_filename, sizeof(actual_filename), "control_centre_%Y-%m-%d_%H-%M-%S.log", t);
-    snprintf(filename, sizeof(filename), "%s/%s", logs_dir, actual_filename);
-
-    FILE *log_file = fopen(filename, "a");
-    if (!log_file) {
-        fprintf(stderr, "Failed to open log file %s\n", filename);
-    }
-    return log_file;
-*/ time_t now = time(NULL);
+	time_t now = time(NULL);
     struct tm *t = localtime(&now);
     if (!t) return NULL;
 
@@ -91,59 +71,8 @@ static void log_message(const char *format, ...) {
 // ---------------------- Command Generation ----------------------
 
 #define FIVE_MINUTES 5.0  // minutes
-// #define FIVE_MINUTES 300.0  // seconds
-//#define FIVE_MINUTES 2.5 //minutes
-//#define FIVE_MINUTES 1.0 //minutes			 //
-			 //
-// RHI THINGS
-//#define SCANS_PER_FILE 5 
 
-// VOLUME to CAPPI things
 #define SCANS_PER_FILE 15
-//#define SCANS_PER_FILE 10
-//#define SCANS_PER_FILE 3
-
-void generate_commands_file(int file_index, double start_time) {
-    char filename[256];
-    snprintf(filename, sizeof(filename), "inputs%s/commands_%04d.txt", g_worker_id, file_index);
-
-    FILE *file = fopen(filename, "w");
-    if (!file) {
-        fprintf(stderr, "Failed to create command file %s\n", filename);
-        return;
-    }
-
-    double interval = FIVE_MINUTES / (SCANS_PER_FILE);  // frequency of scans
-    int counter_A = 0;
-    for (int i = 0; i < SCANS_PER_FILE; i++) {
-        Command cmd;
-        cmd.time = start_time + i * interval;
-        cmd.radar_id = 1; // make sure the radar id is correct.
-
-        // RHI THINGS    
-//         snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
-//         cmd.other_angle = 0;
-
-        // VOL->PPI THINGS
-        snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
-        double VCP_elevation_angles[SCANS_PER_FILE] = {12.0, 8.0, 4.5, 2.0, 0.8, 0.3, 25, 20, 15, 10, 6, 2.8, 1.2, 0.3, 0.3}; 
-       //double VCP_elevation_angles[SCANS_PER_FILE] = {12.0, 4.5, 2.0, 0.8, 0.3, 10, 6, 2.8, 1.2, 0.3}; 
-        //double VCP_elevation_angles[SCANS_PER_FILE] = {1.2, 0.8, 0.3}; 
-	//
-       	cmd.other_angle = VCP_elevation_angles[counter_A];
-        cmd.raincell_id = 1;
-        counter_A++;
-
-        fprintf(file, "%.2f %d %s %d %.5f\n",
-                cmd.time,
-                cmd.radar_id,
-                cmd.scan_mode,
-                cmd.raincell_id,
-                cmd.other_angle);
-    }
-
-    fclose(file);
-}
 
 
 void generate_commands_file_vol_rhi_A(int file_index, double start_time) {
@@ -165,15 +94,9 @@ void generate_commands_file_vol_rhi_A(int file_index, double start_time) {
         cmd.time = start_time + (double)i * interval;
         cmd.radar_id = 0; // make sure the radar id is correct.
 
-        // RHI THINGS    
-        // snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "RHI");
-        // cmd.other_angle = 0;
 
         // VOL->PPI THINGS
         snprintf(cmd.scan_mode, sizeof(cmd.scan_mode), "PPI");
-        //double VCP_elevation_angles[SCANS_PER_FILE] = {12.0, 8.0, 4.5, 2.0, 0.8, 0.3, 25, 20, 15, 10, 6, 2.8, 1.2, 0.3, 0.3}; 
-       //double VCP_elevation_angles[SCANS_PER_FILE] = {12.0, 4.5, 2.0, 0.8, 0.3, 10, 6, 2.8, 1.2, 0.3}; 
-        //double VCP_elevation_angles[SCANS_PER_FILE] = {1.2, 0.8, 0.3}; 
         
        	cmd.other_angle = VCP_elevation_angles_C_vol[counter_A];
         cmd.raincell_id = 1;
@@ -303,28 +226,6 @@ void generate_commands_file_model_description(int file_index, double start_time)
 
 
 
-// ---------------------- Command Validation ----------------------
-/*
-
-bool validate_command(const Command *cmd) {
-    if (cmd->radar_id != 1 && cmd->radar_id != 2) {
-        log_message("Validation Error: Radar ID %d does not exist. Command ID %d.\n",
-                    cmd->radar_id, cmd->command_id);
-        return false;
-    }
-    if (strcmp(cmd->scan_mode, "PPI") != 0 && strcmp(cmd->scan_mode, "RHI") != 0) {
-        log_message("Validation Error: Invalid scan mode '%s'. Command ID %d.\n",
-                    cmd->scan_mode, cmd->command_id);
-        return false;
-    }
-    if (cmd->raincell_id != 1) {
-        log_message("Validation Error: Raincell ID %d does not exist. Command ID %d.\n",
-                    cmd->raincell_id, cmd->command_id);
-        return false;
-    }
-    return true;
-}
-*/
 bool validate_command(const Command *cmd) {
     // Accept radar IDs 0, 1, 2, and 3 (or whatever range your system uses)
     if (cmd->radar_id < 0 || cmd->radar_id > 3) {  // Adjust max ID as needed
@@ -456,65 +357,6 @@ bool read_command_file_once(const char *filename, const VPR *vpr_strat, const VP
     log_message("Finished processing file: %s\n", filename);
     return true;
 }
-
-/*
-bool read_command_file_once_multi_radar(const char *filename, const VPR *vpr_strat, const VPR_params *params, VPR *vpr_conv) {
-    FILE *file = fopen(filename, "r");
-    if (!file) {
-        log_message("Error opening file '%s': %s\n", filename, strerror(errno));
-        return false;
-    }
-
-    // Allocate one Polar_box and reuse it
-    Polar_box* box = init_polar_box();
-    if (!box) {
-        fclose(file);
-        log_message("Failed to initialize polar box\n");
-        return false;
-    }
-
-
-    int counter_scans_radars[MAX_RADARS] = {0};
-    Command cmd;
-    //cmd.command_id = atoi(filename + strlen(filename) - 4);
-    // Option B: Or extract correctly
-const char* num_start = filename + strlen(filename) - 8;  // commands_0000.txt -> start at 'c'
-cmd.command_id = atoi(num_start + 9);  // Skip "commands_"
-    while (fscanf(file, "%lf %d %3s %d %lf",
-                  &cmd.time,
-                  &cmd.radar_id,
-                  cmd.scan_mode,
-                  &cmd.raincell_id,
-                  &cmd.other_angle) == 5) {
-
-	counter_scans_radars[cmd.radar_id]++;
-	cmd.local_scan_id = counter_scans_radars[cmd.radar_id];
-
-        log_message("Processing command ID %d: scan = %d, time=%.2f, radar_id=%d, scan_mode=%s, raincell_id=%d, angle=%.2f\n",
-                    cmd.command_id, cmd.local_scan_id, cmd.time, cmd.radar_id, cmd.scan_mode, cmd.raincell_id, cmd.other_angle);
-
-        if (!validate_command(&cmd)) {
-            log_message("Command ID %d failed validation. Skipping.\n", cmd.command_id);
-            continue;
-        }
-
-        // Safe output file name with worker ID support
-        char filenameA[256];
-        snprintf(filenameA, sizeof(filenameA), "outputs%s/radar_%.2d_scan_%.4d.txt", g_worker_id, cmd.radar_id, cmd.command_id);
-
-        // Execute the command safely
-        execute_command(&cmd, box, filenameA, vpr_strat, params, vpr_conv);
-    }
-
-    // Free polar box once after all commands are done
-    free_polar_box(box);
-    fclose(file);
-
-    log_message("Finished processing file: %s\n", filename);
-    return true;
-}
-*/
-
 
 
 bool read_command_file_once_multi_radar(const char *filename, const VPR *vpr_strat, const VPR_params *params, VPR *vpr_conv) {
