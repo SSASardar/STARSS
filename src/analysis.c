@@ -99,8 +99,8 @@ void initialize_test_environment(
     
     // Initialize radars
     Radar* radar0 = create_radar(0, "C", "PPI", 0.0, 0.0, 25.0, 250000.0, 250.0, 1.0);
-    Radar* radar1 = create_radar(1, "X", "PPI", -50000.0, 50000.0, 100.0, 50000.0, 100.0, 1.0);
-    Radar* radar2 = create_radar(2, "X", "RHI", -50000.0, 50000.0, 100.0, 50000.0, 100.0, 1.0);
+    Radar* radar1 = create_radar(1, "X", "PPI", -50000.0, 50000.0,25.0, 50000.0, 100.0, 1.0);
+    Radar* radar2 = create_radar(2, "X", "RHI", -50000.0, 50000.0,25.0, 50000.0, 100.0, 1.0);
     
     radar_list[radar_count++] = radar0;
     radar_list[radar_count++] = radar1;
@@ -240,17 +240,17 @@ double total_unmasked_area_km2; // <-- Variable to hold the area
         
         // --- OPTION A IMPLEMENTATION ---
         // Calculate the raw volumetric accumulations over the time interval
-       //double measured_volume = total_measured_mm2 * (volume_duration_seconds / 3600.0);
-      // double true_volume     = total_true_mm2_unmasked * (volume_duration_seconds / 3600.0);
+       double measured_volume = total_measured_mm2 * (volume_duration_seconds / 3600.0);
+       double true_volume     = total_true_mm2_unmasked * (volume_duration_seconds / 3600.0);
         
         // Divide by the total active area to get true AVERAGE RAINFALL DEPTH (in mm)
-      //stats[scan_idx].total_measured_mm2 = measured_volume / total_unmasked_area_km2;
-     // stats[scan_idx].total_true_mm2     = true_volume / total_unmasked_area_km2;
+      stats[scan_idx].total_measured_mm2 = measured_volume / total_unmasked_area_km2;
+      stats[scan_idx].total_true_mm2     = true_volume / total_unmasked_area_km2;
 
 	// --- OPTION B: standard hydrological volume.
 	//
- stats[scan_idx].total_measured_mm2 = total_measured_mm2* (volume_duration_seconds/3600)*1000;
-        stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked*( volume_duration_seconds/3600)*1000;
+// stats[scan_idx].total_measured_mm2 = total_measured_mm2* (volume_duration_seconds/3600)*1000;
+//        stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked*( volume_duration_seconds/3600)*1000;
         	
 
 

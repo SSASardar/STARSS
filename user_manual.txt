@@ -305,6 +305,8 @@ python results_analysis/plot_stats_comparison.py outputs/
 
 30-07-2026
 NOTE: you need to add the following directories within your local repository:  "archive/", "build/", "inputs/", "outputs/",  "logs/".   
+NOTE: you need some form of a C compiler. gcc for instance.
+NOTE: you need python and some basic packages installed for the data-visualisation steps.
 
 
 STEP 1:	DEFINE RADAR AND RAINCELL PARAMETERS
@@ -327,3 +329,40 @@ STEP 3: RUN THE SIMULATION TO GENERATE RADAR DATA AND THE PRODUCT DATA
 		chmod +x combi_test.sh
 	then run the script using 
 		./combi_text.sh
+
+	In the outputs/ folder:
+		- the simulated measurements of the RHI's are stored (cg_att_corr_measurements*.txt)
+		- the true measurements of the RHI's are stored (cg_true_reflect*.txt)
+		- the simulated ground-reflectivity values based on the C-band radar data are stored (disp_C_g*.txt)
+		- the simulated ground-reflectivity values based on the X-band radar data are stored (disp_X_g*.txt)
+		- the true ground-reflectivity values are stored (true_g*.txt)
+		- the raw radar reflectivity retrievals are stored (radar_0[0,1,2]_scan*.txt)
+		- the statistics on the predicted rainfall rates are stored (stats_[C,X].txt)
+		- the parametrisations of the VPR's (both stratiform and convective) are stored (VPR_conv*.txt, VPR_strat*.txt)
+		- the empirically determined binned VPR's are stored (vpr_emp_[conv,strat]_[C,X,rhi].txt)
+		- the true binned VPR's are stored (vor_true_[conv,strat].txt)
+
+
+
+STEP 4: RUN THE DATA VISUALISATION CODE. 
+	run the following code to generate the ground-reflectivity comparison between the C-band and X-band radars and the true values as seen by the PPI-based volume scans:
+		python data_vis/gridded_qpe_product.py
+		
+			the figures are stored in the repository folder (grid_comparison.[pdf/png])
+	
+	run the following code to generate the statistics on the 5-min interval rainfall depths:
+		python data_vis/stats_plot.py
+				
+			the figure is stored in the repository folder (stats_comparison.[pdf,png])
+
+	run the following code to generate the RHI reflectivity data: 
+		python data_vis/rhi_visualisation.py
+
+			the figure is stored in the repository folder (rhi_comparison.[pdf/png])
+
+	run the following code to generate the vpr comparisons for the rhi data:
+		python data_vis/vpr_at_peak.py
+
+			the figure its stored in the repository folder (vpr_comparison.[pdf/png])
+
+

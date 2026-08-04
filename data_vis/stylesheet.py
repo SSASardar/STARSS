@@ -1,14 +1,14 @@
 """
 QUICK REFERENCE:
-- Colours:       plot_style.COLORS['blue']   -> '#1f77b4'
-- Colourmaps:    plot_style.COLORMAPS['heat'] -> 'viridis'
-- Palettes:     plot_style.SCENARIO_PALETTES['default'] -> list of hex colors
+- Colours:       stylesheet.COLORS['blue']   -> '#1f77b4'
+- Colourmaps:    stylesheet.COLORMAPS['heat'] -> 'viridis'
+- Palettes:     stylesheet.SCENARIO_PALETTES['default'] -> list of hex colors
 - Standard use: ax.plot(x, y, color=plot_style.COLORS['red'])
 - Heatmaps:     sns.heatmap(data, cmap=plot_style.COLORMAPS['diverging'])
 """
 
 """
-plot_style.py - Centralized colors and matplotlib settings for PhD thesis.
+stylesheet.py - Centralized colors and matplotlib settings for PhD thesis.
 Import this at the start of every plotting script.
 """
 
@@ -34,8 +34,13 @@ COLORS = {
     'coral':   '#ff6b6b',
     'gold':    '#ffd700',
     'navy':    '#000080',
-    'maroon':  '#800000'
-}
+    'maroon':  '#800000',
+    'strat':'#DEECF8',
+    'growth':'#A6C5E8',
+    'mature':'#72A4D7',
+    'decay':'#3F7CC0',
+    'black' : '#000000'
+    }
 
 # ============================================================
 # 2. CONTINUOUS COLORMAPS (for heatmaps, density, contours)

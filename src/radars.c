@@ -375,14 +375,14 @@ int num_angles = (int)ceil(span);
     polar_box->range_resolution = get_range_res_radar(radar);
     polar_box->angular_resolution = get_angular_res_radar(radar);
 
-
+/*
 printf("DEBUG: radar at (%.2f, %.2f, %.2f)\n", radar_point->x, radar_point->y, radar_point->z);
 printf("DEBUG: raincell centre at (%.2f, %.2f, %.2f)\n", centre->x, centre->y, centre->z);
 printf("DEBUG: horizontal distance = %.2f km\n", dist_s/1000.0);
 printf("DEBUG: vertical difference = %.2f km\n", fabs(centre->z - radar_point->z)/1000.0);
 printf("DEBUG: calculated slant range = %.2f km\n", dist/1000.0);
 printf("DEBUG: radar max range = %.2f km\n", radar->maximum_range/1000.0);
-
+*/
 
 /*    
 printf("ABSOLUTE raincell position BEFORE any processing: (%.2f, %.2f)\n",
@@ -857,7 +857,7 @@ if(sample_height < vpr_strat->BB_m.height) {
 		box->estimated_attenuation_grid[idp] = att + box->estimated_attenuation_grid[idp_min_one];
 	}
         box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
-       // box->grid[idp] = add_noise(radar, refl_dBZ);
+        //box->grid[idp] = add_noise(radar, refl_dBZ);
 } else {
 	box->rain_type[idp] = 2;
         refl_dBZ = get_reflectivity_at_height(vpr_conv, sample_height);
@@ -926,7 +926,8 @@ if(idp == idp_min_one) {
                 box->attenuation_grid[idp] = noisy_att + box->attenuation_grid[idp_min_one];
 			box->estimated_attenuation_grid[idp] = att + box->estimated_attenuation_grid[idp_min_one];
 	}
-        box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+       box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+       // box->grid[idp] = add_noise(radar, refl_dBZ);
 } else {
 	box->rain_type[idp] = 2;       
         refl_dBZ = get_reflectivity_at_height(vpr_conv, sample_height);
@@ -946,6 +947,7 @@ if(idp == idp_min_one) {
 			box->estimated_attenuation_grid[idp] = att + box->estimated_attenuation_grid[idp_min_one];
 	}
         box->grid[idp] = add_noise(radar, refl_dBZ-2*box->attenuation_grid[idp]);
+        //box->grid[idp] = add_noise(radar, refl_dBZ);
 }
 		box->height_grid[idp] = sample_height;
 	}
@@ -1637,7 +1639,10 @@ void free_polar_box(Polar_box *box) {
     free(box);  // Finally, free the struct 
 }
 
-// Function to generate Gaussian noise
+// Function to generate Gaussian noise [Marsaglia polar method:
+//
+//	https://doi.org/10.1137/1006063
+//
 double gaussian_noise(double mean, double stddev) {
     static int hasSpare = 0;
     static double spare;
@@ -1690,7 +1695,8 @@ double add_noise_SA(const Radar* radar, double attenuation) {
 
     if (strcmp(radar->frequency, "X") == 0) {
        // noise_db_p_km = 1.5;
-        noise_db_p_km = 0.075;
+        //noise_db_p_km = 0.075;
+        noise_db_p_km = 0.05;
     } else if (strcmp(radar->frequency, "C") == 0) {
         noise_db_p_km = 0.05;
     } else {
@@ -1707,9 +1713,11 @@ double add_noise_SA_alpha(const Radar* radar, double attenuation) {
     double noise_db_p_km = 0.0;
 
     if (strcmp(radar->frequency, "X") == 0) {
-        noise_db_p_km = 1.38e-5;
+        //noise_db_p_km = 1.38e-5;
+        noise_db_p_km = 2.75e-5;
     } else if (strcmp(radar->frequency, "C") == 0) {
-        noise_db_p_km = 2.93e-7;
+        //noise_db_p_km = 2.93e-7;
+        noise_db_p_km = 5.54e-7;
     } else {
         // Unknown frequency, no noise added
         return attenuation;
@@ -1724,9 +1732,12 @@ double add_noise_SA_beta(const Radar* radar, double attenuation) {
     double noise_db_p_km = 0.0;
 
     if (strcmp(radar->frequency, "X") == 0) {
-        noise_db_p_km = 2.75e-2;
+        //noise_db_p_km = 2.75e-2;
+        //noise_db_p_km = 0.55;
+        noise_db_p_km = 5.5e-2;
     } else if (strcmp(radar->frequency, "C") == 0) {
-        noise_db_p_km = 4e-3;
+        //noise_db_p_km = 4e-3;
+        noise_db_p_km = 8e-3;
     } else {
         // Unknown frequency, no noise added
         return attenuation;

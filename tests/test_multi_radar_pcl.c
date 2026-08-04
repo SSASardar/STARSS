@@ -398,13 +398,15 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
 		        if (p_box != NULL) {
             process_polar_box_for_vpr(p_box, vpr_emp_strat, vpr_emp_conv);
         }
-//            update_VPR(VPR_strat, params, time_s_2, VPR_conv);
+            update_VPR(VPR_strat, params, time_s_2, VPR_conv);
 
-//            Cart_grid *cg = interpolate_scan_NN_RHI(p_box, radar, time, cart_grid_res, scan_idx, i);
-//            if (cg) cart_grids[cg_count++] = cg;
+            Cart_grid *cg = interpolate_scan_NN_RHI(p_box, radar, time, cart_grid_res, scan_idx, i);
+            if (cg) cart_grids[cg_count++] = cg;
         }
-
-    // Compute averages (will be stored back into indices 40-79)
+	writeCartGridToFile(cart_grids[cg_count-1],scan_idx,5);
+	writeCartGridToFile(cart_grids[cg_count-1],scan_idx,6);
+    
+	// Compute averages (will be stored back into indices 40-79)
     compute_polar_vpr_averages_inplace(vpr_emp_strat);
     compute_polar_vpr_averages_inplace(vpr_emp_conv);
     
@@ -453,8 +455,8 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
         }
 
 
-        compute_display_grid_KNMI_empirical(vol, -5.0, 0.5, 0);
-        compute_display_grid_KNMI_empirical(vol_1, -5.0, 0.5, 0);
+        compute_display_grid_KNMI_empirical(vol, 5.0, 0.5, 0);
+        compute_display_grid_KNMI_empirical(vol_1, 5.0, 0.5, 0);
 
         double volume_duration = 5.0 * 60.0;
         if (compute_and_store_stats(vol, 5.0, cart_grid_res, volume_duration, stats_array, scan_idx,  raincell_list[0]) == 0) {
@@ -501,13 +503,21 @@ if (write_true_grid_to_file(vol, true_filename) != 0) {
 int xA = vol->num_x/2;
 int yA = vol->num_y/2;
 
+/*
+char point_height_file_A[256];
+char point_height_file_B[256];
+snprintf(point_height_file_A, sizeof(point_height_file_A), "outputs/heights_C_point_%04d.txt", scan_idx);
+snprintf(point_height_file_B, sizeof(point_height_file_B), "outputs/heights_X_point_%04d.txt", scan_idx);
 
-char point_height_file[256];
-snprintf(point_height_file, sizeof(point_height_file), "outputs/heights_point_%04d.txt", scan_idx);
 
-if (write_heights_for_point(vol, xA, yA, point_height_file) != 0) {
+if (write_heights_for_point(vol, xA, yA, point_height_file_A) != 0) {
     fprintf(stderr, "Failed to write heights for point (%d,%d)\n", xA, yA);
 }
+if (write_heights_for_point(vol_1, xA, yA, point_height_file_B) != 0) {
+    fprintf(stderr, "Failed to write heights for point (%d,%d)\n", xA, yA);
+}
+*/
+
 
 if(scan_idx == 0) write_VPR_to_file(VPR_strat, "strat", scan_idx);
 write_VPR_to_file(VPR_conv,  "conv",  scan_idx);
@@ -534,7 +544,7 @@ print_vpr_interpolated(VPR_conv, "outputs/vpr_true_conv.txt", 1);
 }
 
  
-                        compute_display_grid_KNMI_empirical(vol, -5.0, 0.5, 0);
+                        compute_display_grid_KNMI_empirical(vol, 5.0, 0.5, 0);
 /*
 if(print_or_not == 1) {
 // --- Write display_grid to file ---

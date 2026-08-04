@@ -37,6 +37,7 @@ Cart_grid* Cart_grid_init(double resolution, int num_x, int num_y, Point ref_poi
 
     cg->grid = (double *)malloc(sizeof(double) * cg->num_elements);
     cg->height_grid = (double *)malloc(sizeof(double)*cg->num_elements);
+    cg->true_attenuation_grid = (double *)malloc(sizeof(double) * cg->num_elements);
     cg->estimated_attenuation_grid = (double *)malloc(sizeof(double) * cg->num_elements);
     cg->rain_type_grid= (int *)malloc(sizeof(int) * cg->num_elements);
     //if(cg->rain_type_grid)printf("allocating integer pointer (for an array of integers) is successful\n");
@@ -50,6 +51,7 @@ Cart_grid* Cart_grid_init(double resolution, int num_x, int num_y, Point ref_poi
     for (int i = 0; i < cg->num_elements; i++) {
         cg->grid[i] = 0.0;
     	cg->height_grid[i] = 0.0;
+    	cg->true_attenuation_grid[i]=0.0;
     	cg->estimated_attenuation_grid[i]=0.0;
 	cg->rain_type_grid[i] = 9;
     }
@@ -528,13 +530,22 @@ void writeCartGridToFile(Cart_grid* cg, int scan_id, int what_to_print) {
 char filename[100];
 
 //snprintf(filename, sizeof(filename), "outputs/cartesian_grid_output_%d.txt", scan_id);
-if (what_to_print == 0) snprintf(filename, sizeof(filename), "outputs/m_cartesian_grid_output_%d.txt", scan_id);
+if (what_to_print == 0) snprintf(filename, sizeof(filename), "outputs/cg_measured_%.4d.txt", scan_id);
 
-if (what_to_print == 1) snprintf(filename, sizeof(filename), "outputs/h_cartesian_grid_output_%d.txt", scan_id);
+else if (what_to_print == 1) snprintf(filename, sizeof(filename), "outputs/cg_heights_%.4d.txt", scan_id);
 
-if (what_to_print == 2) snprintf(filename, sizeof(filename), "outputs/a_cartesian_grid_output_%d.txt", scan_id);
-if (what_to_print == 3) snprintf(filename, sizeof(filename), "outputs/t_cartesian_grid_output_%d.txt", scan_id);
-
+else if (what_to_print == 2) snprintf(filename, sizeof(filename), "outputs/cg_est_att_%.4d.txt", scan_id);
+else if (what_to_print == 3) snprintf(filename, sizeof(filename), "outputs/cg_raintype_%.4d.txt", scan_id);
+    else if (what_to_print == 4) 
+        snprintf(filename, sizeof(filename), "outputs/cg_true_att_%.4d.txt", scan_id);
+    else if (what_to_print == 5) 
+        snprintf(filename, sizeof(filename), "outputs/cg_true_reflect_%.4d.txt", scan_id);
+    else if (what_to_print == 6) 
+        snprintf(filename, sizeof(filename), "outputs/cg_att_corr_measurement_%.4d.txt", scan_id);
+    else {
+        printf("Error: Invalid what_to_print value\n");
+        return;
+    }
 
 
 
@@ -549,15 +560,28 @@ FILE *fp = fopen(filename, "w");
         for (int y =0;y< cg->num_y; y++) {
             int index = x * cg->num_y + y;
 	    if (what_to_print == 0) fprintf(fp, "%.2f ", cg->grid[index]);  // format as needed
-            if (what_to_print == 1) fprintf(fp, "%.2f ", cg->height_grid[index]);  // format as needed
-    	    if (what_to_print == 2) fprintf(fp,  "%.2f ", cg->estimated_attenuation_grid[index]);    
-    	    if (what_to_print == 3) fprintf(fp,  "%d ", cg->rain_type_grid[index]);    
+	    else if (what_to_print == 1) fprintf(fp, "%.2f ", cg->height_grid[index]);  // format as needed
+	    else if (what_to_print == 2) fprintf(fp,  "%.2f ", cg->estimated_attenuation_grid[index]);    
+	    else if (what_to_print == 3) fprintf(fp,  "%d ", cg->rain_type_grid[index]);
+	    else if (what_to_print == 4) {
+                fprintf(fp, "%.2f ", cg->true_attenuation_grid[index]);  // true attenuation
+            }
+            else if (what_to_print == 5) {
+                // measured + true attenuation (corrected with truth)
+                double corrected = cg->grid[index] - cg->estimated_attenuation_grid[index] + cg->true_attenuation_grid[index];
+                fprintf(fp, "%.2f ", corrected);
+            }
+            else if (what_to_print == 6) {
+                // measured + estimated attenuation (corrected with estimate)
+                double corrected = cg->grid[index];
+                fprintf(fp, "%.2f ", corrected);
+            }    
     }
         fprintf(fp, "\n");  // newline after each row
     }
 
     fclose(fp);
-    printf("Grid successfully written to cartesian_grid_output.txt\n");
+    //printf("Grid successfully written to cartesian_grid_output.txt\n");
 }
 
 Vol_scan *init_vol_scan(Cart_grid **cart_grids, int num_PPIs) {
@@ -755,8 +779,8 @@ Cart_grid* interpolate_scan_NN_RHI(Polar_box *p_box, Radar *radar, double time,
         ceil(bbox->bottomLeft.y / cart_grid_res) * cart_grid_res
     };
    
-	printf("====================\n==================\n");
-	printf("reference point (x,z)= (%.2lf,%.2lf)\n",ref_point.x,ref_point.y);
+	//printf("====================\n==================\n");
+	//printf("reference point (x,z)= (%.2lf,%.2lf)\n",ref_point.x,ref_point.y);
  
 
 
@@ -793,7 +817,8 @@ Cart_grid* interpolate_scan_NN_RHI(Polar_box *p_box, Radar *radar, double time,
                 // Copy values from polar grid to Cartesian grid
                 cg->grid[idA] = p_box->grid[p_grid_idx];
                 cg->height_grid[idA] = p_box->height_grid[p_grid_idx];
-                cg->estimated_attenuation_grid[idA] = p_box->estimated_attenuation_grid[p_grid_idx];
+		cg->true_attenuation_grid[idA] = p_box->attenuation_grid[p_grid_idx];
+		cg->estimated_attenuation_grid[idA] = p_box->estimated_attenuation_grid[p_grid_idx];
                 cg->rain_type_grid[idA] = p_box->rain_type[p_grid_idx];
             } else {
                 // Point is outside radar coverage
@@ -812,6 +837,7 @@ Cart_grid* interpolate_scan_NN_RHI(Polar_box *p_box, Radar *radar, double time,
                 // Set to NAN for invalid points
                 cg->grid[idA] = NAN;
                 cg->height_grid[idA] = NAN;
+		cg->true_attenuation_grid[idA] = NAN;
                 cg->estimated_attenuation_grid[idA] = NAN;
                 cg->rain_type_grid[idA] = 9;  // 9 = undefined type
             }
@@ -1399,6 +1425,7 @@ int compute_display_grid_KNMI(Vol_scan *vol, double threshold, const VPR *vpr_st
                 int idx = vol_index(vol, x, y, ppi);
                 double estim_pia = vol->grid_att[idx];
                 double atten_correction = 2 * estim_pia;
+                //double atten_correction = 0;
                 if (atten_correction > 10) atten_correction = 10;
                 
                 double refl = vol->grid_refl[idx] + atten_correction;
@@ -1568,8 +1595,8 @@ int compute_display_grid_lowest_valid_height(Vol_scan *vol, double threshold) {
             if (vol->grid_refl[i] >= threshold) refl_above_threshold++;
         }
     }
-    printf("DEBUG: grid_refl has %d valid values, %d above threshold %.1f\n", 
-           total_refl, refl_above_threshold, threshold);
+    //printf("DEBUG: grid_refl has %d valid values, %d above threshold %.1f\n", 
+    //       total_refl, refl_above_threshold, threshold);
     
     for (size_t x = 0; x < vol->num_x; x++) {
         for (size_t y = 0; y < vol->num_y; y++) {

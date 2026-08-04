@@ -39,8 +39,8 @@ struct Cart_grid; // from processing.h
  */
 //#define A_COEFF_X 1.5e-5  /**< Coefficient a for X-band */
 //#define B_COEFF_X 1.02    /**< Exponent b for X-band */
-#define A_COEFF_X 6.27e-5  /**< Coefficient a for X-band */
-#define B_COEFF_X 0.845    /**< Exponent b for X-band */
+#define A_COEFF_X 6.16e-5  /**< Coefficient a for X-band */
+#define B_COEFF_X 0.85    /**< Exponent b for X-band */
 /** @} */
 
 
@@ -51,9 +51,9 @@ struct Cart_grid; // from processing.h
  * Source: https://journals.ametsoc.org/view/journals/atot/38/6/JTECH-D-20-0113.1.xml     
  * @{
  */
-#define A_COEFF_C 7.215e-6
+#define A_COEFF_C 7.22e-6
 //#define A_COEFF_C 1.5e-5
-#define B_COEFF_C 0.907
+#define B_COEFF_C 0.91
 //#define B_COEFF_C 0.80
 /** @} */
 
