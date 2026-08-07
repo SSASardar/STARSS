@@ -83,20 +83,20 @@ print(f"  true_g: {true_g_padded.shape}")
 # 3. CREATE FIGURE WITH 3 SUBPLOTS
 # ===========================
 
-fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+fig, axes = plt.subplots(1, 3, figsize=(15, 5), sharey=True)
 
 # ===========================
 # 4. PLOT EACH GRID
 # ===========================
 
 # Plot C-band measurement
-im1 = axes[0].imshow(disp_C_padded.T, 
+im1 = axes[1].imshow(disp_C_padded.T, 
                      cmap=stylesheet.COLORMAPS['sequential'],
                      norm = norm,
                      origin='lower')
-axes[0].set_title("Measured reflectivity (C-band)", fontsize=10)
-axes[0].set_xlabel("km")
-axes[0].set_ylabel("km")
+axes[1].set_title("Measured reflectivity (C-band)", fontsize=10)
+axes[1].set_xlabel("x [km]")
+#axes[1].set_ylabel("y [km]")
 
 # Plot X-band measurement
 im2 = axes[2].imshow(disp_X_padded.T, 
@@ -104,17 +104,17 @@ im2 = axes[2].imshow(disp_X_padded.T,
                      norm = norm,
                      origin='lower')
 axes[2].set_title("Measured reflectivity (X-band)", fontsize=10)
-axes[2].set_xlabel("km")
-axes[2].set_ylabel("km")
+axes[2].set_xlabel("x [km]")
+#axes[2].set_ylabel("y [km]")
 
 # Plot True reflectivity
-im3 = axes[1].imshow(true_g_padded.T, 
+im3 = axes[0].imshow(true_g_padded.T, 
                      cmap=stylesheet.COLORMAPS['sequential'], 
                      norm = norm,
                      origin='lower')
-axes[1].set_title("True Reflectivity", fontsize=10)
-axes[1].set_xlabel("km")
-axes[1].set_ylabel("km")
+axes[0].set_title("True Reflectivity", fontsize=10)
+axes[0].set_xlabel("x [km]")
+axes[0].set_ylabel("y [km]")
 
 # ===========================
 # 5. ADD SINGLE COLORBAR
@@ -123,7 +123,7 @@ axes[1].set_ylabel("km")
 # Create colorbar that spans all three subplots
 cbar = fig.colorbar(im1, ax=axes, orientation='horizontal', 
                     pad=0.15, aspect=40, shrink=0.8)
-cbar.set_label("Reflectivity (dBZ)", fontsize=10)
+cbar.set_label("Reflectivity [dBZ]", fontsize=10)
 
 # ===========================
 # 6. APPLY STYLESHEET SETTINGS

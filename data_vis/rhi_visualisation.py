@@ -78,7 +78,7 @@ print(f"  true_g: {true_g_padded.shape}")
 # 3. CREATE FIGURE WITH 3 SUBPLOTS
 # ===========================
 
-fig, axes = plt.subplots(1, 2, figsize=(15, 10))
+fig, axes = plt.subplots(1, 2, figsize=(15, 10), sharey=True)
 
 # ===========================
 # 4. PLOT EACH GRID
@@ -100,7 +100,7 @@ im3 = axes[1].imshow(true_g_padded.T,
                      origin='lower')
 axes[1].set_title("RHI True Reflectivity", fontsize=10)
 axes[1].set_xlabel("surface [km]")
-axes[1].set_ylabel("height [km]")
+#axes[1].set_ylabel("height [km]")
 
 # ===========================
 # 5. ADD SINGLE COLORBAR
@@ -109,7 +109,7 @@ axes[1].set_ylabel("height [km]")
 # Create colorbar that spans all three subplots
 cbar = fig.colorbar(im2, ax=axes, orientation='horizontal', 
                     pad=0.15, aspect=40, shrink=0.8)
-cbar.set_label("Reflectivity (dBZ)", fontsize=10)
+cbar.set_label("Reflectivity [dBZ]", fontsize=10)
 
 # ===========================
 # 6. APPLY STYLESHEET SETTINGS

@@ -137,16 +137,19 @@ TIMESTEP = 39
 # Load stratiform data
 heights_strat_true, refl_strat_true = load_vpr_file_true("outputs/vpr_true_strat.txt", TIMESTEP)
 heights_strat_emp, refl_strat_emp = load_vpr_file_emp("outputs/vpr_emp_strat_rhi.txt", TIMESTEP)
-
+heights_strat_emp_C, refl_strat_emp_C = load_vpr_file_emp("outputs/vpr_emp_strat_C.txt", TIMESTEP)
+heights_strat_emp_X, refl_strat_emp_X = load_vpr_file_emp("outputs/vpr_emp_strat_X.txt", TIMESTEP)
 # Load convective data
 heights_conv_true, refl_conv_true = load_vpr_file_true("outputs/vpr_true_conv.txt", TIMESTEP)
 heights_conv_emp, refl_conv_emp = load_vpr_file_emp("outputs/vpr_emp_conv_rhi.txt", TIMESTEP)
+heights_conv_emp_C, refl_conv_emp_C = load_vpr_file_emp("outputs/vpr_emp_conv_C.txt", TIMESTEP)
+heights_conv_emp_X, refl_conv_emp_X = load_vpr_file_emp("outputs/vpr_emp_conv_X.txt", TIMESTEP)
 
 # ===========================
 # 3. CREATE FIGURE WITH 2 SUBPLOTS
 # ===========================
 
-fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+fig, axes = plt.subplots(1, 2, figsize=(12, 6), sharey = True)
 
 # ===========================
 # 4. PLOT STRATIFORM (Left)
@@ -159,9 +162,28 @@ ax.plot(refl_strat_true[0:18], heights_strat_true[0:18],
         color=stylesheet.COLORS['black'],
         linestyle='-',
         linewidth=1,
+        markersize=3,
+        label='True')
+
+# Empirical - dotted line with markers
+ax.plot(refl_strat_emp_C[0:18], heights_strat_emp_C[0:18], 
+        color=stylesheet.COLORS['black'],
+        linestyle='-.',
+        linewidth=1,
+        marker='^',
+        markersize=3,
+        label='PPI-based (C-band)')
+
+
+# Empirical - dotted line with markers
+ax.plot(refl_strat_emp_X[0:18], heights_strat_emp_X[0:18], 
+        color=stylesheet.COLORS['black'],
+        linestyle='-.',
+        linewidth=1,
         marker='o',
         markersize=3,
-        label='True VPR')
+        label='PPI-based (X-band)')
+
 
 # Empirical - dotted line with markers
 ax.plot(refl_strat_emp[0:18], heights_strat_emp[0:18], 
@@ -170,11 +192,12 @@ ax.plot(refl_strat_emp[0:18], heights_strat_emp[0:18],
         linewidth=1,
         marker='o',
         markersize=3,
-        label='RHI-based VPR')
+        label='RHI-based (X-band)')
+
 
 ax.set_title("Stratiform VPR", fontsize=11)
-ax.set_xlabel("Reflectivity (dBZ)", fontsize=10)
-ax.set_ylabel("Height (km)", fontsize=10)
+ax.set_xlabel("Reflectivity [dBZ]", fontsize=10)
+ax.set_ylabel("Height [km]", fontsize=10)
 ax.legend(loc='best', fontsize=8)
 ax.grid(True, linestyle=':', alpha=0.5, linewidth=0.5)
 
@@ -189,9 +212,26 @@ ax.plot(refl_conv_true[0:18], heights_conv_true[0:18],
         color=stylesheet.COLORS['black'],
         linestyle='-',
         linewidth=1,
+        markersize=3,
+        label='True')
+
+# Empirical - dotted line with markers
+ax.plot(refl_conv_emp_C[0:18], heights_conv_emp_C[0:18], 
+        color=stylesheet.COLORS['black'],
+        linestyle='-.',
+        linewidth=1,
+        marker='^',
+        markersize=3,
+        label='PPI-based (C-band)')
+
+# Empirical - dotted line with markers
+ax.plot(refl_conv_emp_X[0:18], heights_conv_emp_X[0:18], 
+        color=stylesheet.COLORS['black'],
+        linestyle='-.',
+        linewidth=1,
         marker='o',
         markersize=3,
-        label='True VPR')
+        label='PPI-based (X-band)')
 
 # Empirical - dotted line with markers
 ax.plot(refl_conv_emp[0:18], heights_conv_emp[0:18], 
@@ -200,11 +240,13 @@ ax.plot(refl_conv_emp[0:18], heights_conv_emp[0:18],
         linewidth=1,
         marker='o',
         markersize=3,
-        label='RHI-based VPR')
+        label='RHI-based (X-band)')
+
+
 
 ax.set_title("Convective VPR", fontsize=11)
-ax.set_xlabel("Reflectivity (dBZ)", fontsize=10)
-ax.set_ylabel("Height (km)", fontsize=10)
+ax.set_xlabel("Reflectivity [dBZ]", fontsize=10)
+#ax.set_ylabel("Height [km]", fontsize=10)
 ax.legend(loc='best', fontsize=8)
 ax.grid(True, linestyle=':', alpha=0.5, linewidth=0.5)
 

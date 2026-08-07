@@ -74,6 +74,17 @@ SCENARIO_PALETTES = {
     'performance': ['#ffffcc', '#c7e9b4', '#7fcdbb', '#41b6c4',
                     '#1d91c0', '#225ea8', '#0c2c84']
 }
+# ============================================================
+# 4. FONT SETTINGS (Updated to Avenir Next)
+# ============================================================
+
+# Check if Avenir Next is available on your system
+# If not, fallback to Arial or Helvetica
+FONT_FAMILY = ['Avenir Next', 'Avenir', 'Helvetica', 'Arial', 'sans-serif']
+
+# Apply font settings globally
+plt.rcParams['font.family'] = 'sans-serif'
+plt.rcParams['font.sans-serif'] = FONT_FAMILY
 
 # ============================================================
 # 4. MATPLOTLIB GLOBAL SETTINGS (applied on import)

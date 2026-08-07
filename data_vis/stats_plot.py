@@ -29,34 +29,36 @@ fig, ax = plt.subplots(figsize=(12, 4))
 # 3. PLOT DATA
 # ===========================
 
-# Dataset C - Measured
-ax.plot(time_C, total_measured_mm2_C, 
-        marker='^', 
-        color=stylesheet.COLORS['black'], 
-        label='Measured intensity (C)',
-        linewidth=1,
-        markersize=3)
-        #linestyle = '--')
-
-# Dataset X - Measured
-ax.plot(time_X, total_measured_mm2_X, 
-        marker='o', 
-        color=stylesheet.COLORS['black'], 
-        label='Measured intensity (X)',
-        linewidth=1,
-        markersize=3)
-        #linestyle='--')
 
 # Dataset - True
 ax.plot(time_C, total_true_mm2_C, 
         # marker='o', 
         color=stylesheet.COLORS['black'], 
-        label='True intensity',
+        label='True',
+        linewidth=1,
+        markersize=3)
+        #linestyle = '--')
+
+
+
+
+# Dataset C - Measured
+ax.plot(time_C, total_measured_mm2_C, 
+        marker='^', 
+        color=stylesheet.COLORS['black'], 
+        label='Measured (C-band)',
         linewidth=1,
         markersize=3,
-        linestyle = '--')
+        linestyle = '-.')
 
-
+# Dataset X - Measured
+ax.plot(time_X, total_measured_mm2_X, 
+        marker='o', 
+        color=stylesheet.COLORS['black'], 
+        label='Measured (X-band)',
+        linewidth=1,
+        markersize=3,
+        linestyle='-.')
 # ===========================
 # 4. SET X-AXIS TO START AT ZERO
 # ===========================
@@ -126,8 +128,8 @@ ax.set_ylim(bottom=0)
 # 8. LABELS AND TITLES
 # ===========================
 
-ax.set_title("Rainfall accumulation from raincell", fontsize=11)
-ax.set_xlabel("Time (minutes)", fontsize=10)
+#ax.set_title("Rainfall accumulation from raincell", fontsize=11)
+ax.set_xlabel("Time [min]", fontsize=10)
 ax.set_ylabel("Rainfall accumulation [mm/5min]", fontsize=10)
 ax.legend(loc='best', fontsize=8)
 ax.grid(True, linestyle=':', alpha=0.5, linewidth=0.5)
