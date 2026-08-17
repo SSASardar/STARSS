@@ -85,22 +85,22 @@ fig, axes = plt.subplots(1, 2, figsize=(15, 10), sharey=True)
 # ===========================
 
 # Plot X-band measurement
-im2 = axes[0].imshow(disp_X_padded.T, 
+im2 = axes[1].imshow(disp_X_padded.T[:,:-5], 
                      cmap=stylesheet.COLORMAPS['sequential'], 
                      norm = norm,
                      origin='lower')
-axes[0].set_title("RHI Measured reflectivity (X-band)", fontsize=10)
-axes[0].set_xlabel("surface [km]")
-axes[0].set_ylabel("height [km]")
-
-# Plot True reflectivity
-im3 = axes[1].imshow(true_g_padded.T, 
-                     cmap=stylesheet.COLORMAPS['sequential'], 
-                     norm = norm,
-                     origin='lower')
-axes[1].set_title("RHI True Reflectivity", fontsize=10)
+axes[1].set_title("RHI Measured reflectivity (X-band)", fontsize=10)
 axes[1].set_xlabel("surface [km]")
 #axes[1].set_ylabel("height [km]")
+
+# Plot True reflectivity
+im3 = axes[0].imshow(true_g_padded.T[:,:-5], 
+                     cmap=stylesheet.COLORMAPS['sequential'], 
+                     norm = norm,
+                     origin='lower')
+axes[0].set_title("RHI True Reflectivity", fontsize=10)
+axes[0].set_xlabel("surface [km]")
+axes[0].set_ylabel("height [km]")
 
 # ===========================
 # 5. ADD SINGLE COLORBAR

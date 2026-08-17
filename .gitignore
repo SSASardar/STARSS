@@ -19,6 +19,7 @@ params.txt
 *Min*vol*/
 AX_band_VPR_testing/
 *_exe
+data_vis/__pycache__*
 
 # Common executable extensions
 *exe
