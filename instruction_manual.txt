@@ -2,7 +2,11 @@ THIS IS TO GUIDE YOU TO GETTING AND REPRODUCING YOUR RESULTS:
 
 		instruction manual to getting to figures in the worked example. 
 
-
+		To run this programme, download the codebase onto your computer.
+		Ensure you have a C compiler (gcc or otherwise) and python with numpy and matplotlib installed.
+		This programme was developed and tested using vim and bash scripts and runs easily on the command line.
+		The instructions given assume use on the command line.
+		For use in other integrated development environments, please translate the instructions accordingly.
 
 
 
