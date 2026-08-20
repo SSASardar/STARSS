@@ -92,4 +92,55 @@ STEPS
 
 			for f in data_vis/*.py; do ["$f"="stylesheet.py"] && continue; python "$f"; done
 
-	
+
+
+COMPUTATIONAL STUDY: 
+
+		In order to test the interaction between different components, some programming is needed. 
+		I will explain how I changed the programme for a specific experiment.
+		Please adapt the explanation to your situation.
+
+	STEP 1: DETERMINING THE VARIABLES YOU WANT TO VARY, AND AT WHICH LEVELS.
+		This step does not require any coding, but just some thought.
+		I want to change 7 variables at three different levels. 
+
+	STEP 2: ADAPT CONFIGURATION FILES TO SUIT YOUR NEEDS
+		- in the file src/analysis.c, 
+			*for the function initialize_test_environment() I ensure I have six double's as input parameters (x1,...,x7)
+			*for changes in vertical structure or core development rates, incorporate your variable correctly into the fill_VPR_params() function.	
+			*for changes in the raincell parameters, incorporate your variable correctly into the create_raincell() and create_spatial_raincell() functions. 
+			*for changes in radar parameters, incorporate your variable correctly into the create_radar() functions.
+
+		- in the file include/analysis.h,
+			* ensure the function prototype matches, i.e. have the same input variables as the function defined in the analysis.c file. 
+		- in the file tests/test_multi_radar_pcl.c
+			* alter the CommandLineParams structure to include all your variables.
+			* change the parse_command_line() function of the right default values for each variable in the definition of the CommandLineParams, and change the cases for the each parameter. Also change the help function print_usage().
+
+	STEP 3: CHANGE THE BATCH GENERATION SCRIPT TO INCLUDE YOUR NEW VARIABLES.
+		- alter the generate_params.sh script.
+
+	I suspect that in the writing statistics file, there is a mistake somewhere.... why are the rainfall intensities so big.... 
+
+(base) TUD501825:Repo ssasardar$ ./generate_params.sh 
+(base) TUD501825:Repo ssasardar$ make batch-test TEST=test_multi_radar_pcl PARAM_FILE=params.txt
+
+are the last two commands used. 
+
+
+19 aug 2026: last commands used: 
+
+make adaptive-parallel-batch-test TEST=test_multi_radar_pcl PARAM_FILE=params.txt CORES=8
+
+
+20 aug 2026 last commands used: 
+
+./generate_params.sh 
+make adaptive-parallel-batch-test TEST=test_multi_radar_pcl PARAM_FILE=params.txt CORES=10
+./compute_ave_mse batch_test_20260820_142437
+vi data_vis/initial_analysis.py 
+				CHANGE THE PATH NAME
+python data_vis/initial_analysis.py
+
+
+

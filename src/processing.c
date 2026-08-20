@@ -1417,6 +1417,15 @@ int compute_rainfall_statistics(const Vol_scan *vol,
     double sum_true_mm2_all = 0.0;  // unmasked
     int count = 0, count_all = 0;
 
+    double min_R = 1e10; 
+	double max_R=0;	
+
+
+
+    
+    double min_dBZ = 1e10; 
+	double max_dBZ=0;	
+
     double cell_area_km2 = cart_grid_res*0.001 * cart_grid_res*0.001;
     double unmasked_area_accum = 0.0; // <-- Track active area
     for (int i = 0; i < (int)vol->num_elements; ++i) {
@@ -1425,12 +1434,19 @@ int compute_rainfall_statistics(const Vol_scan *vol,
 
         // --- Unmasked totals: include all valid refl_ALA ---
         if (!isnan(dBZ_true)) {
-            double Rtrue = dBZ_to_R(dBZ_true);
-            sum_true_all += Rtrue;
+        	if(dBZ_true>max_dBZ) max_dBZ = dBZ_true;
+		if(dBZ_true<min_dBZ) min_dBZ = dBZ_true;
+	    	double Rtrue = dBZ_to_R(dBZ_true);
+            	if(Rtrue>max_R) max_R = Rtrue;
+		if(Rtrue<min_R) min_R = Rtrue;
+
+
+		sum_true_all += Rtrue;
             sum_true_mm2_all += Rtrue * cell_area_km2;
             count_all++;
 	    unmasked_area_accum += cell_area_km2; // <-- Accumulate area
-        }
+        
+	}
 
         // --- Masked stats for error metrics ---
         if (isnan(dBZ_disp) || isnan(dBZ_true)) continue;
@@ -1468,7 +1484,12 @@ int compute_rainfall_statistics(const Vol_scan *vol,
     *total_true_unmasked = sum_true_all;
     *total_true_mm2_unmasked = sum_true_mm2_all;
 *total_unmasked_area_km2 = unmasked_area_accum; // <-- Pass it out
-    return 0;
+
+
+
+    printf("dBZ_true min=%.2f max=%.2f, Rtrue min=%.2f max=%.2f\n",min_dBZ, max_dBZ, min_R, max_R); 
+
+return 0;
 }
 
 

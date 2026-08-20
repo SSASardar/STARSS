@@ -41,33 +41,36 @@ void initialize_test_environment(
     Spatial_raincell **s_raincell,
     double *cart_grid_res,
    double *sim_time,
-    double x1, double x2, double x3, double x4, double x5, double x6
+    double x1, double x2, double x3, double x4, double x5, double x6, double x7
 ) {
     // Initialize simulation time
     *sim_time = 00.0;
     
     // Initialize cartesian grid resolution (in meters)
-    *cart_grid_res = x1;  // Now using x1 from command line
+    *cart_grid_res = 1000;
     
     // Calculate dependent variables
-    double e1 = (x2 * 60.0 + 230.0 * 60.0) / 2.0;  // Average of x2*60 and 230*60
-    double e2 = x3 + 3000.0;  // Bright band height = cloud base + 3000
-    
+    double e0 = 230.0-x7; //duration of rainfall peak in minutes.
+    double e1 = (e0 * 60.0 + 230.0 * 60.0) / 2.0;  // Midpoint of start and end of peak. peak ends at 230 minutes.
+   double e2 = floor(10*log10((200*pow(x3,1.6))))-27+3-2;//change in reflectivity for peak
+						       //
+	printf("The change in reflectivity at the peak is: %lf, the eqation should be %lf in dB -27 +3 -2\n\n", e2, x3);
+
     // Initialize VPR parameters
     *params = malloc(sizeof(VPR_params));
     init_VPR_params(*params);
     
     fill_VPR_params(*params,
-        60.0*60, 120.0*60.0, x2*60.0, e1, 230.0*60.0,
+        60.0*60, 120.0*60.0, e0*60.0, e1, 230.0*60.0,
         7.0,
         2000.0, 3000.0,
         45.0, 1.0, 1.0, 2.0,
-        e2, 100.0, 50.0,
+        6000.0, 100.0, 50.0,
         15.0, 2.0, 1.0,
         750.0, 500.0, 250.0,
         0.65, -0.4, -0.15, -0.1,
-        27, -3.0, 2.0, 17.0, //how the reflectivity at cloud-base changes (initial, change during growth, change during mature, change for peak)
-        x3, 150.0, 25.0,
+        27, -3.0, 2.0, floor(10*log10((200*pow(x3,1.6))))-27+3-2, //how the reflectivity at cloud-base changes (initial, change during growth, change during mature, change for peak)
+        x5*1000, 150.0, 25.0,//x5 is cloud base height.
         -0.0005
     );
     
@@ -89,8 +92,8 @@ void initialize_test_environment(
     compute_average_VPR(*VPR_A_d, *params, t3, t2, 60.0, *VPR_dummy);
     
     // Initialize raincell and spatial_raincell with command line parameters
-    *raincell = create_raincell(1, x4, 10000.0, -0.5);  // x4 is the core ratio
-    *s_raincell = create_spatial_raincell(1, -80000.0, x5, x6);  // x5 y-distance, x6 apparent motion
+    *raincell = create_raincell(1, x2, x1*1000, -0.5);  // x1 radius of raincell in km, x2 is the core ratio [-]
+    *s_raincell = create_spatial_raincell(1, -80000.0, x6, x4);  // x6 y-distance, x4 apparent motion
     
     // Add to global lists (if your test functions expect them)
     raincell_list[raincell_count] = *raincell;
@@ -99,8 +102,8 @@ void initialize_test_environment(
     
     // Initialize radars
     Radar* radar0 = create_radar(0, "C", "PPI", 0.0, 0.0, 25.0, 250000.0, 250.0, 1.0);
-    Radar* radar1 = create_radar(1, "X", "PPI", -50000.0, 50000.0,25.0, 50000.0, 100.0, 1.0);
-    Radar* radar2 = create_radar(2, "X", "RHI", -50000.0, 50000.0,25.0, 50000.0, 100.0, 1.0);
+    Radar* radar1 = create_radar(1, "X", "PPI", -50000.0, 60000.0,25.0, 50000.0, 100.0, 1.0);
+    Radar* radar2 = create_radar(2, "X", "RHI", -50000.0, 60000.0,25.0, 50000.0, 100.0, 1.0);
     
     radar_list[radar_count++] = radar0;
     radar_list[radar_count++] = radar1;
@@ -215,12 +218,18 @@ int compute_and_store_stats(Vol_scan *vol, double rain_threshold, double cart_gr
     double total_true_unmasked, total_true_mm2_unmasked;
 double total_unmasked_area_km2; // <-- Variable to hold the area
 
+   // DECLARE THESE HERE - outside the if block
+    double measured_volume = 0.0;
+    double true_volume = 0.0;
+
     // Compute rainfall statistics
     if (compute_rainfall_statistics(vol, rain_threshold, cart_grid_res,
                                     &mse, &mae, &bias,
                                     &total_measured, &total_true_masked,
                                     &total_measured_mm2, &total_true_mm2,
                                     &total_true_unmasked, &total_true_mm2_unmasked,&total_unmasked_area_km2) == 0) {
+	    
+
 	    //double area = vol->num_x*vol->resolution*vol->num_y*vol->resolution*1e-3;
 	    //double area = M_PI*raincell->radius_stratiform*raincell->radius_stratiform*1e-6;
         // Store computed statistics
@@ -237,7 +246,7 @@ double total_unmasked_area_km2; // <-- Variable to hold the area
 	// Divide multiply by the time to get to the accumulation in the timeperiod.
         //stats[scan_idx].total_measured_mm2 = total_measured_mm2* (volume_duration_seconds/3600);
         //stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked*( volume_duration_seconds/3600);
-        
+ 
         // --- OPTION A IMPLEMENTATION ---
         // Calculate the raw volumetric accumulations over the time interval
        double measured_volume = total_measured_mm2 * (volume_duration_seconds / 3600.0);
@@ -251,7 +260,7 @@ double total_unmasked_area_km2; // <-- Variable to hold the area
 	//
 // stats[scan_idx].total_measured_mm2 = total_measured_mm2* (volume_duration_seconds/3600)*1000;
 //        stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked*( volume_duration_seconds/3600)*1000;
-        	
+
 
 
         return 0;

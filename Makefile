@@ -167,32 +167,41 @@ batch-test:
 			test_start=$$(date +%s); \
 			echo "📊 Test $$counter/$$total: $$params"; \
 			\
-			r_val=$$(echo "$$params" | sed -n 's/.*-r \([0-9]*\).*/\1/p'); \
-			m_val=$$(echo "$$params" | sed -n 's/.*-m \([0-9]*\).*/\1/p'); \
-			c_val=$$(echo "$$params" | sed -n 's/.*-c \([0-9]*\).*/\1/p'); \
-			k_val=$$(echo "$$params" | sed -n 's/.*-k \([0-9.]*\).*/\1/p'); \
-			y_val=$$(echo "$$params" | sed -n 's/.*-y \([0-9]*\).*/\1/p'); \
-			a_val=$$(echo "$$params" | sed -n 's/.*-a \([0-9.]*\).*/\1/p'); \
+			x1_val=$$(echo "$$params" | sed -n 's/.*-a \([0-9.]*\).*/\1/p'); \
+			x2_val=$$(echo "$$params" | sed -n 's/.*-b \([0-9.]*\).*/\1/p'); \
+			x3_val=$$(echo "$$params" | sed -n 's/.*-c \([0-9.]*\).*/\1/p'); \
+			x4_val=$$(echo "$$params" | sed -n 's/.*-d \([0-9.]*\).*/\1/p'); \
+			x5_val=$$(echo "$$params" | sed -n 's/.*-e \([0-9.]*\).*/\1/p'); \
+			x6_val=$$(echo "$$params" | sed -n 's/.*-f \([0-9.]*\).*/\1/p'); \
+			x7_val=$$(echo "$$params" | sed -n 's/.*-g \([0-9.]*\).*/\1/p'); \
 			\
-			if [ -z "$$r_val" ]; then r_val="0000"; else r_val=$$(printf "%04d" $$r_val); fi; \
-			if [ -z "$$m_val" ]; then m_val="000"; else m_val=$$(printf "%03d" $$m_val); fi; \
-			if [ -z "$$c_val" ]; then c_val="0000"; else c_val=$$(printf "%04d" $$c_val); fi; \
-			if [ -z "$$k_val" ]; then k_val="000"; else k_val=$$(printf "%03d" $$(echo "$$k_val * 100" | bc | cut -d. -f1)); fi; \
-			if [ -z "$$y_val" ]; then y_val="000000"; else y_val=$$(printf "%06d" $$y_val); fi; \
-			if [ -z "$$a_val" ]; then a_val="00"; else a_val=$$(printf "%02d" $$(echo "$$a_val + 0.5" | bc | cut -d. -f1)); fi; \
+			if [ -z "$$x1_val" ]; then x1_val="000"; else x1_val=$$(printf "%03d" $$(echo "$$x1_val + 0.5" | bc | cut -d. -f1)); fi; \
+			if [ -z "$$x2_val" ]; then x2_val="000"; else x2_val=$$(printf "%03d" $$(echo "$$x2_val * 100" | bc | cut -d. -f1)); fi; \
+			if [ -z "$$x3_val" ]; then x3_val="000"; else x3_val=$$(printf "%03d" $$x3_val); fi; \
+			if [ -z "$$x4_val" ]; then x4_val="00"; else x4_val=$$(printf "%02d" $$(echo "$$x4_val + 0.5" | bc | cut -d. -f1)); fi; \
+			if [ -z "$$x5_val" ]; then x5_val="00"; else x5_val=$$(printf "%02d" $$(echo "$$x5_val + 0.5" | bc | cut -d. -f1)); fi; \
+			if [ -z "$$x6_val" ]; then x6_val="000"; else x6_val=$$(printf "%03d" $$(echo "$$x6_val + 0.5" | bc | cut -d. -f1)); fi; \
+			if [ -z "$$x7_val" ]; then x7_val="000"; else x7_val=$$(printf "%03d" $$x7_val); fi; \
 			\
-			stats_filename="stats_r_$${r_val}_m_$${m_val}_c_$${c_val}_k_$${k_val}_y_$${y_val}_a_$${a_val}.txt"; \
-			echo "   Output file: $(BATCH_DIR)/$$stats_filename"; \
+			stats_filename="stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
+			ad_stats_filename="ad_stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
+			echo "   Output files: $(BATCH_DIR)/$$stats_filename and $(BATCH_DIR)/$$ad_stats_filename"; \
 			\
 			rm -f $(OUTPUTS_DIR)/*.txt; \
 			\
 			./$(BUILD_DIR)/$(TEST) $$params; \
 			\
-			if [ -f "$(OUTPUTS_DIR)/stats.txt" ]; then \
-				mv "$(OUTPUTS_DIR)/stats.txt" "$(BATCH_DIR)/$$stats_filename"; \
-				echo "   ✅ Saved to $(BATCH_DIR)/$$stats_filename"; \
+			if [ -f "$(OUTPUTS_DIR)/stats_C.txt" ]; then \
+				mv "$(OUTPUTS_DIR)/stats_C.txt" "$(BATCH_DIR)/$$stats_filename"; \
+				echo "   ✅ Saved stats_C.txt to $(BATCH_DIR)/$$stats_filename"; \
 			else \
-				echo "   ⚠️ Warning: stats.txt not found"; \
+				echo "   ⚠️ Warning: stats_C.txt not found"; \
+			fi; \
+			if [ -f "$(OUTPUTS_DIR)/ad_stats.txt" ]; then \
+				mv "$(OUTPUTS_DIR)/ad_stats.txt" "$(BATCH_DIR)/$$ad_stats_filename"; \
+				echo "   ✅ Saved ad_stats.txt to $(BATCH_DIR)/$$ad_stats_filename"; \
+			else \
+				echo "   ⚠️ Warning: ad_stats.txt not found"; \
 			fi; \
 			\
 			test_end=$$(date +%s); \
@@ -254,22 +263,24 @@ parallel-batch-test:
 	parallel -j $(CORES) --bar \
 		'params="{}"; \
 		WORKER_ID=$$(printf "%03d" {#}); \
-		r_val=$$(echo $$params | sed -n "s/.*-r \([0-9]*\).*/\1/p"); \
-		m_val=$$(echo $$params | sed -n "s/.*-m \([0-9]*\).*/\1/p"); \
-		c_val=$$(echo $$params | sed -n "s/.*-c \([0-9]*\).*/\1/p"); \
-		k_val=$$(echo $$params | sed -n "s/.*-k \([0-9.]*\).*/\1/p"); \
-		y_val=$$(echo $$params | sed -n "s/.*-y \([0-9]*\).*/\1/p"); \
-		a_val=$$(echo $$params | sed -n "s/.*-a \([0-9.]*\).*/\1/p"); \
-		[ -z "$$r_val" ] && r_val="0000" || r_val=$$(printf "%04d" $$r_val); \
-		[ -z "$$m_val" ] && m_val="000" || m_val=$$(printf "%03d" $$m_val); \
-		[ -z "$$c_val" ] && c_val="0000" || c_val=$$(printf "%04d" $$c_val); \
-		[ -z "$$k_val" ] && k_val="000" || k_val=$$(printf "%03d" $$(echo "$$k_val * 100" | bc | cut -d. -f1)); \
-		[ -z "$$y_val" ] && y_val="000000" || y_val=$$(printf "%06d" $$y_val); \
-		[ -z "$$a_val" ] && a_val="00" || a_val=$$(printf "%02d" $$(echo "$$a_val + 0.5" | bc | cut -d. -f1)); \
-		stats_filename="stats_r_$${r_val}_m_$${m_val}_c_$${c_val}_k_$${k_val}_y_$${y_val}_a_$${a_val}.txt"; \
+		x1_val=$$(echo $$params | sed -n "s/.*-a \([0-9.]*\).*/\1/p"); \
+		x2_val=$$(echo $$params | sed -n "s/.*-b \([0-9.]*\).*/\1/p"); \
+		x3_val=$$(echo $$params | sed -n "s/.*-c \([0-9.]*\).*/\1/p"); \
+		x4_val=$$(echo $$params | sed -n "s/.*-d \([0-9.]*\).*/\1/p"); \
+		x5_val=$$(echo $$params | sed -n "s/.*-e \([0-9.]*\).*/\1/p"); \
+		x6_val=$$(echo $$params | sed -n "s/.*-f \([0-9.]*\).*/\1/p"); \
+		x7_val=$$(echo $$params | sed -n "s/.*-g \([0-9.]*\).*/\1/p"); \
+		[ -z "$$x1_val" ] && x1_val="000" || x1_val=$$(printf "%03d" $$(echo "$$x1_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x2_val" ] && x2_val="000" || x2_val=$$(printf "%03d" $$(echo "$$x2_val * 100" | bc | cut -d. -f1)); \
+		[ -z "$$x3_val" ] && x3_val="000" || x3_val=$$(printf "%03d" $$x3_val); \
+		[ -z "$$x4_val" ] && x4_val="00" || x4_val=$$(printf "%02d" $$(echo "$$x4_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x5_val" ] && x5_val="00" || x5_val=$$(printf "%02d" $$(echo "$$x5_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x6_val" ] && x6_val="000" || x6_val=$$(printf "%03d" $$(echo "$$x6_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x7_val" ] && x7_val="000" || x7_val=$$(printf "%03d" $$x7_val); \
+		stats_filename="stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
 		./$(BUILD_DIR)/$(TEST) $$params -w $$WORKER_ID > /dev/null 2>&1; \
-		if [ -f "outputs_$${WORKER_ID}/stats.txt" ]; then \
-			mv "outputs_$${WORKER_ID}/stats.txt" "$(BATCH_DIR)/$$stats_filename"; \
+		if [ -f "outputs_$${WORKER_ID}/stats_C.txt" ]; then \
+			mv "outputs_$${WORKER_ID}/stats_C.txt" "$(BATCH_DIR)/$$stats_filename"; \
 		fi; \
 		rm -rf outputs_$${WORKER_ID} inputs_$${WORKER_ID} archive_$${WORKER_ID} logs_$${WORKER_ID} 2>/dev/null; \
 		' \
@@ -283,7 +294,6 @@ parallel-batch-test:
 	echo "✅ Parallel batch testing completed"; \
 	echo "⏱️  Total time: $$total_min minutes $$total_sec seconds"; \
 	echo "📁 Results saved in: $(BATCH_DIR)"
-
 
 # Adaptive parallel batch test with multiple cores (GNU Parallel)
 # Also moves ad_stats.txt files from outputs folder to batch directory
@@ -319,30 +329,30 @@ adaptive-parallel-batch-test:
 	parallel -j $(CORES) --bar \
 		'params="{}"; \
 		WORKER_ID=$$(printf "%03d" {#}); \
-		r_val=$$(echo $$params | sed -n "s/.*-r \([0-9]*\).*/\1/p"); \
-		m_val=$$(echo $$params | sed -n "s/.*-m \([0-9]*\).*/\1/p"); \
-		c_val=$$(echo $$params | sed -n "s/.*-c \([0-9]*\).*/\1/p"); \
-		k_val=$$(echo $$params | sed -n "s/.*-k \([0-9.]*\).*/\1/p"); \
-		y_val=$$(echo $$params | sed -n "s/.*-y \([0-9]*\).*/\1/p"); \
-		a_val=$$(echo $$params | sed -n "s/.*-a \([0-9.]*\).*/\1/p"); \
-		[ -z "$$r_val" ] && r_val="0000" || r_val=$$(printf "%04d" $$r_val); \
-		[ -z "$$m_val" ] && m_val="000" || m_val=$$(printf "%03d" $$m_val); \
-		[ -z "$$c_val" ] && c_val="0000" || c_val=$$(printf "%04d" $$c_val); \
-		[ -z "$$k_val" ] && k_val="000" || k_val=$$(printf "%03d" $$(echo "$$k_val * 100" | bc | cut -d. -f1)); \
-		[ -z "$$y_val" ] && y_val="000000" || y_val=$$(printf "%06d" $$y_val); \
-		[ -z "$$a_val" ] && a_val="00" || a_val=$$(printf "%02d" $$(echo "$$a_val + 0.5" | bc | cut -d. -f1)); \
-		stats_filename="stats_r_$${r_val}_m_$${m_val}_c_$${c_val}_k_$${k_val}_y_$${y_val}_a_$${a_val}.txt"; \
-		ad_stats_filename="ad_stats_r_$${r_val}_m_$${m_val}_c_$${c_val}_k_$${k_val}_y_$${y_val}_a_$${a_val}.txt"; \
+		x1_val=$$(echo $$params | sed -n "s/.*-a \([0-9.]*\).*/\1/p"); \
+		x2_val=$$(echo $$params | sed -n "s/.*-b \([0-9.]*\).*/\1/p"); \
+		x3_val=$$(echo $$params | sed -n "s/.*-c \([0-9.]*\).*/\1/p"); \
+		x4_val=$$(echo $$params | sed -n "s/.*-d \([0-9.]*\).*/\1/p"); \
+		x5_val=$$(echo $$params | sed -n "s/.*-e \([0-9.]*\).*/\1/p"); \
+		x6_val=$$(echo $$params | sed -n "s/.*-f \([0-9.]*\).*/\1/p"); \
+		x7_val=$$(echo $$params | sed -n "s/.*-g \([0-9.]*\).*/\1/p"); \
+		[ -z "$$x1_val" ] && x1_val="000" || x1_val=$$(printf "%03d" $$(echo "$$x1_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x2_val" ] && x2_val="000" || x2_val=$$(printf "%03d" $$(echo "$$x2_val * 100" | bc | cut -d. -f1)); \
+		[ -z "$$x3_val" ] && x3_val="000" || x3_val=$$(printf "%03d" $$x3_val); \
+		[ -z "$$x4_val" ] && x4_val="00" || x4_val=$$(printf "%02d" $$(echo "$$x4_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x5_val" ] && x5_val="00" || x5_val=$$(printf "%02d" $$(echo "$$x5_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x6_val" ] && x6_val="000" || x6_val=$$(printf "%03d" $$(echo "$$x6_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x7_val" ] && x7_val="000" || x7_val=$$(printf "%03d" $$x7_val); \
+		stats_filename="stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
+		ad_stats_filename="ad_stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
 		./$(BUILD_DIR)/$(TEST) $$params -w $$WORKER_ID > /dev/null 2>&1; \
-		if [ -f "outputs_$${WORKER_ID}/stats.txt" ]; then \
-			mv "outputs_$${WORKER_ID}/stats.txt" "$(BATCH_DIR)/$$stats_filename"; \
-			#echo "   ✅ Saved stats.txt to $(BATCH_DIR)/$$stats_filename"; \
+		if [ -f "outputs_$${WORKER_ID}/stats_C.txt" ]; then \
+			mv "outputs_$${WORKER_ID}/stats_C.txt" "$(BATCH_DIR)/$$stats_filename"; \
 		else \
 			echo "   ⚠️ Warning: stats.txt not found for $$params"; \
 		fi; \
 		if [ -f "outputs_$${WORKER_ID}/ad_stats.txt" ]; then \
 			mv "outputs_$${WORKER_ID}/ad_stats.txt" "$(BATCH_DIR)/$$ad_stats_filename"; \
-			#echo "   ✅ Saved ad_stats.txt to $(BATCH_DIR)/$$ad_stats_filename"; \
 		else \
 			echo "   ⚠️ Warning: ad_stats.txt not found for $$params"; \
 		fi; \

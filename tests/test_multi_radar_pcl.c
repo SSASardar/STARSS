@@ -30,49 +30,53 @@ extern int radar_count;
 
 // Structure to hold command line parameters
 typedef struct {
-    double x1;  // cartesian grid resolution (m)
-    double x2;  // mature phase end time (minutes)
-    double x3;  // cloud base height (m)
-    double x4;  // core circle ratio
-    double x5;  // raincell closest distance in y direction (m)
-    double x6;  // apparent motion (units?)
+    double x1;  // radius of raincell in kilometers
+    double x2;  // ratio of core radius to raincell radius. unitless
+    double x3;  // maximum rainfall intensity (in mm per hour)
+    double x4;  // apparent motion (meters per second)
+    double x5;  // cloud base height in kilometers
+    double x6;  // minimum distance to C-band radar in kilometers
+    double x7;	// storm duration in minutes. 
     char worker_id[16];  // worker ID for parallel execution
 } CommandLineParams;
 
 void print_usage(const char* program_name) {
     printf("Usage: %s [options]\n", program_name);
     printf("Options:\n");
-    printf("  -r, --resolution <value>    Cartesian grid resolution in meters (x1, default: 1000.0)\n");
-    printf("  -m, --mature-end <value>    Mature phase end time in minutes (x2, default: 170.0)\n");
-    printf("  -c, --cloud-base <value>    Cloud base height in meters (x3, default: 500.0)\n");
-    printf("  -k, --core-ratio <value>    Core circle ratio (x4, default: 0.5)\n");
-    printf("  -y, --y-distance <value>    Raincell closest distance in y direction in meters (x5, default: 80000.0)\n");
-    printf("  -a, --apparent-motion <value> Apparent motion (x6, default: 10.0)\n");
+    printf("  -a, --radius-raincell <value>    radius of raincell in kilometers (x1, default: 15.0)\n");
+    printf("  -b, --core-ratio <value>    ratio of core of raincell to stratiform part [between 0 and 1] (x2, default:0.3)\n");
+    printf("  -c, --rain-intensity <value>    intensity of rain in mm per hour(x3, default: 35.0)\n");
+    printf("  -d, --apparent-motion <value>    apparent motion of raincell in meters per second (x4, default: 9)\n");
+    printf("  -e, --cloud base height <value>    height of the cloud base in km (x5, default: 2.0)\n");
+    printf("  -f, --distance to C-band radar <value> distance of the centre of the raincell to the C-band radar in km (x6, default: 35.0)\n");
+    printf("  -g, --storm duration <value> duration of the peak rainfall in minutes(x6, default: 30.0)\n");
     printf("  -w, --worker-id <id>        Worker ID for parallel execution (creates isolated directories)\n");
     printf("  -h, --help                  Show this help message\n");
     printf("\nExample:\n");
-    printf("  %s -r 500 -m 180 -c 600 -k 0.7 -y 75000 -a 12\n", program_name);
-    printf("  %s -r 500 -m 180 -c 600 -k 0.7 -y 75000 -a 12 -w 3\n", program_name);
+    printf("  %s -a 15 -b 0.3 -c 35 -d 9 -e 2 -f 35 -g 30\n", program_name);
+    printf("  %s -a 15 -b 0.3 -c 35 -d 9 -e 2 -f 35 -g 30 -w 3\n", program_name);
 }
 
 CommandLineParams parse_command_line(int argc, char *argv[]) {
     CommandLineParams params = {
-        .x1 = 1000.0,      // default: 1 km resolution
-        .x2 = 170.0,       // default: 170 minutes
-        .x3 = 500.0,       // default: 500 m cloud base
-        .x4 = 0.5,         // default: 0.5 ratio
-        .x5 = 25000.0,     // default: 25 km from origin
-        .x6 = 4.0,        // default: 10m
+        .x1 = 10.0,      // default: 10 km radius of raincell
+        .x2 = 0.30,       // default: core ratio of 0.3 of full radius.
+        .x3 = 35.0,       // default: 35 mm per hour rainfall
+        .x4 = 9.0,         // default: apparent motion of 9 meters per second
+        .x5 = 2.0,         // default: cloud base height of 2km
+        .x6 = 35.0,        // default: 35 km from C-band radar
+	.x7 = 30.0,	  // default 3o minutes peak duration
         .worker_id = ""     // default: empty (original behavior)
     };
     
     static struct option long_options[] = {
-        {"resolution",      required_argument, 0, 'r'},
-        {"mature-end",      required_argument, 0, 'm'},
-        {"cloud-base",      required_argument, 0, 'c'},
-        {"core-ratio",      required_argument, 0, 'k'},
-        {"y-distance",      required_argument, 0, 'y'},
-        {"apparent-motion", required_argument, 0, 'a'},
+        {"radius",      required_argument, 0, 'a'},
+        {"core radius",      required_argument, 0, 'b'},
+        {"rainfall intensity",      required_argument, 0, 'c'},
+        {"apparent motion",      required_argument, 0, 'd'},
+        {"cloud base height", required_argument, 0, 'e'},
+        {"distance to C-band",      required_argument, 0, 'f'},
+        {"storm duration", required_argument, 0, 'g'},
         {"worker-id",       required_argument, 0, 'w'},
         {"help",            no_argument,       0, 'h'},
         {0, 0, 0, 0}
@@ -81,43 +85,58 @@ CommandLineParams parse_command_line(int argc, char *argv[]) {
     int opt;
     int option_index = 0;
     
-    while ((opt = getopt_long(argc, argv, "r:m:c:k:y:a:w:h", long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "a:b:c:d:e:f:g:w:h", long_options, &option_index)) != -1) {
         switch (opt) {
-            case 'r':
+            case 'a':
                 params.x1 = atof(optarg);
                 if (params.x1 <= 0) {
-                    fprintf(stderr, "Error: Resolution must be positive\n");
+                    fprintf(stderr, "Error: raincell radius must be positive\n");
                     exit(EXIT_FAILURE);
                 }
                 break;
-            case 'm':
+            case 'b':
                 params.x2 = atof(optarg);
-                if (params.x2 <= 0) {
-                    fprintf(stderr, "Error: Mature end time must be positive\n");
+                if (params.x2 < 0 || params.x2>1) {
+                    fprintf(stderr, "Error: ratio of core to raincell radius must be between 0 and 1\n");
                     exit(EXIT_FAILURE);
                 }
                 break;
             case 'c':
                 params.x3 = atof(optarg);
-                if (params.x3 < 0) {
-                    fprintf(stderr, "Error: Cloud base height cannot be negative\n");
+                if (params.x3 <= 0||params.x3>60) {
+                    fprintf(stderr, "Error: rainfall intensity must be a non-zero positive number below 60\n");
                     exit(EXIT_FAILURE);
                 }
                 break;
-            case 'k':
+            case 'd':
                 params.x4 = atof(optarg);
-                if (params.x4 < 0 || params.x4 > 1) {
-                    fprintf(stderr, "Error: Core ratio must be between 0 and 1\n");
+                if (params.x4 < 0 || params.x4 > 40) {
+                    fprintf(stderr, "Error: raincell apparent motion must be between 0 and 40 meters per second\n");
                     exit(EXIT_FAILURE);
                 }
                 break;
-            case 'y':
+            case 'e':
                 params.x5 = atof(optarg);
-                break;
-            case 'a':
+                 if (params.x5 <= 0) {
+                    fprintf(stderr, "Error: cloud base height must be positive\n");
+                    exit(EXIT_FAILURE);
+                }
+		 break;
+            case 'f':
                 params.x6 = atof(optarg);
+		 if (params.x6 <= 0) {
+                    fprintf(stderr, "Error: distance to C-band radar must be positive\n");
+                    exit(EXIT_FAILURE);
+                }
                 break;
-            case 'w':
+            case 'g':
+                params.x7 = atof(optarg);
+		 if (params.x7 < 0) {
+                    fprintf(stderr, "Error: duration of storm must be at least 0\n");
+                    exit(EXIT_FAILURE);
+                }
+                break;
+	    case 'w':
                 snprintf(params.worker_id, sizeof(params.worker_id), "%s", optarg);
                 break;
             case 'h':
@@ -263,10 +282,10 @@ int main(int argc, char *argv[]) {
         &VPR_strat, &VPR_conv, &VPR_A_clima, &VPR_A_gmd, &VPR_A_d, &VPR_dummy,
         &params, &raincell, &s_raincell, &cart_grid_res, &sim_time,
         cmd_params.x1, cmd_params.x2, cmd_params.x3, cmd_params.x4, 
-        cmd_params.x5, cmd_params.x6
+        cmd_params.x5, cmd_params.x6, cmd_params.x7
     );
    
-   printf("Parameters in order are: %lf, %lf, %lf, %lf, %lf, %lf\n",cmd_params.x1, cmd_params.x2, cmd_params.x3, cmd_params.x4, cmd_params.x5, cmd_params.x6); 
+   printf("Parameters in order are: %lf, %lf, %lf, %lf, %lf, %lf, %lf\n",cmd_params.x1, cmd_params.x2, cmd_params.x3, cmd_params.x4, cmd_params.x5, cmd_params.x6, cmd_params.x7); 
    printf("Raincell is  %lf m in radius.\n", raincell_list[0]->radius_stratiform); 
     // =========================================
     // Part 1: Run test_command_centre functionality
@@ -327,7 +346,7 @@ int print_or_not = 1;
     for (int scan_idx = 0; scan_idx < NUM_SCANS; scan_idx++) {
         char filename[256];
         Vol_scan *vol = NULL;  // Declare vol here
-        Vol_scan *vol_1 = NULL;  // Declare vol here
+	// Vol_scan *vol_1 = NULL;  // Declare vol here
         Cart_grid **cart_grids = NULL;  // Declare cart_grids here
         int cg_count = 0;  // Declare cg_count here
 			   //
@@ -350,7 +369,7 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
             read_radar_scans(filename);
         
         //the the PPI volume scan radars... 
-	if(radar_id ==0 || radar_id==1){
+	if(radar_id ==0){
 	if (scan_count == 0) continue;
 
         cart_grids = malloc(scan_count * sizeof(Cart_grid*));
@@ -375,13 +394,9 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
         for (int i = 0; i < cg_count; i++) {
             add_cart_grid_to_volscan(vol, cart_grids[i], i);
         }
-	} else if (radar_id == 1) {
-	vol_1 = init_vol_scan(cart_grids, cg_count);
-        for (int i = 0; i < cg_count; i++) {
-            add_cart_grid_to_volscan(vol_1, cart_grids[i], i);
-        }
 	}
-	} else if (radar_id == 2) /*RHI baesd volume scan */ { 
+	} 
+	else if (radar_id == 2) /*RHI baesd volume scan */ { 
 	
 		//printf("the scan count for radar %.2d in command %.4d is %.3d\n",radar_id, scan_idx, scan_count);
         cart_grids = malloc(scan_count * sizeof(Cart_grid*));
@@ -426,11 +441,6 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
 	}
 	}
 }
-	//process X-band volume scan	
-        process_volume_scan_VPR(vol_1);
-        compute_average_empVPR(vol_1);
-        compute_std_dev_empVPR(vol_1);
-
 	//process C-band volume scan
 	process_volume_scan_VPR(vol);
         compute_average_empVPR(vol);
@@ -450,31 +460,19 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
         }
 
 
-        if (fill_refl_ALA_grid(vol_1, raincell_pos, raincell, VPR_strat, VPR_conv) != 0) {
-            exit(EXIT_FAILURE);
-        }
-
-
         compute_display_grid_KNMI_empirical(vol, 5.0, 0.5, 0);
-        compute_display_grid_KNMI_empirical(vol_1, 5.0, 0.5, 0);
 
         double volume_duration = 5.0 * 60.0;
         if (compute_and_store_stats(vol, 5.0, cart_grid_res, volume_duration, stats_array, scan_idx,  raincell_list[0]) == 0) {
             append_stats_to_file(stats_array, scan_idx, stats_path);
         }
 
-if (compute_and_store_stats(vol_1, 5.0, cart_grid_res, volume_duration, stats_array_X, scan_idx,  raincell_list[0]) == 0) {
-            append_stats_to_file(stats_array_X, scan_idx, stats_path_X);
-        }
 
     // Process adaptive volume scan if empirical VPRs are available
         // Create a deep copy of the volume scan for adaptive processing
 if(print_or_not == 1) {
 print_vpr_detailed_with_std(vol, "outputs/vpr_emp_strat_C.txt", 1, 1);  // Append stratiform with std dev
 print_vpr_detailed_with_std(vol, "outputs/vpr_emp_conv_C.txt", 2, 1);  // Append convective with std dev
-
-print_vpr_detailed_with_std(vol_1, "outputs/vpr_emp_strat_X.txt", 1, 1);  // Append stratiform with std dev
-print_vpr_detailed_with_std(vol_1, "outputs/vpr_emp_conv_X.txt", 2, 1);  // Append convective with std dev
 
 }
  
@@ -483,13 +481,8 @@ if(print_or_not == 1) {
 char disp_filename[256];
 char disp_filename_1[256];
 snprintf(disp_filename, sizeof(disp_filename), "outputs/disp_C_g_%04d.txt", scan_idx);
-snprintf(disp_filename_1, sizeof(disp_filename), "outputs/disp_X_g_%04d.txt", scan_idx);
 if (write_display_grid_to_file(vol, disp_filename) != 0) {
     fprintf(stderr, "Failed to write display grid to %s\n", disp_filename);
-}
-
-if (write_display_grid_to_file(vol_1, disp_filename_1) != 0) {
-    fprintf(stderr, "Failed to write display grid to %s\n", disp_filename_1);
 }
 
 // --- Write true_grid to file ---
@@ -555,12 +548,11 @@ if (write_display_grid_to_file(vol, disp_filename) != 0) {
 }
 
 }
-
+*/
 	      		// Compute and store adaptive statistics
-            if (compute_and_store_stats(vol, -5.0, cart_grid_res, volume_duration, ad_stats_array, scan_idx) == 0) {
+            if (compute_and_store_stats(vol, -5.0, cart_grid_res, volume_duration, ad_stats_array, scan_idx,  raincell_list[0]) == 0) {
                 append_stats_to_file(ad_stats_array, scan_idx, ad_stats_path);
             }
-*/
         for (int i = 0; i < cg_count; i++)
             free_cart_grid(cart_grids[i]);
         free(cart_grids);

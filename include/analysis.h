@@ -57,7 +57,7 @@ void initialize_test_environment(
     Spatial_raincell **s_raincell,
     double *cart_grid_res,
     double *sim_time,
-    double x1, double x2, double x3, double x4, double x5, double x6
+    double x1, double x2, double x3, double x4, double x5, double x6, double x7
 );
 
 void cleanup_test_environment(
