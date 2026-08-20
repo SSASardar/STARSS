@@ -137,9 +137,11 @@ make adaptive-parallel-batch-test TEST=test_multi_radar_pcl PARAM_FILE=params.tx
 
 ./generate_params.sh 
 make adaptive-parallel-batch-test TEST=test_multi_radar_pcl PARAM_FILE=params.txt CORES=10
+chmod +x compute_ave_mse data_vis/compute_avg_mse.c
 ./compute_ave_mse batch_test_20260820_142437
 vi data_vis/initial_analysis.py 
 				CHANGE THE PATH NAME
+
 python data_vis/initial_analysis.py
 
 
