@@ -269,7 +269,7 @@ int process_batch_folder(const char* folder_path) {
     // Process each file
     while ((entry = readdir(dir)) != NULL) {
         // Check if it's a stats file
-        if (strstr(entry->d_name, "stats_x1_") == NULL) {
+        if (strstr(entry->d_name, "stats_x1_") != entry->d_name) {
             continue;
         }
         

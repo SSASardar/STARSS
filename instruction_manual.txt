@@ -145,4 +145,8 @@ vi data_vis/initial_analysis.py
 python data_vis/initial_analysis.py
 
 
+25 aug: commands used: 
 
+you made the compute_emd.c file (gcc into a.out), then run a.out with the batch folder without the last forward slash.
+python data_vis/anova_sum_of_squares.py 
+then the analysis. 
