@@ -179,7 +179,7 @@ batch-test:
 			if [ -z "$$x2_val" ]; then x2_val="000"; else x2_val=$$(printf "%03d" $$(echo "$$x2_val * 100" | bc | cut -d. -f1)); fi; \
 			if [ -z "$$x3_val" ]; then x3_val="000"; else x3_val=$$(printf "%03d" $$x3_val); fi; \
 			if [ -z "$$x4_val" ]; then x4_val="00"; else x4_val=$$(printf "%02d" $$(echo "$$x4_val + 0.5" | bc | cut -d. -f1)); fi; \
-			if [ -z "$$x5_val" ]; then x5_val="00"; else x5_val=$$(printf "%02d" $$(echo "$$x5_val + 0.5" | bc | cut -d. -f1)); fi; \
+			if [ -z "$$x5_val" ]; then x5_val="00"; else x5_val=$$(printf "%02d" $$(echo "$$x5_val * 10" | bc | cut -d. -f1)); fi; \
 			if [ -z "$$x6_val" ]; then x6_val="000"; else x6_val=$$(printf "%03d" $$(echo "$$x6_val + 0.5" | bc | cut -d. -f1)); fi; \
 			if [ -z "$$x7_val" ]; then x7_val="000"; else x7_val=$$(printf "%03d" $$x7_val); fi; \
 			\
@@ -274,7 +274,7 @@ parallel-batch-test:
 		[ -z "$$x2_val" ] && x2_val="000" || x2_val=$$(printf "%03d" $$(echo "$$x2_val * 100" | bc | cut -d. -f1)); \
 		[ -z "$$x3_val" ] && x3_val="000" || x3_val=$$(printf "%03d" $$x3_val); \
 		[ -z "$$x4_val" ] && x4_val="00" || x4_val=$$(printf "%02d" $$(echo "$$x4_val + 0.5" | bc | cut -d. -f1)); \
-		[ -z "$$x5_val" ] && x5_val="00" || x5_val=$$(printf "%02d" $$(echo "$$x5_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x5_val" ] && x5_val="00" || x5_val=$$(printf "%02d" $$(echo "$$x5_val * 10" | bc | cut -d. -f1)); \
 		[ -z "$$x6_val" ] && x6_val="000" || x6_val=$$(printf "%03d" $$(echo "$$x6_val + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x7_val" ] && x7_val="000" || x7_val=$$(printf "%03d" $$x7_val); \
 		stats_filename="stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
@@ -340,7 +340,7 @@ adaptive-parallel-batch-test:
 		[ -z "$$x2_val" ] && x2_val="000" || x2_val=$$(printf "%03d" $$(echo "$$x2_val * 100" | bc | cut -d. -f1)); \
 		[ -z "$$x3_val" ] && x3_val="000" || x3_val=$$(printf "%03d" $$x3_val); \
 		[ -z "$$x4_val" ] && x4_val="00" || x4_val=$$(printf "%02d" $$(echo "$$x4_val + 0.5" | bc | cut -d. -f1)); \
-		[ -z "$$x5_val" ] && x5_val="00" || x5_val=$$(printf "%02d" $$(echo "$$x5_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x5_val" ] && x5_val="00" || x5_val=$$(printf "%02d" $$(echo "$$x5_val * 10" | bc | cut -d. -f1)); \
 		[ -z "$$x6_val" ] && x6_val="000" || x6_val=$$(printf "%03d" $$(echo "$$x6_val + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x7_val" ] && x7_val="000" || x7_val=$$(printf "%03d" $$x7_val); \
 		stats_filename="stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \

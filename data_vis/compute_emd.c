@@ -17,7 +17,7 @@ typedef struct {
     int x2;  // core ratio (0-1) - multiplied by 100
     int x3;  // rain intensity (mm/hr)
     int x4;  // apparent motion (m/s) - multiplied by 10
-    int x5;  // cloud base height (km) - multiplied by 100
+    int x5;  // cloud base height (km) - multiplied by 10
     int x6;  // distance to C-band radar (km)
     int x7;  // storm duration (minutes)
     double emd;
@@ -368,7 +368,7 @@ int process_batch_folder(const char* folder_path) {
     for (int i = 0; i < result_count; i++) {
         fprintf(out, "%d %d %d %d %d %d %d %.10f\n",
                 results[i].x1, results[i].x2, results[i].x3,
-                results[i].x4, results[i].x5, results[i].x6,
+                results[i].x4, results[i].x5/10, results[i].x6,
                 results[i].x7, results[i].emd);
         
         if (!isnan(results[i].emd)) {
