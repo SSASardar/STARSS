@@ -120,6 +120,46 @@ COMPUTATIONAL STUDY:
 	STEP 3: CHANGE THE BATCH GENERATION SCRIPT TO INCLUDE YOUR NEW VARIABLES.
 		- alter the generate_params.sh script.
 
+
+STEPS TO BE DESCRIBED: 
+	How to change the filenaming so you can do higher resolution testing: 
+
+			changing the files in the makefiles to increase the number of digits displayed for the integer.
+			batch-test, batch-test-parallel, and adaptive-batch-test-paralell
+
+	
+	Generate parameters: using the generate params.sh thing (chmod +x [name of executable] [path to file])
+
+	Run the test using the command: 
+	
+			make adaptive-parallel-batch-test TEST=test_multi_radar_pcl PARAM_FILE=params.txt CORES=10
+
+	Run the data_vis/double_compute_sums.c file (compile using gcc -lm path_to_file -O) and running ./a.out "batch_test_folder" (WITHOUT THE LAST SLASH)
+
+	then run the initial anova(python data_vis/anova_initial.py), revised anova (python data_vis/anova_revised.py), or checking assumptions for further analysis (python data_vis/single_factor_tests.py)
+
+			The outputs are stored in the figures/ folder. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	I suspect that in the writing statistics file, there is a mistake somewhere.... why are the rainfall intensities so big.... 
 
 (base) TUD501825:Repo ssasardar$ ./generate_params.sh 

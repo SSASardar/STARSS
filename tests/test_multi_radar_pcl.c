@@ -525,7 +525,7 @@ write_VPR_to_file(VPR_conv,  "conv",  scan_idx);
 //	    memcpy(vol->emp_vpr_strat, vpr_emp_strat, 120 * sizeof(double));
 //	    memcpy(vol->emp_vpr_conv, vpr_emp_conv, 120 * sizeof(double));
 
-combine_vpr_M0(vol, vpr_emp_strat, vpr_emp_conv);
+combine_vpr_M1(vol, vpr_emp_strat, vpr_emp_conv);
 
 
 if(print_or_not == 1) {

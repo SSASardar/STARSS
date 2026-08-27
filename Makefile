@@ -178,7 +178,7 @@ batch-test:
 			if [ -z "$$x1_val" ]; then x1_val="000"; else x1_val=$$(printf "%03d" $$(echo "$$x1_val + 0.5" | bc | cut -d. -f1)); fi; \
 			if [ -z "$$x2_val" ]; then x2_val="000"; else x2_val=$$(printf "%03d" $$(echo "$$x2_val * 100" | bc | cut -d. -f1)); fi; \
 			if [ -z "$$x3_val" ]; then x3_val="000"; else x3_val=$$(printf "%03d" $$x3_val); fi; \
-			if [ -z "$$x4_val" ]; then x4_val="00"; else x4_val=$$(printf "%02d" $$(echo "$$x4_val + 0.5" | bc | cut -d. -f1)); fi; \
+			if [ -z "$$x4_val" ]; then x4_val="00"; else x4_val=$$(printf "%04d" $$(echo "$$x4_val * 100+ 0.5" | bc | cut -d. -f1)); fi; \
 			if [ -z "$$x5_val" ]; then x5_val="00"; else x5_val=$$(printf "%02d" $$(echo "$$x5_val * 10" | bc | cut -d. -f1)); fi; \
 			if [ -z "$$x6_val" ]; then x6_val="000"; else x6_val=$$(printf "%03d" $$(echo "$$x6_val + 0.5" | bc | cut -d. -f1)); fi; \
 			if [ -z "$$x7_val" ]; then x7_val="000"; else x7_val=$$(printf "%03d" $$x7_val); fi; \
@@ -273,7 +273,7 @@ parallel-batch-test:
 		[ -z "$$x1_val" ] && x1_val="000" || x1_val=$$(printf "%03d" $$(echo "$$x1_val + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x2_val" ] && x2_val="000" || x2_val=$$(printf "%03d" $$(echo "$$x2_val * 100" | bc | cut -d. -f1)); \
 		[ -z "$$x3_val" ] && x3_val="000" || x3_val=$$(printf "%03d" $$x3_val); \
-		[ -z "$$x4_val" ] && x4_val="00" || x4_val=$$(printf "%02d" $$(echo "$$x4_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x4_val" ] && x4_val="00" || x4_val=$$(printf "%04d" $$(echo "$$x4_val * 100+ 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x5_val" ] && x5_val="00" || x5_val=$$(printf "%02d" $$(echo "$$x5_val * 10" | bc | cut -d. -f1)); \
 		[ -z "$$x6_val" ] && x6_val="000" || x6_val=$$(printf "%03d" $$(echo "$$x6_val + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x7_val" ] && x7_val="000" || x7_val=$$(printf "%03d" $$x7_val); \
@@ -339,7 +339,7 @@ adaptive-parallel-batch-test:
 		[ -z "$$x1_val" ] && x1_val="000" || x1_val=$$(printf "%03d" $$(echo "$$x1_val + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x2_val" ] && x2_val="000" || x2_val=$$(printf "%03d" $$(echo "$$x2_val * 100" | bc | cut -d. -f1)); \
 		[ -z "$$x3_val" ] && x3_val="000" || x3_val=$$(printf "%03d" $$x3_val); \
-		[ -z "$$x4_val" ] && x4_val="00" || x4_val=$$(printf "%02d" $$(echo "$$x4_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x4_val" ] && x4_val="00" || x4_val=$$(printf "%04d" $$(echo "$$x4_val *100 + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x5_val" ] && x5_val="00" || x5_val=$$(printf "%02d" $$(echo "$$x5_val * 10" | bc | cut -d. -f1)); \
 		[ -z "$$x6_val" ] && x6_val="000" || x6_val=$$(printf "%03d" $$(echo "$$x6_val + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x7_val" ] && x7_val="000" || x7_val=$$(printf "%03d" $$x7_val); \
@@ -369,61 +369,6 @@ adaptive-parallel-batch-test:
 	echo "📊 Collected both stats.txt and ad_stats.txt files"; \
 	echo "⏱️  Total time: $$total_min minutes $$total_sec seconds"; \
 	echo "📁 Results saved in: $(BATCH_DIR)"
-
-# Generate parameter combinations for grid search
-# Usage: make generate-params OUTPUT=params.txt
-generate-params:
-	@if [ -z "$(OUTPUT)" ]; then \
-		echo "❌ Please specify OUTPUT file"; \
-		exit 1; \
-	fi
-	@echo "Generating parameter combinations to $(OUTPUT)"
-	@> $(OUTPUT)
-	@for res in 500 750 1000 1250 1500; do \
-		for mature in 150 160 170 180 190; do \
-			for cloud in 400 500 600 700; do \
-				for ratio in 0.4 0.5 0.6 0.7; do \
-					for ydist in 70000 80000 90000; do \
-						for motion in 8 10 12; do \
-							echo "-r $$res -m $$mature -c $$cloud -k $$ratio -y $$ydist -a $$motion" >> $(OUTPUT); \
-						done; \
-					done; \
-				done; \
-			done; \
-		done; \
-	done
-	@echo "✅ Generated $$(wc -l < $(OUTPUT)) parameter combinations"
-
-# Debug: Test parameter extraction
-debug-params:
-	@echo "Testing parameter extraction with sample line:"
-	@echo "  -r 500 -m 170 -c 600 -k 0.7 -y 75000 -a 12"
-	@echo ""
-	@r_val=$$(echo "-r 500 -m 170 -c 600 -k 0.7 -y 75000 -a 12" | sed -n 's/.*-r \([0-9]*\).*/\1/p'); \
-	m_val=$$(echo "-r 500 -m 170 -c 600 -k 0.7 -y 75000 -a 12" | sed -n 's/.*-m \([0-9]*\).*/\1/p'); \
-	c_val=$$(echo "-r 500 -m 170 -c 600 -k 0.7 -y 75000 -a 12" | sed -n 's/.*-c \([0-9]*\).*/\1/p'); \
-	k_val=$$(echo "-r 500 -m 170 -c 600 -k 0.7 -y 75000 -a 12" | sed -n 's/.*-k \([0-9.]*\).*/\1/p'); \
-	y_val=$$(echo "-r 500 -m 170 -c 600 -k 0.7 -y 75000 -a 12" | sed -n 's/.*-y \([0-9]*\).*/\1/p'); \
-	a_val=$$(echo "-r 500 -m 170 -c 600 -k 0.7 -y 75000 -a 12" | sed -n 's/.*-a \([0-9.]*\).*/\1/p'); \
-	echo "Extracted values:"; \
-	echo "  r_val = $$r_val"; \
-	echo "  m_val = $$m_val"; \
-	echo "  c_val = $$c_val"; \
-	echo "  k_val = $$k_val"; \
-	echo "  y_val = $$y_val"; \
-	echo "  a_val = $$a_val"; \
-	echo ""; \
-	if [ -z "$$k_val" ]; then k_val="000"; else k_val=$$(printf "%03d" $$(echo "$$k_val * 100" | bc | cut -d. -f1)); fi; \
-	if [ -z "$$a_val" ]; then a_val="00"; else a_val=$$(printf "%02d" $$(echo "$$a_val + 0.5" | bc | cut -d. -f1)); fi; \
-	echo "Formatted values:"; \
-	echo "  k_val = $$k_val (after multiplying by 100 and formatting)"; \
-	echo "  a_val = $$a_val (after rounding)"; \
-	echo ""; \
-	stats_filename="stats_r_$${r_val}_m_$${m_val}_c_$${c_val}_k_$${k_val}_y_$${y_val}_a_$${a_val}.txt"; \
-	ad_stats_filename="ad_stats_r_$${r_val}_m_$${m_val}_c_$${c_val}_k_$${k_val}_y_$${y_val}_a_$${a_val}.txt"; \
-	echo "Final filenames:"; \
-	echo "  $$stats_filename"; \
-	echo "  $$ad_stats_filename"
 
 # ---------------------------------
 # Project management progress report

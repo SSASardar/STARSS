@@ -20,7 +20,9 @@ typedef struct {
     int x5;  // cloud base height (km) - multiplied by 10
     int x6;  // distance to C-band radar (km)
     int x7;  // storm duration (minutes)
-    double emd;
+    double emd;           // EMD for regular stats
+    double ad_emd;        // EMD for AD stats
+    char filename_type[20]; // "stats" or "ad_stats"
 } TestResult;
 
 // Structure to hold histogram data
@@ -29,49 +31,65 @@ typedef struct {
     int count;
 } Histogram;
 
-// Extract parameters from filename
+// Extract parameters from filename (handles both stats and ad_stats)
 int extract_parameters(const char* filename, TestResult* result) {
     regex_t regex;
-    regmatch_t matches[8];
+    regmatch_t matches[10];  // Increased size to accommodate all groups
     
-    // Pattern: stats_x1_(\d+)_x2_(\d+)_x3_(\d+)_x4_(\d+)_x5_(\d+)_x6_(\d+)_x7_(\d+)\.txt
-    const char* pattern = "stats_x1_([0-9]+)_x2_([0-9]+)_x3_([0-9]+)_x4_([0-9]+)_x5_([0-9]+)_x6_([0-9]+)_x7_([0-9]+)\\.txt";
+    // Pattern for stats: stats_x1_(\d+)_x2_(\d+)_x3_(\d+)_x4_(\d+)_x5_(\d+)_x6_(\d+)_x7_(\d+)\.txt
+    // Pattern for ad_stats: ad_stats_x1_(\d+)_x2_(\d+)_x3_(\d+)_x4_(\d+)_x5_(\d+)_x6_(\d+)_x7_(\d+)\.txt
+    const char* pattern = "^(ad_)?stats_x1_([0-9]+)_x2_([0-9]+)_x3_([0-9]+)_x4_([0-9]+)_x5_([0-9]+)_x6_([0-9]+)_x7_([0-9]+)\\.txt$";
     
     if (regcomp(&regex, pattern, REG_EXTENDED) != 0) {
         fprintf(stderr, "Failed to compile regex\n");
         return -1;
     }
     
-    if (regexec(&regex, filename, 8, matches, 0) == 0) {
+    if (regexec(&regex, filename, 10, matches, 0) == 0) {
         char buffer[32];
         
-        // Extract each parameter
-        int len = matches[1].rm_eo - matches[1].rm_so;
-        snprintf(buffer, len + 1, "%.*s", len, filename + matches[1].rm_so);
+        // Check if it's ad_stats (match 1 contains "ad_" or NULL)
+        if (matches[1].rm_so != -1 && matches[1].rm_so != matches[1].rm_eo) {
+            strcpy(result->filename_type, "ad_stats");
+        } else {
+            strcpy(result->filename_type, "stats");
+        }
+        
+        // Extract each parameter (matches start at index 2 because group 1 is optional)
+        int idx = 2;  // Start from group 2 (first parameter after optional group)
+        
+        int len = matches[idx].rm_eo - matches[idx].rm_so;
+        snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
         result->x1 = atoi(buffer);
+        idx++;
         
-        len = matches[2].rm_eo - matches[2].rm_so;
-        snprintf(buffer, len + 1, "%.*s", len, filename + matches[2].rm_so);
+        len = matches[idx].rm_eo - matches[idx].rm_so;
+        snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
         result->x2 = atoi(buffer);
+        idx++;
         
-        len = matches[3].rm_eo - matches[3].rm_so;
-        snprintf(buffer, len + 1, "%.*s", len, filename + matches[3].rm_so);
+        len = matches[idx].rm_eo - matches[idx].rm_so;
+        snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
         result->x3 = atoi(buffer);
+        idx++;
         
-        len = matches[4].rm_eo - matches[4].rm_so;
-        snprintf(buffer, len + 1, "%.*s", len, filename + matches[4].rm_so);
+        len = matches[idx].rm_eo - matches[idx].rm_so;
+        snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
         result->x4 = atoi(buffer);
+        idx++;
         
-        len = matches[5].rm_eo - matches[5].rm_so;
-        snprintf(buffer, len + 1, "%.*s", len, filename + matches[5].rm_so);
+        len = matches[idx].rm_eo - matches[idx].rm_so;
+        snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
         result->x5 = atoi(buffer);
+        idx++;
         
-        len = matches[6].rm_eo - matches[6].rm_so;
-        snprintf(buffer, len + 1, "%.*s", len, filename + matches[6].rm_so);
+        len = matches[idx].rm_eo - matches[idx].rm_so;
+        snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
         result->x6 = atoi(buffer);
+        idx++;
         
-        len = matches[7].rm_eo - matches[7].rm_so;
-        snprintf(buffer, len + 1, "%.*s", len, filename + matches[7].rm_so);
+        len = matches[idx].rm_eo - matches[idx].rm_so;
+        snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
         result->x7 = atoi(buffer);
         
         regfree(&regex);
@@ -189,31 +207,6 @@ void normalize_histogram(double* values, int count, double** normalized, int* no
 }
 
 // Compute Earth Mover's Distance (1D Wasserstein distance)
-double compute_emd(double* dist1, int count1, double* dist2, int count2) {
-    // For 1D EMD, we compute the L1 distance between cumulative distributions
-    // Both distributions should have the same length (number of scans)
-    
-    if (count1 != count2 || count1 == 0) {
-        return NAN;
-    }
-    
-    double cum1 = 0.0;
-    double cum2 = 0.0;
-    double emd = 0.0;
-    
-    for (int i = 0; i < count1; i++) {
-        cum1 += dist1[i];
-        cum2 += dist2[i];
-        emd += fabs(cum1 - cum2);
-    }
-    
-    // Normalize by number of bins (scans)
-    emd = emd / count1;
-    
-    return emd;
-}
-
-// Compute EMD using the more accurate method with positions
 double compute_emd_with_positions(double* dist1, double* dist2, int count) {
     // EMD = integral of |CDF1 - CDF2| dx
     // For discrete distributions with positions 0,1,2,...,n-1
@@ -240,9 +233,42 @@ int compare_results(const void* a, const void* b) {
     TestResult* result_a = (TestResult*)a;
     TestResult* result_b = (TestResult*)b;
     
+    // Sort primarily by regular EMD
     if (result_a->emd < result_b->emd) return -1;
     if (result_a->emd > result_b->emd) return 1;
+    
+    // If regular EMD equal, sort by AD EMD
+    if (result_a->ad_emd < result_b->ad_emd) return -1;
+    if (result_a->ad_emd > result_b->ad_emd) return 1;
+    
     return 0;
+}
+
+// Find or create result entry in array
+TestResult* find_or_create_result(TestResult* results, int* count, TestResult* new_result) {
+    // Search for matching parameters
+    for (int i = 0; i < *count; i++) {
+        if (results[i].x1 == new_result->x1 &&
+            results[i].x2 == new_result->x2 &&
+            results[i].x3 == new_result->x3 &&
+            results[i].x4 == new_result->x4 &&
+            results[i].x5 == new_result->x5 &&
+            results[i].x6 == new_result->x6 &&
+            results[i].x7 == new_result->x7) {
+            return &results[i];
+        }
+    }
+    
+    // Not found, add new entry
+    if (*count < MAX_RESULTS) {
+        results[*count] = *new_result;
+        results[*count].emd = NAN;
+        results[*count].ad_emd = NAN;
+        (*count)++;
+        return &results[*count - 1];
+    }
+    
+    return NULL;
 }
 
 // Main function to process all stats files in a directory
@@ -253,6 +279,8 @@ int process_batch_folder(const char* folder_path) {
     char filepath[MAX_FILENAME];
     TestResult results[MAX_RESULTS];
     int result_count = 0;
+    int stats_files_processed = 0;
+    int ad_stats_files_processed = 0;
     
     // Open directory
     dir = opendir(folder_path);
@@ -266,10 +294,18 @@ int process_batch_folder(const char* folder_path) {
     printf("=========================================\n");
     printf("Processing folder: %s\n\n", folder_path);
     
+    // Initialize results array
+    for (int i = 0; i < MAX_RESULTS; i++) {
+        results[i].emd = NAN;
+        results[i].ad_emd = NAN;
+        results[i].filename_type[0] = '\0';
+    }
+    
     // Process each file
     while ((entry = readdir(dir)) != NULL) {
-        // Check if it's a stats file
-        if (strstr(entry->d_name, "stats_x1_") != entry->d_name) {
+        // Check if it's a stats file (regular or AD)
+        if (strstr(entry->d_name, "stats_x1_") != entry->d_name && 
+            strstr(entry->d_name, "ad_stats_x1_") != entry->d_name) {
             continue;
         }
         
@@ -282,6 +318,10 @@ int process_batch_folder(const char* folder_path) {
         
         // Extract parameters from filename
         TestResult result;
+        memset(&result, 0, sizeof(TestResult));
+        result.emd = NAN;
+        result.ad_emd = NAN;
+        
         if (extract_parameters(entry->d_name, &result) != 0) {
             fprintf(stderr, "  ⚠️ Skipping: %s (cannot parse filename)\n", entry->d_name);
             continue;
@@ -306,24 +346,34 @@ int process_batch_folder(const char* folder_path) {
         normalize_histogram(measured, scan_count, &norm_measured, &norm_count_meas);
         normalize_histogram(true_values, scan_count, &norm_true, &norm_count_true);
         
-        if (norm_measured && norm_true && norm_count_meas == norm_count_true) {
+        // Find or create result entry
+        TestResult* result_entry = find_or_create_result(results, &result_count, &result);
+        
+        if (norm_measured && norm_true && norm_count_meas == norm_count_true && result_entry) {
             // Compute EMD
-            result.emd = compute_emd_with_positions(norm_measured, norm_true, norm_count_meas);
+            double emd_value = compute_emd_with_positions(norm_measured, norm_true, norm_count_meas);
             
-            printf("[%d] %s\n", result_count + 1, entry->d_name);
-            printf("    Parameters: x1=%d x2=%d x3=%d x4=%d x5=%d x6=%d x7=%d\n", 
-                   result.x1, result.x2, result.x3, result.x4, result.x5, result.x6, result.x7);
-            printf("    Scans: %d\n", scan_count);
-            printf("    EMD: %.10f\n\n", result.emd);
-            
-            // Store result
-            if (result_count < MAX_RESULTS) {
-                results[result_count++] = result;
+            // Store in appropriate field based on file type
+            if (strcmp(result.filename_type, "ad_stats") == 0) {
+                result_entry->ad_emd = emd_value;
+                ad_stats_files_processed++;
+//                printf("[AD %d] %s\n", ad_stats_files_processed, entry->d_name);
+//                printf("    Parameters: x1=%d x2=%d x3=%d x4=%d x5=%d x6=%d x7=%d\n", 
+//                       result.x1, result.x2, result.x3, result.x4, result.x5, result.x6, result.x7);
+//                printf("    Scans: %d\n", scan_count);
+//                printf("    AD EMD: %.10f\n\n", emd_value);
+            } else {
+                result_entry->emd = emd_value;
+                stats_files_processed++;
+//                printf("[STATS %d] %s\n", stats_files_processed, entry->d_name);
+//                printf("    Parameters: x1=%d x2=%d x3=%d x4=%d x5=%d x6=%d x7=%d\n", 
+//                       result.x1, result.x2, result.x3, result.x4, result.x5, result.x6, result.x7);
+//                printf("    Scans: %d\n", scan_count);
+//                printf("    EMD: %.10f\n\n", emd_value);
             }
         } else {
-            printf("[%d] %s\n", result_count + 1, entry->d_name);
+            printf("[%s] %s\n", result.filename_type, entry->d_name);
             printf("    ⚠️ Invalid data (zero sum or empty)\n\n");
-            result.emd = NAN;
         }
         
         // Cleanup
@@ -345,7 +395,7 @@ int process_batch_folder(const char* folder_path) {
     
     // Save results to file
     char output_file[MAX_FILENAME];
-    snprintf(output_file, sizeof(output_file), "%s/emd_results.txt", folder_path);
+    snprintf(output_file, sizeof(output_file), "%s/results_emd.txt", folder_path);
     
     FILE* out = fopen(output_file, "w");
     if (!out) {
@@ -355,8 +405,10 @@ int process_batch_folder(const char* folder_path) {
     
     fprintf(out, "# Earth Mover's Distance Results\n");
     fprintf(out, "# Generated: %s %s\n", __DATE__, __TIME__);
-    fprintf(out, "# Format: x1 x2 x3 x4 x5 x6 x7 EMD\n");
-    fprintf(out, "# Total files processed: %d\n", result_count);
+    fprintf(out, "# Format: x1 x2 x3 x4 x5 x6 x7 EMD AD_EMD\n");
+    fprintf(out, "# Total parameter sets: %d\n", result_count);
+    fprintf(out, "# Stats files processed: %d\n", stats_files_processed);
+    fprintf(out, "# AD Stats files processed: %d\n", ad_stats_files_processed);
     fprintf(out, "#\n");
     
     // Calculate statistics
@@ -365,17 +417,29 @@ int process_batch_folder(const char* folder_path) {
     double max_emd = -INFINITY;
     int valid_count = 0;
     
+    double sum_ad_emd = 0.0;
+    double min_ad_emd = INFINITY;
+    double max_ad_emd = -INFINITY;
+    int valid_ad_count = 0;
+    
     for (int i = 0; i < result_count; i++) {
-        fprintf(out, "%d %d %d %d %d %d %d %.10f\n",
+        fprintf(out, "%d %d %d %d %d %d %d %.10f %.10f\n",
                 results[i].x1, results[i].x2, results[i].x3,
-                results[i].x4, results[i].x5/10, results[i].x6,
-                results[i].x7, results[i].emd);
+                results[i].x4, results[i].x5, results[i].x6,
+                results[i].x7, results[i].emd, results[i].ad_emd);
         
         if (!isnan(results[i].emd)) {
             sum_emd += results[i].emd;
             if (results[i].emd < min_emd) min_emd = results[i].emd;
             if (results[i].emd > max_emd) max_emd = results[i].emd;
             valid_count++;
+        }
+        
+        if (!isnan(results[i].ad_emd)) {
+            sum_ad_emd += results[i].ad_emd;
+            if (results[i].ad_emd < min_ad_emd) min_ad_emd = results[i].ad_emd;
+            if (results[i].ad_emd > max_ad_emd) max_ad_emd = results[i].ad_emd;
+            valid_ad_count++;
         }
     }
     
@@ -387,14 +451,28 @@ int process_batch_folder(const char* folder_path) {
     printf("📁 Results saved to: %s\n", output_file);
     printf("\n");
     printf("Summary:\n");
-    printf("  Total files processed: %d\n", result_count);
+    printf("  Total parameter sets: %d\n", result_count);
+    printf("  Stats files processed: %d\n", stats_files_processed);
+    printf("  AD Stats files processed: %d\n", ad_stats_files_processed);
+    
     if (valid_count > 0) {
-        printf("  Valid EMD values: %d\n", valid_count);
-        printf("  Min EMD: %.10f\n", min_emd);
-        printf("  Max EMD: %.10f\n", max_emd);
-        printf("  Mean EMD: %.10f\n", sum_emd / valid_count);
+        printf("\n  Regular EMD:\n");
+        printf("    Valid values: %d\n", valid_count);
+        printf("    Min: %.10f\n", min_emd);
+        printf("    Max: %.10f\n", max_emd);
+        printf("    Mean: %.10f\n", sum_emd / valid_count);
     } else {
-        printf("  No valid EMD values found\n");
+        printf("  No valid regular EMD values found\n");
+    }
+    
+    if (valid_ad_count > 0) {
+        printf("\n  AD EMD:\n");
+        printf("    Valid values: %d\n", valid_ad_count);
+        printf("    Min: %.10f\n", min_ad_emd);
+        printf("    Max: %.10f\n", max_ad_emd);
+        printf("    Mean: %.10f\n", sum_ad_emd / valid_ad_count);
+    } else {
+        printf("  No valid AD EMD values found\n");
     }
     printf("=========================================\n");
     

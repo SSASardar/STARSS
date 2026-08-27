@@ -2,16 +2,26 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
+import sys
+
+# Save original stdout
+original_stdout = sys.stdout
+
+# Open log file and redirect stdout
+log_file = open("figures/cs_anova_initial.txt", "w")
+sys.stdout = log_file
 
 # ====================================================
 # 1. LOAD THE DATA
 # ====================================================
-file_path = "batch_test_20260825_100749/emd_results.txt"
+file_path = "batch_test_20260825_100749/results_sums.txt"
 
 try:
     data = np.loadtxt(file_path, comments="#")
 except FileNotFoundError:
     print(f"Error: Could not find '{file_path}'")
+    sys.stdout = original_stdout  # Restore before exit
+    log_file.close()
     exit(1)
 
 # Extract variables
@@ -165,26 +175,6 @@ print(f"Number of parameters: {len(feature_names)}")
 print(f"Degrees of freedom residual: {df_residual}")
 
 # ====================================================
-# 7. MODEL COEFFICIENTS
-# ====================================================
-print("\n" + "=" * 80)
-print("  MODEL COEFFICIENTS")
-print("=" * 80)
-print(f"{'Term':<20} {'Coefficient':<15} {'Std Error':<15} {'t-value':<15}")
-print("-" * 80)
-
-# Standard errors
-residual_std = np.sqrt(ss_residual / df_residual)
-X_inv = np.linalg.pinv(X_model.T @ X_model)
-std_errors = np.sqrt(np.diag(X_inv) * ss_residual / df_residual)
-
-for i, name in enumerate(feature_names):
-    coef = model.coef_[i]
-    se = std_errors[i]
-    t_val = coef / se if se > 0 else 0
-    print(f"{name:<20} {coef:<15.6f} {se:<15.6f} {t_val:<15.2f}")
-
-# ====================================================
 # 8. OPTIMAL CONFIGURATION (MINIMUM EMD)
 # ====================================================
 print("\n" + "=" * 80)
@@ -263,3 +253,7 @@ print("-" * 80)
 print(f"Total:                          {ss_total:.6f} (100.00%)")
 
 print("\n" + "=" * 80)
+
+# Restore stdout and close file
+sys.stdout = original_stdout
+log_file.close()
