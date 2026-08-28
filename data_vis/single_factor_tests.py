@@ -21,7 +21,7 @@ import os
 os.makedirs('figures', exist_ok=True)
 
 # Read the data - UPDATE THIS PATH TO YOUR ACTUAL FILE
-file_path = 'batch_test_20260827_113654/results_sums.txt'  # Change this to your actual file path
+file_path = 'batch_test_20260828_145426/results_sums.txt'  # Change this to your actual file path
 
 # Try reading with different methods
 try:
