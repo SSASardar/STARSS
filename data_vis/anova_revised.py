@@ -12,7 +12,7 @@ log_file = open("figures/cs_anova_refined.txt", "w")
 sys.stdout = log_file
 
 # Load the data
-file_path = "batch_test_20260826_132848/results_sums.txt"
+file_path = "batch_test_refined_model/results_sums.txt"
 
 try:
     data = np.loadtxt(file_path, comments="#")
@@ -32,8 +32,8 @@ y = data[:, 7]
 # x'_3 = x5 (cloud base height)
 # x'_4 = x7 (storm duration)
 x1 = X_all[:, 3]  # x'_1: apparent motion (m/s)
-x2 = X_all[:, 1]  # x'_2: core ratio (ratio*100)
-x3 = X_all[:, 4]  # x'_3: cloud base height (km*10)
+x3 = X_all[:, 1]  # x'_3: core ratio (ratio*100)
+x2 = X_all[:, 4]  # x'_2: cloud base height (km*10)
 x4 = X_all[:, 6]  # x'_4: storm duration (minutes)
 
 n_total = len(y)
@@ -138,11 +138,11 @@ print(f"{'x1 (motion)':<25} {2:<8} {ss_x1:<20.6f} {ss_x1/ss_total*100:<15.2f}% {
 print(f"{'  Linear':<25} {1:<8} {ss_terms['x\'1_L']:<20.6f} {ss_terms['x\'1_L']/ss_total*100:<15.2f}% {ss_terms['x\'1_L']/ss_model*100:<15.2f}%")
 print(f"{'  Quadratic':<25} {1:<8} {ss_terms['x\'1_Q']:<20.6f} {ss_terms['x\'1_Q']/ss_total*100:<15.2f}% {ss_terms['x\'1_Q']/ss_model*100:<15.2f}%")
 
-print(f"{'x2 (core ratio)':<25} {2:<8} {ss_x2:<20.6f} {ss_x2/ss_total*100:<15.2f}% {ss_x2/ss_model*100:<15.2f}%")
+print(f"{'x2 (cloud-base height)':<25} {2:<8} {ss_x2:<20.6f} {ss_x2/ss_total*100:<15.2f}% {ss_x2/ss_model*100:<15.2f}%")
 print(f"{'  Linear':<25} {1:<8} {ss_terms['x\'2_L']:<20.6f} {ss_terms['x\'2_L']/ss_total*100:<15.2f}% {ss_terms['x\'2_L']/ss_model*100:<15.2f}%")
 print(f"{'  Quadratic':<25} {1:<8} {ss_terms['x\'2_Q']:<20.6f} {ss_terms['x\'2_Q']/ss_total*100:<15.2f}% {ss_terms['x\'2_Q']/ss_model*100:<15.2f}%")
 
-print(f"{'x3 (cloud height)':<25} {2:<8} {ss_x3:<20.6f} {ss_x3/ss_total*100:<15.2f}% {ss_x3/ss_model*100:<15.2f}%")
+print(f"{'x3 (core ratio)':<25} {2:<8} {ss_x3:<20.6f} {ss_x3/ss_total*100:<15.2f}% {ss_x3/ss_model*100:<15.2f}%")
 print(f"{'  Linear':<25} {1:<8} {ss_terms['x\'3_L']:<20.6f} {ss_terms['x\'3_L']/ss_total*100:<15.2f}% {ss_terms['x\'3_L']/ss_model*100:<15.2f}%")
 print(f"{'  Quadratic':<25} {1:<8} {ss_terms['x\'3_Q']:<20.6f} {ss_terms['x\'3_Q']/ss_total*100:<15.2f}% {ss_terms['x\'3_Q']/ss_model*100:<15.2f}%")
 

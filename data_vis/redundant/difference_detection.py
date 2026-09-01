@@ -1,9 +1,10 @@
 """
 visualize_rainfall_discrepancy.py
 Visualizes the difference between regular stats and AD stats discrepancies.
-Four key plots: scatter, histogram, Q-Q plot, and boxplot comparison.
+Two key plots: scatter and histogram.
 Each visualization is saved as a separate figure.
 Uses the centralized stylesheet for consistent PhD thesis styling.
+Additionally, exports parameter combinations where Difference < 0.
 """
 
 import pandas as pd
@@ -21,7 +22,7 @@ import os
 os.makedirs('figures', exist_ok=True)
 
 # Read the data - UPDATE THIS PATH TO YOUR ACTUAL FILE
-file_path = 'batch_test_20260828_145426/results_sums.txt'  # Change this to your actual file path
+file_path = 'batch_test_20260831_111605/results_sums.txt'  # Change this to your actual file path
 
 # Try reading with different methods
 try:
@@ -53,7 +54,31 @@ df['Difference'] = df['Stats_Discrepancy'] - df['AD_Stats_Discrepancy']
 n = len(df)
 
 # ============================================================
-# 2. CREATE INDIVIDUAL FIGURES
+# 2. EXTRACT PARAMETER COMBINATIONS WHERE DIFFERENCE < 0
+# ============================================================
+
+# Filter rows where Difference is less than 0
+negative_diff_df = df[df['Difference'] < 0]
+
+# Get the parameter combinations (x1 through x7) for these rows
+negative_params = negative_diff_df[['x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7']].copy()
+
+# Add the difference and discrepancy values for reference
+negative_params['Difference'] = negative_diff_df['Difference']
+negative_params['Stats_Discrepancy'] = negative_diff_df['Stats_Discrepancy']
+negative_params['AD_Stats_Discrepancy'] = negative_diff_df['AD_Stats_Discrepancy']
+
+# Save to CSV
+negative_params.to_csv('figures/negative_difference_parameters.csv', index=False)
+print(f"Found {len(negative_params)} parameter combinations with Difference < 0")
+print("Saved to: figures/cs_negative_difference_parameters.csv")
+
+# Also print a summary to console
+print("\nFirst 10 parameter combinations with Difference < 0:")
+print(negative_params.head(10).to_string())
+
+# ============================================================
+# 3. CREATE INDIVIDUAL FIGURES
 # ============================================================
 
 # ---- Figure 1: Scatter plot: Stats vs AD ----
@@ -74,7 +99,6 @@ ax1.plot([min_val, max_val], [min_val, max_val], 'k--', alpha=0.5,
 ax1.set_xlabel('Stats Discrepancy')
 ax1.set_ylabel('AD Stats Discrepancy')
 ax1.set_title('Scatter Plot: Stats vs AD Stats')
-ax1.legend(loc='best')
 ax1.grid(True, alpha=0.3)
 ax1.set_aspect('equal', adjustable='box')
 
@@ -82,7 +106,7 @@ plt.tight_layout()
 plt.savefig('figures/cs_scatter_plot.png', dpi=300, bbox_inches='tight')
 plt.savefig('figures/cs_scatter_plot.pdf', bbox_inches='tight')
 plt.close()
-print("Figure 1 saved: scatter_plot")
+print("\nFigure 1 saved: scatter_plot")
 
 # ---- Figure 2: Histogram of differences ----
 fig2, ax2 = plt.subplots(figsize=(5.5, 4.0))
@@ -93,6 +117,11 @@ ax2.hist(df['Difference'], bins=15, edgecolor='white', linewidth=0.8,
 
 # Add reference lines
 ax2.axvline(0, color='black', linestyle='-', linewidth=1.5, alpha=0.7)
+
+# Add a vertical line at the mean if desired
+mean_diff = df['Difference'].mean()
+ax2.axvline(mean_diff, color='red', linestyle='--', linewidth=1.5, alpha=0.7, 
+            label=f'Mean: {mean_diff:.4f}')
 
 # Labels and formatting
 ax2.set_xlabel('Difference (Stats - AD)')
@@ -107,82 +136,8 @@ plt.savefig('figures/cs_histogram_differences.pdf', bbox_inches='tight')
 plt.close()
 print("Figure 2 saved: histogram_differences")
 
-# ---- Figure 3: Q-Q plot for normality check ----
-fig3, ax3 = plt.subplots(figsize=(5.5, 4.0))
-
-# Q-Q plot
-stats.probplot(df['Difference'], dist="norm", plot=ax3)
-
-# Customize colors and styles
-ax3.get_lines()[0].set_color(stylesheet.COLORS['blue'])  # Data points
-ax3.get_lines()[0].set_marker('o')
-ax3.get_lines()[0].set_markersize(4)
-ax3.get_lines()[0].set_alpha(0.6)
-ax3.get_lines()[1].set_color(stylesheet.COLORS['red'])   # Reference line
-ax3.get_lines()[1].set_linestyle('--')
-ax3.get_lines()[1].set_linewidth(1.5)
-
-# Labels and formatting
-ax3.set_xlabel('Theoretical Quantiles')
-ax3.set_ylabel('Sample Quantiles')
-ax3.set_title('Q-Q Plot: Normality Check')
-ax3.grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.savefig('figures/cs_qq_plot.png', dpi=300, bbox_inches='tight')
-plt.savefig('figures/cs_qq_plot.pdf', bbox_inches='tight')
-plt.close()
-print("Figure 3 saved: qq_plot")
-
-# ---- Figure 4: Boxplot comparison ----
-fig4, ax4 = plt.subplots(figsize=(5.5, 4.0))
-
-# Prepare data for boxplot
-data_to_plot = [df['Stats_Discrepancy'].values, df['AD_Stats_Discrepancy'].values]
-bp = ax4.boxplot(data_to_plot, patch_artist=True, 
-                 tick_labels=['Stats', 'AD Stats'],
-                 showmeans=False)  # Turned off means to avoid errors
-
-# Color the boxes
-bp['boxes'][0].set_facecolor(stylesheet.COLORS['blue'])
-bp['boxes'][1].set_facecolor(stylesheet.COLORS['orange'])
-bp['boxes'][0].set_alpha(0.7)
-bp['boxes'][1].set_alpha(0.7)
-bp['boxes'][0].set_edgecolor('black')
-bp['boxes'][1].set_edgecolor('black')
-bp['boxes'][0].set_linewidth(0.8)
-bp['boxes'][1].set_linewidth(0.8)
-
-# Style the median lines
-bp['medians'][0].set_color('black')
-bp['medians'][0].set_linewidth(2)
-bp['medians'][1].set_color('black')
-bp['medians'][1].set_linewidth(2)
-
-# Style the whiskers and caps
-for whisker in bp['whiskers']:
-    whisker.set_color('black')
-for cap in bp['caps']:
-    cap.set_color('black')
-for flier in bp['fliers']:
-    flier.set_marker('o')
-    flier.set_markersize(4)
-    flier.set_alpha(0.5)
-
-# Labels and formatting
-ax4.set_ylabel('Discrepancy Value')
-ax4.set_title('Boxplot Comparison: Stats vs AD Stats')
-ax4.grid(True, alpha=0.3, axis='y')
-
-plt.tight_layout()
-plt.savefig('figures/cs_boxplot_comparison.png', dpi=300, bbox_inches='tight')
-plt.savefig('figures/cs_boxplot_comparison.pdf', bbox_inches='tight')
-plt.close()
-print("Figure 4 saved: boxplot_comparison")
-
-print("\nAll four figures have been generated successfully!")
+print("\nAll figures have been generated successfully!")
 print("Files saved in 'figures/' directory:")
-print("  - figures/cs_1scatter_plot.png/pdf")
-print("  - figures/cs_1histogram_differences.png/pdf")
-print("  - figures/cs_1qq_plot.png/pdf")
-print("  - figures/cs_1boxplot_comparison.png/pdf")
+print("  - figures/scatter_plot.png/pdf")
+print("  - figures/histogram_differences.png/pdf")
+print("  - figures/negative_difference_parameters.csv (parameter list)")

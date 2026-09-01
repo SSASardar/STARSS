@@ -39,8 +39,25 @@ COLORS = {
     'growth':'#A6C5E8',
     'mature':'#72A4D7',
     'decay':'#3F7CC0',
-    'black' : '#000000'
+    'black' : '#000000',
+        # New colors for difference shading
+    'positive_diff': '#d62728',   # Red for positive differences (Stats better)
+    'negative_diff': '#2ca02c',   # Green for negative differences (AD better)
+    'positive_light': '#fcae91',  # Lighter red for subtle shading
+    'negative_light': '#a1d99b',  # Lighter green for subtle shading
+    'diff_zero' : '#ffffff'
+
     }
+
+# Add a custom colormap function
+def get_diff_colormap():
+    """Return a green-white-red colormap for difference plots"""
+    from matplotlib.colors import LinearSegmentedColormap
+    return LinearSegmentedColormap.from_list('green_white_red', 
+                                             [COLORS['negative_diff'], 
+                                              COLORS['diff_zero'], 
+                                              COLORS['positive_diff']], 
+                                             N=256)
 
 # ============================================================
 # 2. CONTINUOUS COLORMAPS (for heatmaps, density, contours)
@@ -51,8 +68,9 @@ COLORMAPS = {
     'heat_cool':  'cividis',     # Colorblind-friendly cool
     'diverging':  'RdBu_r',      # Data with meaningful zero midpoint
     'sequential': 'Blues',       # Clean monochrome
-    'density':    'plasma'       # Good for scatter density
-}
+    'density':    'plasma',       # Good for scatter density
+    'diff_diverging': 'RdYlGn'  # Red-Yellow-Green for difference visualization
+    }
 
 # ============================================================
 # 3. SCENARIO PALETTES (map your specific simulation cases)
@@ -72,8 +90,12 @@ SCENARIO_PALETTES = {
 
     # Example: Performance metrics
     'performance': ['#ffffcc', '#c7e9b4', '#7fcdbb', '#41b6c4',
-                    '#1d91c0', '#225ea8', '#0c2c84']
-}
+                    '#1d91c0', '#225ea8', '#0c2c84'],
+
+    # Difference palette (red for positive, green for negative)
+    'difference': ['#d62728', '#2ca02c']  # Red, Green
+
+    }
 # ============================================================
 # 4. FONT SETTINGS (Updated to Avenir Next)
 # ============================================================
