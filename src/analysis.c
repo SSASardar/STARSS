@@ -66,7 +66,7 @@ void initialize_test_environment(
         15.0, 2.0, 1.0,
         750.0, 500.0, 250.0,
         0.65, -0.4, -0.15, -0.1,
-        27, -3.0, 2.0, 17.0, //how the reflectivity at cloud-base changes (initial, change during growth, change during mature, change for peak)
+        27, -3.0, 2.0, 23.0, //how the reflectivity at cloud-base changes (initial, change during growth, change during mature, change for peak)
         x3, 150.0, 25.0,
         -0.0005
     );
