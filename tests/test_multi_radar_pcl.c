@@ -403,6 +403,7 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
             Cart_grid *cg = interpolate_scan_NN_RHI(p_box, radar, time, cart_grid_res, scan_idx, i);
             if (cg) cart_grids[cg_count++] = cg;
         }
+	writeCartGridToFile(cart_grids[cg_count-1],scan_idx,0);
 	writeCartGridToFile(cart_grids[cg_count-1],scan_idx,5);
 	writeCartGridToFile(cart_grids[cg_count-1],scan_idx,6);
     

@@ -40,11 +40,12 @@ def pad_grid_to_match(grid, target_shape):
 
 # Load the three grid files
 disp_X = load_grid("outputs/cg_att_corr_measurement_0039.txt")
+disp_IP = load_grid("outputs/cg_measured_0039.txt")
 true_g = load_grid("outputs/cg_true_reflect_0039.txt")
 
 # Determine common color scale limits
-vmin = min(np.nanmin(disp_X), np.nanmin(true_g))
-vmax = max(np.nanmax(disp_X), np.nanmax(true_g))
+vmin = min(np.nanmin(disp_X), np.nanmin(disp_IP), np.nanmin(true_g))
+vmax = max(np.nanmax(disp_X),np.nanmax(disp_IP), np.nanmax(true_g))
 
 norm = LogNorm(vmin=vmin,vmax=vmax)
 # ===========================
@@ -52,12 +53,13 @@ norm = LogNorm(vmin=vmin,vmax=vmax)
 # ===========================
 
 target_shape = (
-    max(disp_X.shape[0], true_g.shape[0]),  # Max rows
-    max(disp_X.shape[1], true_g.shape[1])   # Max cols
+    max(disp_X.shape[0], disp_IP.shape[0], true_g.shape[0]),  # Max rows
+    max(disp_X.shape[1], disp_IP.shape[1], true_g.shape[1])   # Max cols
 )
 
 print(f"Original shapes:")
 print(f"  disp_X: {disp_X.shape}")
+print(f"  disp_Intermediate_Product: {true_g.shape}")
 print(f"  true_g: {true_g.shape}")
 print(f"Target shape: {target_shape}")
 
@@ -66,10 +68,12 @@ print(f"Target shape: {target_shape}")
 # ===========================
 
 disp_X_padded = pad_grid_to_match(disp_X, target_shape)
+disp_IP_padded = pad_grid_to_match(disp_IP, target_shape)
 true_g_padded = pad_grid_to_match(true_g, target_shape)
 
 print(f"\nPadded shapes:")
 print(f"  disp_X: {disp_X_padded.shape}")
+print(f"  disp_IP: {disp_IP_padded.shape}")
 print(f"  true_g: {true_g_padded.shape}")
 
 
@@ -79,6 +83,7 @@ print(f"  true_g: {true_g_padded.shape}")
 # ===========================
 
 fig, axes = plt.subplots(1, 2, figsize=(15, 10), sharey=True)
+#fig, axes = plt.subplots(1, 3, figsize=(21, 10), sharey=True)
 
 # ===========================
 # 4. PLOT EACH GRID
@@ -89,16 +94,24 @@ im2 = axes[1].imshow(disp_X_padded.T[:,:-5],
                      cmap=stylesheet.COLORMAPS['sequential'], 
                      norm = norm,
                      origin='lower')
-axes[1].set_title("RHI Measured reflectivity (X-band)", fontsize=10)
+axes[1].set_title("X-band intermediate product", fontsize=10)
 axes[1].set_xlabel("surface [km]")
 #axes[1].set_ylabel("height [km]")
+
+# Plot X-band wihtout attenuation correction
+#im2 = axes[1].imshow(disp_IP_padded.T[:,:-5], 
+#                     cmap=stylesheet.COLORMAPS['sequential'], 
+#                     norm = norm,
+#                     origin='lower')
+#axes[1].set_title("X-band without attenuation correction", fontsize=10)
+#axes[1].set_xlabel("surface [km]")
 
 # Plot True reflectivity
 im3 = axes[0].imshow(true_g_padded.T[:,:-5], 
                      cmap=stylesheet.COLORMAPS['sequential'], 
                      norm = norm,
                      origin='lower')
-axes[0].set_title("RHI True Reflectivity", fontsize=10)
+axes[0].set_title("True Reflectivity", fontsize=10)
 axes[0].set_xlabel("surface [km]")
 axes[0].set_ylabel("height [km]")
 

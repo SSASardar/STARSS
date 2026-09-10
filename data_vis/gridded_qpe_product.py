@@ -94,7 +94,7 @@ im1 = axes[1].imshow(disp_C_padded.T,
                      cmap=stylesheet.COLORMAPS['sequential'],
                      norm = norm,
                      origin='lower')
-axes[1].set_title("Measured reflectivity (C-band)", fontsize=10)
+axes[1].set_title("C-band intermediate product", fontsize=10)
 axes[1].set_xlabel("x [km]")
 #axes[1].set_ylabel("y [km]")
 
@@ -103,7 +103,7 @@ im2 = axes[2].imshow(disp_X_padded.T,
                      cmap=stylesheet.COLORMAPS['sequential'], 
                      norm = norm,
                      origin='lower')
-axes[2].set_title("Measured reflectivity (X-band)", fontsize=10)
+axes[2].set_title("X-band intermediate product", fontsize=10)
 axes[2].set_xlabel("x [km]")
 #axes[2].set_ylabel("y [km]")
 

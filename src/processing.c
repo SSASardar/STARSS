@@ -1245,9 +1245,12 @@ int write_display_grid_to_file(const Vol_scan *vol, const char *filename) {
     FILE *f = fopen(filename, "w");
     if (!f) return -2;
 
-    fprintf(f, "# Vol_scan Display Grid (max reflectivity across PPIs)\n");
+    fprintf(f, "# Vol_scan Display Grid (processed)\n");
     fprintf(f, "# Grid size: %zu x %zu\n", vol->num_x, vol->num_y);
     fprintf(f, "# Format: reflectivity\n");
+    fprintf(f, "# Ref point: (%lf, %lf)\n", vol->ref_point.x, vol->ref_point.y);
+    fprintf(f, "# Grid res: %lf meters\n", vol->resolution);
+
 
     for (int x = 0; x < (int)vol->num_x; x++) {
         for (int y = 0; y < (int)vol->num_y; y++) {
@@ -1268,9 +1271,12 @@ int write_true_grid_to_file(const Vol_scan *vol, const char *filename) {
     FILE *f = fopen(filename, "w");
     if (!f) return -2;
 
-    fprintf(f, "# Vol_scan True Grid (RALA)\n");
+    fprintf(f, "# Vol_scan True Grid (surface level reflectivity)\n");
     fprintf(f, "# Grid size: %zu x %zu\n", vol->num_x, vol->num_y);
     fprintf(f, "# Format: reflectivity\n");
+    fprintf(f, "# Ref point: (%lf, %lf)\n", vol->ref_point.x, vol->ref_point.y);
+    fprintf(f, "# Grid res: %lf meters\n", vol->resolution);
+
 
     for (int x = 0; x < (int)vol->num_x; x++) {
         for (int y = 0; y < (int)vol->num_y; y++) {
