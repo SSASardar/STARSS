@@ -5,71 +5,79 @@
 Model: Y' = β'0 + Σβ'i*x'i + Σβ'ij*x'i*x'j + Σβ'ii*(x'i)^2
 
 Design: 5⁴ factorial (4 factors, 5 levels each)
-Total runs: 2187
-Total Sum of Squares (SS_Total): 149.216246
+Total runs: 625
+Total Sum of Squares (SS_Total): 177.216048
 
 
 ANOVA Table (Type III Sum of Squares):
 --------------------------------------------------------------------------------
 Source                    DF       SS                   % of Total      % of Model     
 --------------------------------------------------------------------------------
-x1 (motion)               2        48.213726            32.31          % 37.34          %
-  Linear                  1        41.597385            27.88          % 32.21          %
-  Quadratic               1        6.616342             4.43           % 5.12           %
-x2 (cloud-base height)    2        51.683868            34.64          % 40.02          %
-  Linear                  1        28.080026            18.82          % 21.74          %
-  Quadratic               1        23.603841            15.82          % 18.28          %
-x3 (core ratio)           2        13.898700            9.31           % 10.76          %
-  Linear                  1        13.785590            9.24           % 10.68          %
-  Quadratic               1        0.113110             0.08           % 0.09           %
-x4 (duration)             2        5.794951             3.88           % 4.49           %
-  Linear                  1        5.556319             3.72           % 4.30           %
-  Quadratic               1        0.238632             0.16           % 0.18           %
-Interactions              6        9.544040             6.40           % 7.39           %
-  x'1:x'2                 1        3.926208             2.63           % 3.04           %
-  x'1:x'3                 1        0.056243             0.04           % 0.04           %
-  x'1:x'4                 1        0.029427             0.02           % 0.02           %
-  x'2:x'3                 1        0.615564             0.41           % 0.48           %
-  x'2:x'4                 1        3.425269             2.30           % 2.65           %
-  x'3:x'4                 1        1.491328             1.00           % 1.15           %
-Residual                  2172     20.080962            13.46          %                
+x1 (motion)               2        41.117807            23.20          % 29.30          %
+  Linear                  1        6.892448             3.89           % 4.91           %
+  Quadratic               1        34.225359            19.31          % 24.39          %
+x2 (cloud-base height)    2        80.096525            45.20          % 57.08          %
+  Linear                  1        37.568540            21.20          % 26.78          %
+  Quadratic               1        42.527985            24.00          % 30.31          %
+x3 (core ratio)           2        10.695516            6.04           % 7.62           %
+  Linear                  1        9.292747             5.24           % 6.62           %
+  Quadratic               1        1.402769             0.79           % 1.00           %
+x4 (duration)             2        3.975064             2.24           % 2.83           %
+  Linear                  1        3.974950             2.24           % 2.83           %
+  Quadratic               1        0.000114             0.00           % 0.00           %
+Interactions              6        4.426284             2.50           % 3.15           %
+  x'1:x'2                 1        0.992644             0.56           % 0.71           %
+  x'1:x'3                 1        0.269325             0.15           % 0.19           %
+  x'1:x'4                 1        0.000277             0.00           % 0.00           %
+  x'2:x'3                 1        0.936727             0.53           % 0.67           %
+  x'2:x'4                 1        2.227221             1.26           % 1.59           %
+  x'3:x'4                 1        0.000090             0.00           % 0.00           %
+Residual                  610      36.904852            20.82          %                
 --------------------------------------------------------------------------------
-Total                     2186     149.216246           100.00         %                
+Total                     624      177.216048           100.00         %                
 
 ================================================================================
   MODEL STATISTICS
 ================================================================================
-R² = 0.8654 (86.54%)
-Adjusted R² = 0.8646 (86.46%)
+R² = 0.7918 (79.18%)
+Adjusted R² = 0.7870 (78.70%)
 Number of parameters: 15
-Degrees of freedom residual: 2172
+Degrees of freedom residual: 610
 
 ================================================================================
   OPTIMAL CONFIGURATION FOR MINIMUM EMD
 ================================================================================
 
 x'_1 (motion) Level Response Profile:
-  Level 4 -> Mean EMD: -0.035474
-  Level 8 -> Mean EMD: 0.016757
-  Level 12 -> Mean EMD: 0.302345
---> Optimal Setting: 4
+  Level 4 -> Mean EMD: -0.069149
+  Level 8 -> Mean EMD: -0.049229
+  Level 12 -> Mean EMD: 0.176376
+  Level 16 -> Mean EMD: 0.292980
+  Level 20 -> Mean EMD: -0.611533
+--> Optimal Setting: 20
 
-x'_2 (core ratio) Level Response Profile:
-  Level 0.2 -> Mean EMD: -0.074195
-  Level 0.3 -> Mean EMD: 0.154464
-  Level 0.4 -> Mean EMD: 0.203360
---> Optimal Setting: 0.2
+x'_2 (cloud-base height) Level Response Profile:
+  Level 1.0 -> Mean EMD: -0.448195
+  Level 1.5 -> Mean EMD: -0.197507
+  Level 2.0 -> Mean EMD: -0.006584
+  Level 2.5 -> Mean EMD: 0.143725
+  Level 3.0 -> Mean EMD: 0.248005
+--> Optimal Setting: 1.0
 
-x'_3 (cloud height) Level Response Profile:
-  Level 1.0 -> Mean EMD: 0.179917
-  Level 1.5 -> Mean EMD: 0.118269
-  Level 2.0 -> Mean EMD: -0.014558
---> Optimal Setting: 2.0
+x'_3 (core ratio) Level Response Profile:
+  Level 0.2 -> Mean EMD: 0.074108
+  Level 0.3 -> Mean EMD: 0.055406
+  Level 0.4 -> Mean EMD: -0.000603
+  Level 0.5 -> Mean EMD: -0.120338
+  Level 0.6 -> Mean EMD: -0.269129
+--> Optimal Setting: 0.6
 
 x'_4 (duration) Level Response Profile:
-  Level 20 -> Mean EMD: 0.174740
-  Level 30 -> Mean EMD: 0.057613
-  Level 40 -> Mean EMD: 0.051275
---> Optimal Setting: 40
+  Level 20 -> Mean EMD: 0.058446
+  Level 30 -> Mean EMD: 0.009621
+  Level 40 -> Mean EMD: -0.056369
+  Level 50 -> Mean EMD: -0.107110
+  Level 60 -> Mean EMD: -0.165144
+--> Optimal Setting: 60
 
 ================================================================================

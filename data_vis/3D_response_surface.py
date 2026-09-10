@@ -17,7 +17,7 @@ import stylesheet  # Your centralized stylesheet
 # ============================================================
 
 # Read the data
-df = pd.read_csv('batch_test_20260831_111605/results_sums.txt', comment='#', sep=r'\s+',
+df = pd.read_csv('batch_test_final_testing/results_sums.txt', comment='#', sep=r'\s+',
                  header=None,
                  names=['x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7',
                         'Stats_Discrepancy', 'AD_Stats_Discrepancy'])
@@ -79,6 +79,30 @@ surf_ad = ax.plot_surface(xi, yi/10, z_ad_grid,
                           antialiased=True)
 
 # ============================================================
+# 4a. ADD FLAT PLANE AT Z=0 (FULL EXTENT)
+# ============================================================
+
+# Get the full x and y ranges for the plot
+x_full = np.array([x.min(), x.max()])
+y_full = np.array([y.min(), y.max()])
+
+# Create a meshgrid for the full extent (4 corners of the plane)
+X_plane, Y_plane = np.meshgrid(x_full, y_full)
+
+# Create the zero plane
+Z_plane = np.zeros_like(X_plane)
+
+# Plot the zero plane as a transparent gray surface covering full extent
+surf_zero = ax.plot_surface(X_plane, Y_plane/10, Z_plane,
+                           color='gray',
+                           alpha=0.15,
+                           linewidth=0,
+                           antialiased=True)
+
+# Add a wireframe grid on the zero plane for better visibility
+ax.plot_wireframe(X_plane, Y_plane/10, Z_plane,
+                  color='gray', alpha=0.3, linewidth=0.5)
+# ============================================================
 # 5. CUSTOMIZE PLOT
 # ============================================================
 
@@ -87,10 +111,16 @@ ax.set_xlabel('Apparent Motion [m/s]', fontsize=11, labelpad=10)
 ax.set_ylabel('Cloud Base Height [km]', fontsize=11, labelpad=10)
 ax.set_zlabel('Discrepancy in rainfall accumulation [mm/h]', fontsize=11, labelpad=10)
 
+# Set z-axis limits to include the zero plane
+z_min = min(z_stats_grid.min(), z_ad_grid.min(), 0)
+z_max = max(z_stats_grid.max(), z_ad_grid.max(), 0)
+ax.set_zlim(z_min, z_max)
+
 # Add legend with solid color patches
 from matplotlib.patches import Patch
-legend_elements = [Patch(facecolor=stylesheet.COLORS['blue'], alpha=0.8, label='Non-adaptive'),
-                   Patch(facecolor=stylesheet.COLORS['purple'], alpha=0.8, label='Adaptive')]
+legend_elements = [Patch(facecolor=stylesheet.COLORS['blue'], alpha=0.3, label='Non-adaptive'),
+                   Patch(facecolor=stylesheet.COLORS['purple'], alpha=0.1, label='Adaptive'),
+                   Patch(facecolor='gray', alpha=0.4, label='Zero reference')]
 ax.legend(handles=legend_elements, loc='best', fontsize=10)
 
 # Adjust viewing angle for better visualization

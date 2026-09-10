@@ -14,7 +14,7 @@ sys.stdout = log_file
 # ====================================================
 # 1. LOAD THE DATA
 # ====================================================
-file_path = "batch_test_20260825_100749/results_sums.txt"
+file_path = "batch_test_initial_model/results_sums.txt"
 
 try:
     data = np.loadtxt(file_path, comments="#")

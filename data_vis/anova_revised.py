@@ -181,11 +181,11 @@ print("  OPTIMAL CONFIGURATION FOR MINIMUM EMD")
 print("=" * 80)
 
 X_transformed = np.column_stack([x1, x2, x3, x4])
-var_names = ["x'_1 (motion)", "x'_2 (core ratio)", "x'_3 (cloud height)", "x'_4 (duration)"]
+var_names = ["x'_1 (motion)", "x'_2 (cloud-base height)", "x'_3 (core ratio)", "x'_4 (duration)"]
 level_labels = [
     [4, 8, 12, 16, 20],              # x1: motion (m/s)
-    [0.20, 0.30, 0.40, 0.50, 0.60],  # x2: core ratio
-    [1.0, 1.5, 2.0, 2.5, 3.0],       # x3: cloud height (km)
+    [1.0, 1.5, 2.0, 2.5, 3.0],       # x2: cloud height (km)
+    [0.20, 0.30, 0.40, 0.50, 0.60],  # x3: core ratio
     [20, 30, 40, 50, 60]             # x4: duration (minutes)
 ]
 
