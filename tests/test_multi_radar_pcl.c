@@ -30,11 +30,11 @@ extern int radar_count;
 
 // Structure to hold command line parameters
 typedef struct {
-    double x1;  // radius of raincell in kilometers
-    double x2;  // ratio of core radius to raincell radius. unitless
-    double x3;  // maximum rainfall intensity (in mm per hour)
-    double x4;  // apparent motion (meters per second)
-    double x5;  // cloud base height in kilometers
+    double x1;  // radius of raincell core in kilometers
+    double x2;  // maximum rainfall intensity (in mm per hour)
+    double x3;  // apparent motion (meters per second)
+    double x4;  // cloud base height in kilometers
+    double x5;  // sub-cloud refelctivity gradient
     double x6;  // minimum distance to C-band radar in kilometers
     double x7;	// storm duration in minutes. 
     char worker_id[16];  // worker ID for parallel execution
@@ -43,11 +43,11 @@ typedef struct {
 void print_usage(const char* program_name) {
     printf("Usage: %s [options]\n", program_name);
     printf("Options:\n");
-    printf("  -a, --radius-raincell <value>    radius of raincell in kilometers (x1, default: 15.0)\n");
-    printf("  -b, --core-ratio <value>    ratio of core of raincell to stratiform part [between 0 and 1] (x2, default:0.3)\n");
-    printf("  -c, --rain-intensity <value>    intensity of rain in mm per hour(x3, default: 35.0)\n");
-    printf("  -d, --apparent-motion <value>    apparent motion of raincell in meters per second (x4, default: 9)\n");
-    printf("  -e, --cloud base height <value>    height of the cloud base in km (x5, default: 2.0)\n");
+    printf("  -a, --core-ratio <value>    ratio of core of raincell to stratiform part [between 0 and 1] (x2, default:0.3)\n");
+    printf("  -b, --rain-intensity <value>    intensity of rain in mm per hour(x3, default: 35.0)\n");
+    printf("  -c, --apparent-motion <value>    apparent motion of raincell in meters per second (x4, default: 9)\n");
+    printf("  -d, --cloud base height <value>    height of the cloud base in km (x5, default: 2.0)\n");
+    printf("  -e, --sub-cloud reflectivity gradient <value>    gradient of the reflectivity below the cloud-base(x5, default: 5*10^{-4})\n");
     printf("  -f, --distance to C-band radar <value> distance of the centre of the raincell to the C-band radar in km (x6, default: 35.0)\n");
     printf("  -g, --storm duration <value> duration of the peak rainfall in minutes(x6, default: 30.0)\n");
     printf("  -w, --worker-id <id>        Worker ID for parallel execution (creates isolated directories)\n");
@@ -59,23 +59,23 @@ void print_usage(const char* program_name) {
 
 CommandLineParams parse_command_line(int argc, char *argv[]) {
     CommandLineParams params = {
-        .x1 = 10.0,      // default: 10 km radius of raincell
-        .x2 = 0.30,       // default: core ratio of 0.3 of full radius.
-        .x3 = 35.0,       // default: 35 mm per hour rainfall
-        .x4 = 9.0,         // default: apparent motion of 9 meters per second
-        .x5 = 2.0,         // default: cloud base height of 2km
+        .x1 = 3,      // default: 3 km radius of convective core raincell
+        .x2 = 35.0,       // default: 35 mm per hour rainfall
+        .x3 = 9.0,         // default: apparent motion of 9 meters per second
+        .x4 = 2.0,         // default: cloud base height of 2km
+	.x5 = 5,	   // default, sub-cloud reflectivity gradient 5*10^{-4}
         .x6 = 35.0,        // default: 35 km from C-band radar
 	.x7 = 30.0,	  // default 3o minutes peak duration
         .worker_id = ""     // default: empty (original behavior)
     };
     
     static struct option long_options[] = {
-        {"radius",      required_argument, 0, 'a'},
-        {"core radius",      required_argument, 0, 'b'},
-        {"rainfall intensity",      required_argument, 0, 'c'},
-        {"apparent motion",      required_argument, 0, 'd'},
-        {"cloud base height", required_argument, 0, 'e'},
-        {"distance to C-band",      required_argument, 0, 'f'},
+        {"core radius",      required_argument, 0, 'a'},
+        {"rainfall intensity",      required_argument, 0, 'b'},
+        {"apparent motion",      required_argument, 0, 'c'},
+        {"cloud base height", required_argument, 0, 'd'},
+	{"sub-cloud reflectivity gradient", required_argument, 0, 'e'},
+        {"distance to C-band", required_argument, 0, 'f'},
         {"storm duration", required_argument, 0, 'g'},
         {"worker-id",       required_argument, 0, 'w'},
         {"help",            no_argument,       0, 'h'},
@@ -89,36 +89,36 @@ CommandLineParams parse_command_line(int argc, char *argv[]) {
         switch (opt) {
             case 'a':
                 params.x1 = atof(optarg);
-                if (params.x1 <= 0) {
-                    fprintf(stderr, "Error: raincell radius must be positive\n");
+                if (params.x1 < 0) {
+                    fprintf(stderr, "Error: raincell core radius must be at least zero\n");
                     exit(EXIT_FAILURE);
                 }
                 break;
             case 'b':
                 params.x2 = atof(optarg);
-                if (params.x2 < 0 || params.x2>1) {
-                    fprintf(stderr, "Error: ratio of core to raincell radius must be between 0 and 1\n");
+                if (params.x2 <= 0 || params.x2>60) {
+                    fprintf(stderr, "Error: rainfall intensity must be a non-zero positive number below 60\n");
                     exit(EXIT_FAILURE);
                 }
                 break;
             case 'c':
                 params.x3 = atof(optarg);
-                if (params.x3 <= 0||params.x3>60) {
-                    fprintf(stderr, "Error: rainfall intensity must be a non-zero positive number below 60\n");
+                if (params.x3 < 0||params.x3>40) {
+                    fprintf(stderr, "Error: raincell apparent motion must be between 0 and 40 meters per second\n");
                     exit(EXIT_FAILURE);
                 }
                 break;
             case 'd':
                 params.x4 = atof(optarg);
-                if (params.x4 < 0 || params.x4 > 40) {
-                    fprintf(stderr, "Error: raincell apparent motion must be between 0 and 40 meters per second\n");
+                if (params.x4 <= 0) {
+                    fprintf(stderr, "Error: cloud base height must be positive\n");
                     exit(EXIT_FAILURE);
                 }
                 break;
             case 'e':
                 params.x5 = atof(optarg);
-                 if (params.x5 <= 0) {
-                    fprintf(stderr, "Error: cloud base height must be positive\n");
+                 if (params.x5 < 0 || params.x5 > 99) {
+                    fprintf(stderr, "Error: the sub-cloud gradient must be in [0,100)\n");
                     exit(EXIT_FAILURE);
                 }
 		 break;
@@ -327,7 +327,7 @@ if (!stats_array) {
 double vpr_emp_strat[120] = {0};
 double vpr_emp_conv[120] = {0};
 
-int print_or_not = 1;
+int print_or_not = 0;
 
     // Determine stats file path based on worker ID
     char stats_path[256];
@@ -346,7 +346,7 @@ int print_or_not = 1;
     for (int scan_idx = 0; scan_idx < NUM_SCANS; scan_idx++) {
         char filename[256];
         Vol_scan *vol = NULL;  // Declare vol here
-	// Vol_scan *vol_1 = NULL;  // Declare vol here
+	Vol_scan *vol_1 = NULL;  // Declare vol here
         Cart_grid **cart_grids = NULL;  // Declare cart_grids here
         int cg_count = 0;  // Declare cg_count here
 			   //
@@ -369,7 +369,7 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
             read_radar_scans(filename);
         
         //the the PPI volume scan radars... 
-	if(radar_id ==0){
+	if(radar_id ==0 || radar_id == 1){
 	if (scan_count == 0) continue;
 
         cart_grids = malloc(scan_count * sizeof(Cart_grid*));
@@ -394,7 +394,13 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
         for (int i = 0; i < cg_count; i++) {
             add_cart_grid_to_volscan(vol, cart_grids[i], i);
         }
+	} else if (radar_id == 1) {
+	vol_1 = init_vol_scan(cart_grids, cg_count);
+        for (int i = 0; i < cg_count; i++) {
+            add_cart_grid_to_volscan(vol_1, cart_grids[i], i);
+        }
 	}
+
 	} 
 	else if (radar_id == 2) /*RHI baesd volume scan */ { 
 	
@@ -441,7 +447,15 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
 	}
 	}
 }
-	//process C-band volume scan
+
+	//process X-band volume scan	
+        process_volume_scan_VPR(vol_1);
+        compute_average_empVPR(vol_1);
+        compute_std_dev_empVPR(vol_1);
+
+
+
+//process C-band volume scan
 	process_volume_scan_VPR(vol);
         compute_average_empVPR(vol);
         compute_std_dev_empVPR(vol);
@@ -458,21 +472,30 @@ for (int radar_id = 0; radar_id < MAX_RADARS; radar_id++) {
         if (fill_refl_ALA_grid(vol, raincell_pos, raincell, VPR_strat, VPR_conv) != 0) {
             exit(EXIT_FAILURE);
         }
+        if (fill_refl_ALA_grid(vol_1, raincell_pos, raincell, VPR_strat, VPR_conv) != 0) {
+            exit(EXIT_FAILURE);
+        }
 
 
         compute_display_grid_KNMI_empirical(vol, 5.0, 0.5, 0);
+compute_display_grid_KNMI_empirical(vol_1, 5.0, 0.5, 0);
 
         double volume_duration = 5.0 * 60.0;
         if (compute_and_store_stats(vol, 5.0, cart_grid_res, volume_duration, stats_array, scan_idx,  raincell_list[0]) == 0) {
             append_stats_to_file(stats_array, scan_idx, stats_path);
         }
-
+if (compute_and_store_stats(vol_1, 5.0, cart_grid_res, volume_duration, stats_array_X, scan_idx,  raincell_list[0]) == 0) {
+            append_stats_to_file(stats_array_X, scan_idx, stats_path_X);
+        }
 
     // Process adaptive volume scan if empirical VPRs are available
         // Create a deep copy of the volume scan for adaptive processing
 if(print_or_not == 1) {
 print_vpr_detailed_with_std(vol, "outputs/vpr_emp_strat_C.txt", 1, 1);  // Append stratiform with std dev
 print_vpr_detailed_with_std(vol, "outputs/vpr_emp_conv_C.txt", 2, 1);  // Append convective with std dev
+
+print_vpr_detailed_with_std(vol_1, "outputs/vpr_emp_strat_X.txt", 1, 1);  // Append stratiform with std dev
+print_vpr_detailed_with_std(vol_1, "outputs/vpr_emp_conv_X.txt", 2, 1);  // Append convective with std dev
 
 }
  

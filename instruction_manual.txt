@@ -190,3 +190,19 @@ python data_vis/initial_analysis.py
 you made the compute_emd.c file (gcc into a.out), then run a.out with the batch folder without the last forward slash.
 python data_vis/anova_sum_of_squares.py 
 then the analysis. 
+
+
+
+
+Sept 11: commands used:
+
+
+./generate_params.sh
+make parallel-batch-test TEST=test_multi_radar_pcl PARAM_FILE=params.txt CORES=10
+gcc -Wall -Wextra -std=c11 -o build/sum_stats_both data_vis/compute_sums_for_x_and_c.c -lm
+./build/sum_stats_both batch_test_20260911_151338
+
+**** CHANGE the filename to the right one. 
+python data_vis/cs_anova_initial.py 
+
+For the initial analysis. 

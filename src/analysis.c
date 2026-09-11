@@ -52,7 +52,7 @@ void initialize_test_environment(
     // Calculate dependent variables
     double e0 = 230.0-x7; //duration of rainfall peak in minutes.
     double e1 = (e0 * 60.0 + 230.0 * 60.0) / 2.0;  // Midpoint of start and end of peak. peak ends at 230 minutes.
-   double e2 = floor(10*log10((200*pow(x3,1.6))))-27+3-2;//change in reflectivity for peak
+   double e2 = floor(10*log10((200*pow(x2,1.6))))-27+3-2;//change in reflectivity for peak
 						       //
 	printf("The change in reflectivity at the peak is: %lf, the eqation should be %lf in dB -27 +3 -2\n\n", e2, x3);
 
@@ -70,8 +70,8 @@ void initialize_test_environment(
         750.0, 500.0, 250.0,
         0.65, -0.4, -0.15, -0.1,
         27, -3.0, 2.0, floor(10*log10((200*pow(x3,1.6))))-27+3-2, //how the reflectivity at cloud-base changes (initial, change during growth, change during mature, change for peak)
-        x5*1000, 150.0, 25.0,//x5 is cloud base height.
-        -0.0005
+        x4*1000, 150.0, 25.0,//x5 is cloud base height.
+        -(x5-50)*1e-4
     );
     
     // Create VPR profiles
@@ -92,8 +92,8 @@ void initialize_test_environment(
     compute_average_VPR(*VPR_A_d, *params, t3, t2, 60.0, *VPR_dummy);
     
     // Initialize raincell and spatial_raincell with command line parameters
-    *raincell = create_raincell(1, x2, x1*1000, -0.5);  // x1 radius of raincell in km, x2 is the core ratio [-]
-    *s_raincell = create_spatial_raincell(1, -80000.0, x6, x4);  // x6 y-distance, x4 apparent motion
+    *raincell = create_raincell(1, x1, 10000, -0.5);  // x1 radius of raincell in km, x2 is the core ratio [-]
+    *s_raincell = create_spatial_raincell(1, -80000.0, x6, x3);  // x6 y-distance, x4 apparent motion
     
     // Add to global lists (if your test functions expect them)
     raincell_list[raincell_count] = *raincell;
@@ -102,8 +102,8 @@ void initialize_test_environment(
     
     // Initialize radars
     Radar* radar0 = create_radar(0, "C", "PPI", 0.0, 0.0, 25.0, 250000.0, 250.0, 1.0);
-    Radar* radar1 = create_radar(1, "X", "PPI", -50000.0, 60000.0,25.0, 50000.0, 100.0, 1.0);
-    Radar* radar2 = create_radar(2, "X", "RHI", -50000.0, 60000.0,25.0, 50000.0, 100.0, 1.0);
+    Radar* radar1 = create_radar(1, "X", "PPI", -50000.0, 50000.0,25.0, 50000.0, 100.0, 1.0);
+    Radar* radar2 = create_radar(2, "X", "RHI", -50000.0, 50000.0,25.0, 50000.0, 100.0, 1.0);
     
     radar_list[radar_count++] = radar0;
     radar_list[radar_count++] = radar1;

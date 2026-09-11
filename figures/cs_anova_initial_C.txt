@@ -1,0 +1,107 @@
+================================================================================
+  MAIN EFFECTS ANOVA — C-BAND
+================================================================================
+
+Input file: batch_test_20260911_151338/results_sums_C.txt
+Total runs: 2187
+Total Sum of Squares (SS_Total): 62.656432
+
+
+================================================================================
+  ANOVA TABLE (Main Effects Only)
+================================================================================
+Source                              DF       SS                   % of Total      % of Model     
+--------------------------------------------------------------------------------
+x5 (sub-cloud gradient)             2        36.552191            58.34          % 65.23          %
+x3 (apparent motion)                2        17.429769            27.82          % 31.10          %
+x4 (cloud base height)              2        1.852312             2.96           % 3.31           %
+x6 (distance to C-band)             2        0.164600             0.26           % 0.29           %
+x7 (storm duration)                 2        0.038163             0.06           % 0.07           %
+x1 (convective core radius)         2        0.000000             0.00           % 0.00           %
+x2 (max rain intensity)             2        0.000000             0.00           % 0.00           %
+--------------------------------------------------------------------------------
+Residual                            2179     6.619397             10.56          %
+--------------------------------------------------------------------------------
+Total                               2186     62.656432            100.00         %
+
+================================================================================
+  MODEL STATISTICS
+================================================================================
+R² = 0.8944 (89.44%)
+Adjusted R² = 0.8940 (89.40%)
+Number of parameters: 8
+Degrees of freedom residual: 2179
+
+================================================================================
+  OPTIMAL CONFIGURATION FOR MINIMUM DISCREPANCY
+================================================================================
+
+x1 (convective core radius) Level Response Profile:
+  Level 1.0      -> Mean Discrepancy: -0.103827
+  Level 3.0      -> Mean Discrepancy: -0.103827
+  Level 5.0      -> Mean Discrepancy: -0.103827
+--> Optimal Setting: 1.0
+
+x2 (max rain intensity) Level Response Profile:
+  Level 30.0     -> Mean Discrepancy: -0.103827
+  Level 35.0     -> Mean Discrepancy: -0.103827
+  Level 40.0     -> Mean Discrepancy: -0.103827
+--> Optimal Setting: 30.0
+
+x3 (apparent motion) Level Response Profile:
+  Level 3.0      -> Mean Discrepancy: -0.228145
+  Level 6.0      -> Mean Discrepancy: -0.073867
+  Level 9.0      -> Mean Discrepancy: -0.009471
+--> Optimal Setting: 3.0
+
+x4 (cloud base height) Level Response Profile:
+  Level 1.0      -> Mean Discrepancy: -0.143082
+  Level 2.0      -> Mean Discrepancy: -0.096605
+  Level 3.0      -> Mean Discrepancy: -0.071795
+--> Optimal Setting: 1.0
+
+x5 (sub-cloud gradient) Level Response Profile:
+  Level -5.0     -> Mean Discrepancy: -0.255643
+  Level 0.0      -> Mean Discrepancy: -0.116867
+  Level 5.0      -> Mean Discrepancy: 0.061028
+--> Optimal Setting: -5.0
+
+x6 (distance to C-band) Level Response Profile:
+  Level 15.0     -> Mean Discrepancy: -0.113669
+  Level 45.0     -> Mean Discrepancy: -0.105394
+  Level 75.0     -> Mean Discrepancy: -0.092419
+--> Optimal Setting: 15.0
+
+x7 (storm duration) Level Response Profile:
+  Level 20.0     -> Mean Discrepancy: -0.095962
+  Level 35.0     -> Mean Discrepancy: -0.109325
+  Level 50.0     -> Mean Discrepancy: -0.106195
+--> Optimal Setting: 35.0
+
+================================================================================
+  RECOMMENDED OPTIMAL CONFIGURATION
+================================================================================
+  x1 (convective core radius) = 1.0
+  x2 (max rain intensity) = 30.0
+  x3 (apparent motion) = 3.0
+  x4 (cloud base height) = 1.0
+  x5 (sub-cloud gradient) = -5.0
+  x6 (distance to C-band) = 15.0
+  x7 (storm duration) = 35.0
+
+================================================================================
+  SUMMARY OF VARIANCE EXPLAINED
+================================================================================
+Main effects (7 factors):       56.037035 (89.44%)
+  x5 (sub-cloud gradient)             36.552191 (58.34%)
+  x3 (apparent motion)                17.429769 (27.82%)
+  x4 (cloud base height)              1.852312 (2.96%)
+  x6 (distance to C-band)             0.164600 (0.26%)
+  x7 (storm duration)                 0.038163 (0.06%)
+  x1 (convective core radius)         0.000000 (0.00%)
+  x2 (max rain intensity)             0.000000 (0.00%)
+Residual:                       6.619397 (10.56%)
+--------------------------------------------------------------------------------
+Total:                          62.656432 (100.00%)
+
+================================================================================

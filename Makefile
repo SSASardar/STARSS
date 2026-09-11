@@ -139,6 +139,20 @@ quick-test:
 
 # Batch test with multiple parameter combinations from a file (Serial)
 # Usage: make batch-test TEST=test_cl PARAM_FILE=params.txt
+#
+# Parameter meanings:
+#   -a = x1 = radius of convective core (km)
+#   -b = x2 = maximum rainfall intensity (mm/hr)
+#   -c = x3 = apparent motion (m/s)
+#   -d = x4 = cloud base height (km)
+#   -e = x5 = sub-cloud reflectivity gradient (x1e-4, +10 offset in filename)
+#   -f = x6 = minimum distance to C-band radar (km)
+#   -g = x7 = storm duration (minutes)
+#
+# Files collected per run:
+#   outputs/stats_X.txt  -> batch_dir/stats_X_x1_..._x7_....txt
+#   outputs/stats_C.txt  -> batch_dir/stats_C_x1_..._x7_....txt
+#   outputs/ad_stats.txt -> batch_dir/ad_stats_x1_..._x7_....txt
 batch-test:
 	@if [ -z "$(TEST)" ]; then \
 		echo "❌ Please specify TEST name"; \
@@ -176,30 +190,40 @@ batch-test:
 			x7_val=$$(echo "$$params" | sed -n 's/.*-g \([0-9.]*\).*/\1/p'); \
 			\
 			if [ -z "$$x1_val" ]; then x1_val="000"; else x1_val=$$(printf "%03d" $$(echo "$$x1_val + 0.5" | bc | cut -d. -f1)); fi; \
-			if [ -z "$$x2_val" ]; then x2_val="000"; else x2_val=$$(printf "%03d" $$(echo "$$x2_val * 100" | bc | cut -d. -f1)); fi; \
-			if [ -z "$$x3_val" ]; then x3_val="000"; else x3_val=$$(printf "%03d" $$x3_val); fi; \
-			if [ -z "$$x4_val" ]; then x4_val="00"; else x4_val=$$(printf "%04d" $$(echo "$$x4_val * 100+ 0.5" | bc | cut -d. -f1)); fi; \
-			if [ -z "$$x5_val" ]; then x5_val="00"; else x5_val=$$(printf "%04d" $$(echo "$$x5_val * 1000" | bc | cut -d. -f1)); fi; \
+			if [ -z "$$x2_val" ]; then x2_val="000"; else x2_val=$$(printf "%03d" $$(echo "$$x2_val + 0.5" | bc | cut -d. -f1)); fi; \
+			if [ -z "$$x3_val" ]; then x3_val="000"; else x3_val=$$(printf "%03d" $$(echo "$$x3_val + 0.5" | bc | cut -d. -f1)); fi; \
+			if [ -z "$$x4_val" ]; then x4_val="0000"; else x4_val=$$(printf "%04d" $$(echo "$$x4_val * 100 + 0.5" | bc | cut -d. -f1)); fi; \
+			if [ -z "$$x5_val" ]; then x5_val="0000"; else x5_val=$$(printf "%04d" $$(echo "($$x5_val)*100 + 0.5" | bc | cut -d. -f1)); fi; \
 			if [ -z "$$x6_val" ]; then x6_val="000"; else x6_val=$$(printf "%03d" $$(echo "$$x6_val + 0.5" | bc | cut -d. -f1)); fi; \
-			if [ -z "$$x7_val" ]; then x7_val="000"; else x7_val=$$(printf "%03d" $$x7_val); fi; \
+			if [ -z "$$x7_val" ]; then x7_val="000"; else x7_val=$$(printf "%03d" $$(echo "$$x7_val + 0.5" | bc | cut -d. -f1)); fi; \
 			\
-			stats_filename="stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
+			stats_X_filename="stats_X_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
+			stats_C_filename="stats_C_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
 			ad_stats_filename="ad_stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
-			echo "   Output files: $(BATCH_DIR)/$$stats_filename and $(BATCH_DIR)/$$ad_stats_filename"; \
+			echo "   Output files:"; \
+			echo "     $(BATCH_DIR)/$$stats_X_filename"; \
+			echo "     $(BATCH_DIR)/$$stats_C_filename"; \
+			echo "     $(BATCH_DIR)/$$ad_stats_filename"; \
 			\
 			rm -f $(OUTPUTS_DIR)/*.txt; \
 			\
 			./$(BUILD_DIR)/$(TEST) $$params; \
 			\
+			if [ -f "$(OUTPUTS_DIR)/stats_X.txt" ]; then \
+				mv "$(OUTPUTS_DIR)/stats_X.txt" "$(BATCH_DIR)/$$stats_X_filename"; \
+				echo "   ✅ Saved stats_X.txt"; \
+			else \
+				echo "   ⚠️ Warning: stats_X.txt not found"; \
+			fi; \
 			if [ -f "$(OUTPUTS_DIR)/stats_C.txt" ]; then \
-				mv "$(OUTPUTS_DIR)/stats_C.txt" "$(BATCH_DIR)/$$stats_filename"; \
-				echo "   ✅ Saved stats_C.txt to $(BATCH_DIR)/$$stats_filename"; \
+				mv "$(OUTPUTS_DIR)/stats_C.txt" "$(BATCH_DIR)/$$stats_C_filename"; \
+				echo "   ✅ Saved stats_C.txt"; \
 			else \
 				echo "   ⚠️ Warning: stats_C.txt not found"; \
 			fi; \
 			if [ -f "$(OUTPUTS_DIR)/ad_stats.txt" ]; then \
 				mv "$(OUTPUTS_DIR)/ad_stats.txt" "$(BATCH_DIR)/$$ad_stats_filename"; \
-				echo "   ✅ Saved ad_stats.txt to $(BATCH_DIR)/$$ad_stats_filename"; \
+				echo "   ✅ Saved ad_stats.txt"; \
 			else \
 				echo "   ⚠️ Warning: ad_stats.txt not found"; \
 			fi; \
@@ -271,16 +295,24 @@ parallel-batch-test:
 		x6_val=$$(echo $$params | sed -n "s/.*-f \([0-9.]*\).*/\1/p"); \
 		x7_val=$$(echo $$params | sed -n "s/.*-g \([0-9.]*\).*/\1/p"); \
 		[ -z "$$x1_val" ] && x1_val="000" || x1_val=$$(printf "%03d" $$(echo "$$x1_val + 0.5" | bc | cut -d. -f1)); \
-		[ -z "$$x2_val" ] && x2_val="000" || x2_val=$$(printf "%03d" $$(echo "$$x2_val * 100" | bc | cut -d. -f1)); \
-		[ -z "$$x3_val" ] && x3_val="000" || x3_val=$$(printf "%03d" $$x3_val); \
-		[ -z "$$x4_val" ] && x4_val="00" || x4_val=$$(printf "%04d" $$(echo "$$x4_val * 100+ 0.5" | bc | cut -d. -f1)); \
-		[ -z "$$x5_val" ] && x5_val="00" || x5_val=$$(printf "%04d" $$(echo "$$x5_val * 1000" | bc | cut -d. -f1)); \
+		[ -z "$$x2_val" ] && x2_val="000" || x2_val=$$(printf "%03d" $$(echo "$$x2_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x3_val" ] && x3_val="000" || x3_val=$$(printf "%03d" $$(echo "$$x3_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x4_val" ] && x4_val="0000" || x4_val=$$(printf "%04d" $$(echo "$$x4_val * 100 + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x5_val" ] && x5_val="0000" || x5_val=$$(printf "%04d" $$(echo "($$x5_val) * 100 + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x6_val" ] && x6_val="000" || x6_val=$$(printf "%03d" $$(echo "$$x6_val + 0.5" | bc | cut -d. -f1)); \
-		[ -z "$$x7_val" ] && x7_val="000" || x7_val=$$(printf "%03d" $$x7_val); \
-		stats_filename="stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
+		[ -z "$$x7_val" ] && x7_val="000" || x7_val=$$(printf "%03d" $$(echo "$$x7_val + 0.5" | bc | cut -d. -f1)); \
+		stats_X_filename="stats_X_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
+		stats_C_filename="stats_C_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
 		./$(BUILD_DIR)/$(TEST) $$params -w $$WORKER_ID > /dev/null 2>&1; \
+		if [ -f "outputs_$${WORKER_ID}/stats_X.txt" ]; then \
+			mv "outputs_$${WORKER_ID}/stats_X.txt" "$(BATCH_DIR)/$$stats_X_filename"; \
+		else \
+			echo "   ⚠️ stats_X.txt not found for $$params"; \
+		fi; \
 		if [ -f "outputs_$${WORKER_ID}/stats_C.txt" ]; then \
-			mv "outputs_$${WORKER_ID}/stats_C.txt" "$(BATCH_DIR)/$$stats_filename"; \
+			mv "outputs_$${WORKER_ID}/stats_C.txt" "$(BATCH_DIR)/$$stats_C_filename"; \
+		else \
+			echo "   ⚠️ stats_C.txt not found for $$params"; \
 		fi; \
 		rm -rf outputs_$${WORKER_ID} inputs_$${WORKER_ID} archive_$${WORKER_ID} logs_$${WORKER_ID} 2>/dev/null; \
 		' \
@@ -337,24 +369,30 @@ adaptive-parallel-batch-test:
 		x6_val=$$(echo $$params | sed -n "s/.*-f \([0-9.]*\).*/\1/p"); \
 		x7_val=$$(echo $$params | sed -n "s/.*-g \([0-9.]*\).*/\1/p"); \
 		[ -z "$$x1_val" ] && x1_val="000" || x1_val=$$(printf "%03d" $$(echo "$$x1_val + 0.5" | bc | cut -d. -f1)); \
-		[ -z "$$x2_val" ] && x2_val="000" || x2_val=$$(printf "%03d" $$(echo "$$x2_val * 100" | bc | cut -d. -f1)); \
-		[ -z "$$x3_val" ] && x3_val="000" || x3_val=$$(printf "%03d" $$x3_val); \
-		[ -z "$$x4_val" ] && x4_val="00" || x4_val=$$(printf "%04d" $$(echo "$$x4_val *100 + 0.5" | bc | cut -d. -f1)); \
-		[ -z "$$x5_val" ] && x5_val="00" || x5_val=$$(printf "%04d" $$(echo "$$x5_val * 1000 " | bc | cut -d. -f1)); \
+		[ -z "$$x2_val" ] && x2_val="000" || x2_val=$$(printf "%03d" $$(echo "$$x2_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x3_val" ] && x3_val="000" || x3_val=$$(printf "%03d" $$(echo "$$x3_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x4_val" ] && x4_val="0000" || x4_val=$$(printf "%04d" $$(echo "$$x4_val * 100 + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x5_val" ] && x5_val="0000" || x5_val=$$(printf "%04d" $$(echo "($$x5_val) * 100 + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x6_val" ] && x6_val="000" || x6_val=$$(printf "%03d" $$(echo "$$x6_val + 0.5" | bc | cut -d. -f1)); \
-		[ -z "$$x7_val" ] && x7_val="000" || x7_val=$$(printf "%03d" $$x7_val); \
-		stats_filename="stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
+		[ -z "$$x7_val" ] && x7_val="000" || x7_val=$$(printf "%03d" $$(echo "$$x7_val + 0.5" | bc | cut -d. -f1)); \
+		stats_X_filename="stats_X_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
+		stats_C_filename="stats_C_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
 		ad_stats_filename="ad_stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
 		./$(BUILD_DIR)/$(TEST) $$params -w $$WORKER_ID > /dev/null 2>&1; \
-		if [ -f "outputs_$${WORKER_ID}/stats_C.txt" ]; then \
-			mv "outputs_$${WORKER_ID}/stats_C.txt" "$(BATCH_DIR)/$$stats_filename"; \
+		if [ -f "outputs_$${WORKER_ID}/stats_X.txt" ]; then \
+			mv "outputs_$${WORKER_ID}/stats_X.txt" "$(BATCH_DIR)/$$stats_X_filename"; \
 		else \
-			echo "   ⚠️ Warning: stats.txt not found for $$params"; \
+			echo "   ⚠️ stats_X.txt not found for $$params"; \
+		fi; \
+		if [ -f "outputs_$${WORKER_ID}/stats_C.txt" ]; then \
+			mv "outputs_$${WORKER_ID}/stats_C.txt" "$(BATCH_DIR)/$$stats_C_filename"; \
+		else \
+			echo "   ⚠️ stats_C.txt not found for $$params"; \
 		fi; \
 		if [ -f "outputs_$${WORKER_ID}/ad_stats.txt" ]; then \
 			mv "outputs_$${WORKER_ID}/ad_stats.txt" "$(BATCH_DIR)/$$ad_stats_filename"; \
 		else \
-			echo "   ⚠️ Warning: ad_stats.txt not found for $$params"; \
+			echo "   ⚠️ ad_stats.txt not found for $$params"; \
 		fi; \
 		rm -rf outputs_$${WORKER_ID} inputs_$${WORKER_ID} archive_$${WORKER_ID} logs_$${WORKER_ID} 2>/dev/null; \
 		' \
@@ -366,7 +404,7 @@ adaptive-parallel-batch-test:
 	echo ""; \
 	echo "========================================"; \
 	echo "✅ Adaptive parallel batch testing completed"; \
-	echo "📊 Collected both stats.txt and ad_stats.txt files"; \
+	echo "📊 Collected stats_X.txt, stats_C.txt and ad_stats.txt files"; \
 	echo "⏱️  Total time: $$total_min minutes $$total_sec seconds"; \
 	echo "📁 Results saved in: $(BATCH_DIR)"
 
@@ -406,22 +444,43 @@ help:
 	@echo "=== Batch Testing ==="
 	@echo "  make batch-test TEST=test_cl PARAM_FILE=file.txt - Run from parameter file (serial)"
 	@echo "  make parallel-batch-test TEST=test_cl PARAM_FILE=file.txt CORES=8 - Run in parallel"
-	@echo "  make adaptive-parallel-batch-test TEST=test_cl PARAM_FILE=file.txt CORES=8 - Run in parallel and collect ad_stats.txt"
+	@echo "  make adaptive-parallel-batch-test TEST=test_cl PARAM_FILE=file.txt CORES=8 - Run in parallel and also collect ad_stats.txt"
 	@echo "  make generate-params OUTPUT=file.txt - Generate parameter combinations"
 	@echo "  make debug-params               - Test parameter extraction"
 	@echo ""
+	@echo "Parameter meanings (new sensitivity study):"
+	@echo "  -a = x1 = radius of convective core (km)          [1, 3, 5]"
+	@echo "  -b = x2 = maximum rainfall intensity (mm/hr)      [30, 40, 50]"
+	@echo "  -c = x3 = apparent motion (m/s)                   [3, 9, 15]"
+	@echo "  -d = x4 = cloud base height (km)                  [1, 2, 3]"
+	@echo "  -e = x5 = sub-cloud reflectivity gradient (x1e-4) [5, 10, 15]"
+	@echo "  -f = x6 = minimum distance to C-band radar (km)   [20, 110, 200]"
+	@echo "  -g = x7 = storm duration (minutes)                [20, 35, 50]"
+	@echo ""
+	@echo "Files collected per run:"
+	@echo "  outputs/stats_X.txt  -> batch_dir/stats_X_x1_..._x7_....txt"
+	@echo "  outputs/stats_C.txt  -> batch_dir/stats_C_x1_..._x7_....txt"
+	@echo "  outputs/ad_stats.txt -> batch_dir/ad_stats_x1_..._x7_....txt  (adaptive target only)"
+	@echo ""
+	@echo "Filename encoding:"
+	@echo "  x1, x2, x3, x6, x7 : integer (%03d)"
+	@echo "  x4                 : value*100  (%04d, 2 decimals)"
+	@echo "  x5                 : (value+10)*100 (%04d, +10 offset so negative gradients stay non-negative)"
+	@echo ""
 	@echo "Examples:"
 	@echo "  make test TEST=test_cl"
-	@echo "  make quick-test TEST=test_cl ARGS='-r 500 -m 180'"
+	@echo "  make quick-test TEST=test_cl ARGS='-a 3 -b 40 -c 9 -d 2 -e 10 -f 110 -g 35'"
 	@echo "  make batch-test TEST=test_cl PARAM_FILE=my_params.txt"
 	@echo "  make parallel-batch-test TEST=test_cl PARAM_FILE=my_params.txt CORES=8"
 	@echo "  make adaptive-parallel-batch-test TEST=test_cl PARAM_FILE=my_params.txt CORES=8"
 	@echo ""
 	@echo "Parameter file format (my_params.txt):"
-	@echo "  -r 500 -m 170 -c 600 -k 0.7 -y 75000 -a 12"
-	@echo "  -r 1000 -m 180 -c 500 -k 0.5 -y 80000 -a 10"
+	@echo "  -a 1 -b 30 -c 3  -d 1 -e 5  -f 20  -g 20"
+	@echo "  -a 3 -b 40 -c 9  -d 2 -e 10 -f 110 -g 35"
+	@echo "  -a 5 -b 50 -c 15 -d 3 -e 15 -f 200 -g 50"
 	@echo ""
 	@echo "Batch test output:"
 	@echo "  Results saved in: batch_test_YYYYMMDD_HHMMSS/"
-	@echo "  File format: stats_r_XXXX_m_XXX_c_XXXX_k_XXX_y_XXXXXX_a_XX.txt"
-	@echo "  Adaptive format: ad_stats_r_XXXX_m_XXX_c_XXXX_k_XXX_y_XXXXXX_a_XX.txt"
+	@echo "  stats_X format: stats_X_x1_XXX_x2_XXX_x3_XXX_x4_XXXX_x5_XXXX_x6_XXX_x7_XXX.txt"
+	@echo "  stats_C format: stats_C_x1_XXX_x2_XXX_x3_XXX_x4_XXXX_x5_XXXX_x6_XXX_x7_XXX.txt"
+	@echo "  ad_stats format: ad_stats_x1_XXX_x2_XXX_x3_XXX_x4_XXXX_x5_XXXX_x6_XXX_x7_XXX.txt"
