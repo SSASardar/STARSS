@@ -20,7 +20,7 @@ import os
 os.makedirs('figures', exist_ok=True)
 
 # Read the data - UPDATE THIS PATH TO YOUR ACTUAL FILE
-file_path = 'batch_test_20260831_111605/results_sums.txt'  # Change this to your actual file path
+file_path = 'batch_test_20260914_110306/results_sums.txt'  # Change this to your actual file path
 
 # Try reading with different methods
 try:
@@ -46,8 +46,8 @@ except:
     # Convert all columns to numeric
     df = df.apply(pd.to_numeric)
 
-# Calculate non-absolute difference (Stats - AD)
-df['Difference'] = df['Stats_Discrepancy'] - df['AD_Stats_Discrepancy']
+# Calculate difference
+df['Difference'] = df['Stats_Discrepancy'].abs() - df['AD_Stats_Discrepancy'].abs()
 
 n = len(df)
 
@@ -77,7 +77,7 @@ min_val = min(df['Stats_Discrepancy'].min(), df['AD_Stats_Discrepancy'].min())
 max_val = max(df['Stats_Discrepancy'].max(), df['AD_Stats_Discrepancy'].max())
 ax1.plot([min_val, max_val], [min_val, max_val], 'k--', alpha=0.5, 
          linewidth=1.5)
-
+ax1.axhline(0, color='black', linestyle='--', linewidth=1.5, alpha=0.5, zorder=1)
 # Labels and formatting
 ax1.set_xlabel('Stats Discrepancy (1 Radar)')
 ax1.set_ylabel('AD Stats Discrepancy (2 Radars)')
@@ -104,9 +104,9 @@ ax2.axvline(df['Difference'].mean(), color='red', linestyle='--', linewidth=1.5,
             alpha=0.7, label=f'Mean: {df["Difference"].mean():.4f}')
 
 # Labels and formatting
-ax2.set_xlabel('Difference (1 Radar - 2 Radars) [mm per hour]')
+ax2.set_xlabel('Difference in absolute discrepancy (abs(non-adaptive)-abs(adaptive)) [mm per 5min]')
 ax2.set_ylabel('Frequency')
-ax2.set_title('Distribution of Differences in Rainfall Depth')
+ax2.set_title('Distribution of Differences in Rainfall Depth Discrepancy')
 ax2.legend(loc='best')
 ax2.grid(True, alpha=0.3, axis='y')
 

@@ -32,70 +32,90 @@ int extract_parameters(const char* filename, TestResult* result) {
     regex_t regex;
     regmatch_t matches[10];
     
-    const char* pattern = "^(ad_)?stats_x1_([0-9]+)_x2_([0-9]+)_x3_([0-9]+)_x4_([0-9]+)_x5_([0-9]+)_x6_([0-9]+)_x7_([0-9]+)\\.txt$";
+    // Try ad_stats pattern first (no C_ in name)
+    const char* ad_pattern = "^ad_stats_x1_([0-9]+)_x2_([0-9]+)_x3_([0-9]+)_x4_([0-9]+)_x5_([0-9]+)_x6_([0-9]+)_x7_([0-9]+)\\.txt$";
+    // Regular stats pattern (with C_)
+    const char* stats_pattern = "^stats_C_x1_([0-9]+)_x2_([0-9]+)_x3_([0-9]+)_x4_([0-9]+)_x5_([0-9]+)_x6_([0-9]+)_x7_([0-9]+)\\.txt$";
     
-    if (regcomp(&regex, pattern, REG_EXTENDED) != 0) {
-        fprintf(stderr, "Failed to compile regex\n");
+    int is_ad = 0;
+    int matched = 0;
+    
+    // Try ad_stats pattern first
+    if (regcomp(&regex, ad_pattern, REG_EXTENDED) != 0) {
+        fprintf(stderr, "Failed to compile ad_stats regex\n");
         return -1;
     }
     
     if (regexec(&regex, filename, 10, matches, 0) == 0) {
-        char buffer[32];
-        
-        // Check if it's ad_stats (match 1 contains "ad_" or NULL)
-        int is_ad = (matches[1].rm_so != -1 && matches[1].rm_so != matches[1].rm_eo);
-        
-        // Extract each parameter (matches start at index 2)
-        int idx = 2;
-        
-        int len = matches[idx].rm_eo - matches[idx].rm_so;
-        snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
-        result->x1 = atoi(buffer);
-        idx++;
-        
-        len = matches[idx].rm_eo - matches[idx].rm_so;
-        snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
-        result->x2 = atoi(buffer);
-        idx++;
-        
-        len = matches[idx].rm_eo - matches[idx].rm_so;
-        snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
-        result->x3 = atoi(buffer);
-        idx++;
-        
-        len = matches[idx].rm_eo - matches[idx].rm_so;
-        snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
-        result->x4 = atoi(buffer);
-        idx++;
-        
-        len = matches[idx].rm_eo - matches[idx].rm_so;
-        snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
-        result->x5 = atoi(buffer);
-        idx++;
-        
-        len = matches[idx].rm_eo - matches[idx].rm_so;
-        snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
-        result->x6 = atoi(buffer);
-        idx++;
-        
-        len = matches[idx].rm_eo - matches[idx].rm_so;
-        snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
-        result->x7 = atoi(buffer);
-        
-        regfree(&regex);
-        
-        // Set the filename type in the result
-        if (is_ad) {
-            strcpy(result->filename_type, "ad_stats");
-        } else {
-            strcpy(result->filename_type, "stats");
+        is_ad = 1;
+        matched = 1;
+    }
+    regfree(&regex);
+    
+    // If not ad_stats, try regular stats pattern
+    if (!matched) {
+        if (regcomp(&regex, stats_pattern, REG_EXTENDED) != 0) {
+            fprintf(stderr, "Failed to compile stats regex\n");
+            return -1;
         }
         
-        return 0;
+        if (regexec(&regex, filename, 10, matches, 0) == 0) {
+            is_ad = 0;
+            matched = 1;
+        }
+        regfree(&regex);
     }
     
-    regfree(&regex);
-    return -1;
+    if (!matched) {
+        return -1;
+    }
+    
+    // Extract each parameter (matches start at index 1 now since no optional group)
+    char buffer[32];
+    int idx = 1;
+    
+    int len = matches[idx].rm_eo - matches[idx].rm_so;
+    snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
+    result->x1 = atoi(buffer);
+    idx++;
+    
+    len = matches[idx].rm_eo - matches[idx].rm_so;
+    snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
+    result->x2 = atoi(buffer);
+    idx++;
+    
+    len = matches[idx].rm_eo - matches[idx].rm_so;
+    snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
+    result->x3 = atoi(buffer);
+    idx++;
+    
+    len = matches[idx].rm_eo - matches[idx].rm_so;
+    snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
+    result->x4 = atoi(buffer);
+    idx++;
+    
+    len = matches[idx].rm_eo - matches[idx].rm_so;
+    snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
+    result->x5 = atoi(buffer);
+    idx++;
+    
+    len = matches[idx].rm_eo - matches[idx].rm_so;
+    snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
+    result->x6 = atoi(buffer);
+    idx++;
+    
+    len = matches[idx].rm_eo - matches[idx].rm_so;
+    snprintf(buffer, len + 1, "%.*s", len, filename + matches[idx].rm_so);
+    result->x7 = atoi(buffer);
+    
+    // Set the filename type in the result
+    if (is_ad) {
+        strcpy(result->filename_type, "ad_stats");
+    } else {
+        strcpy(result->filename_type, "stats");
+    }
+    
+    return 0;
 }
 
 // Read stats file and compute discrepancy (True - Measured) from columns 7 and 8
@@ -226,8 +246,10 @@ int process_batch_folder(const char* folder_path) {
     // Process each file
     while ((entry = readdir(dir)) != NULL) {
         // Check if it's a stats file (regular or AD)
-        if (strstr(entry->d_name, "stats_x1_") != entry->d_name && 
-            strstr(entry->d_name, "ad_stats_x1_") != entry->d_name) {
+        // Regular: stats_C_x1_...
+        // AD: ad_stats_x1_...
+        if (strncmp(entry->d_name, "stats_C_x1_", 11) != 0 && 
+            strncmp(entry->d_name, "ad_stats_x1_", 12) != 0) {
             continue;
         }
         
@@ -268,22 +290,10 @@ int process_batch_folder(const char* folder_path) {
                 result_entry->ad_stats_discrepancy = discrepancy;
                 result_entry->ad_stats_scan_count = scan_count;
                 ad_stats_files_processed++;
-                
-                //printf("[AD %d] %s\n", ad_stats_files_processed, entry->d_name);
-                //printf("    Parameters: x1=%d x2=%d x3=%d x4=%d x5=%d x6=%d x7=%d\n", 
-                //       result.x1, result.x2, result.x3, result.x4, result.x5, result.x6, result.x7);
-                //printf("    Scans: %d\n", scan_count);
-                //printf("    Discrepancy (True - Measured): %.10f\n\n", discrepancy);
             } else {
                 result_entry->stats_discrepancy = discrepancy;
                 result_entry->stats_scan_count = scan_count;
                 stats_files_processed++;
-                
-                //printf("[STATS %d] %s\n", stats_files_processed, entry->d_name);
-                //printf("    Parameters: x1=%d x2=%d x3=%d x4=%d x5=%d x6=%d x7=%d\n", 
-                //       result.x1, result.x2, result.x3, result.x4, result.x5, result.x6, result.x7);
-                //printf("    Scans: %d\n", scan_count);
-                //printf("    Discrepancy (True - Measured): %.10f\n\n", discrepancy);
             }
         }
     }
