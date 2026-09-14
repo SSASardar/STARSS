@@ -2630,6 +2630,61 @@ Vol_scan* create_adaptive_vol_scan(Vol_scan *original_vol, double *emp_vpr_strat
 }
 
 
+Vol_scan copy_vol_scan(const Vol_scan *src) {
+    Vol_scan dst = *src;  // shallow copy of all scalar/array members first
+
+    size_t total = src->num_elements * (size_t)src->num_PPIs;
+
+    // Allocate and copy each dynamically allocated buffer
+    if (src->grid_refl) {
+        dst.grid_refl = malloc(total * sizeof(double));
+        memcpy(dst.grid_refl, src->grid_refl, total * sizeof(double));
+    } else {
+        dst.grid_refl = NULL;
+    }
+
+    if (src->grid_height) {
+        dst.grid_height = malloc(total * sizeof(double));
+        memcpy(dst.grid_height, src->grid_height, total * sizeof(double));
+    } else {
+        dst.grid_height = NULL;
+    }
+
+    if (src->grid_att) {
+        dst.grid_att = malloc(total * sizeof(double));
+        memcpy(dst.grid_att, src->grid_att, total * sizeof(double));
+    } else {
+        dst.grid_att = NULL;
+    }
+
+    if (src->grid_rain_type) {
+        dst.grid_rain_type = malloc(total * sizeof(int));
+        memcpy(dst.grid_rain_type, src->grid_rain_type, total * sizeof(int));
+    } else {
+        dst.grid_rain_type = NULL;
+    }
+
+    if (src->display_grid) {
+        dst.display_grid = malloc(src->num_elements * sizeof(double));
+        memcpy(dst.display_grid, src->display_grid, src->num_elements * sizeof(double));
+    } else {
+        dst.display_grid = NULL;
+    }
+
+    if (src->refl_ALA) {
+        dst.refl_ALA = malloc(src->num_elements * sizeof(double));
+        memcpy(dst.refl_ALA, src->refl_ALA, src->num_elements * sizeof(double));
+    } else {
+        dst.refl_ALA = NULL;
+    }
+
+    // emp_vpr_strat and emp_vpr_conv are fixed-size arrays inside the struct,
+    // so the initial `dst = *src` already copied them. Nothing more to do.
+
+    return dst;
+}
+
+
 
 
 void combine_vpr_M0(Vol_scan *vol, double vpr_strat[120], double vpr_conv[120]) {

@@ -150,9 +150,10 @@ quick-test:
 #   -g = x7 = storm duration (minutes)
 #
 # Files collected per run:
-#   outputs/stats_X.txt  -> batch_dir/stats_X_x1_..._x7_....txt
-#   outputs/stats_C.txt  -> batch_dir/stats_C_x1_..._x7_....txt
-#   outputs/ad_stats.txt -> batch_dir/ad_stats_x1_..._x7_....txt
+#   outputs/stats_X.txt      -> batch_dir/stats_X_x1_..._x7_....txt
+#   outputs/stats_C.txt      -> batch_dir/stats_C_x1_..._x7_....txt
+#   outputs/ad_stats.txt     -> batch_dir/ad_stats_x1_..._x7_....txt
+#   outputs/combi_stats.txt  -> batch_dir/combi_stats_x1_..._x7_....txt
 batch-test:
 	@if [ -z "$(TEST)" ]; then \
 		echo "❌ Please specify TEST name"; \
@@ -200,10 +201,12 @@ batch-test:
 			stats_X_filename="stats_X_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
 			stats_C_filename="stats_C_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
 			ad_stats_filename="ad_stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
+			combi_stats_filename="combi_stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
 			echo "   Output files:"; \
 			echo "     $(BATCH_DIR)/$$stats_X_filename"; \
 			echo "     $(BATCH_DIR)/$$stats_C_filename"; \
 			echo "     $(BATCH_DIR)/$$ad_stats_filename"; \
+			echo "     $(BATCH_DIR)/$$combi_stats_filename"; \
 			\
 			rm -f $(OUTPUTS_DIR)/*.txt; \
 			\
@@ -226,6 +229,12 @@ batch-test:
 				echo "   ✅ Saved ad_stats.txt"; \
 			else \
 				echo "   ⚠️ Warning: ad_stats.txt not found"; \
+			fi; \
+			if [ -f "$(OUTPUTS_DIR)/combi_stats.txt" ]; then \
+				mv "$(OUTPUTS_DIR)/combi_stats.txt" "$(BATCH_DIR)/$$combi_stats_filename"; \
+				echo "   ✅ Saved combi_stats.txt"; \
+			else \
+				echo "   ⚠️ Warning: combi_stats.txt not found"; \
 			fi; \
 			\
 			test_end=$$(date +%s); \
@@ -303,6 +312,8 @@ parallel-batch-test:
 		[ -z "$$x7_val" ] && x7_val="000" || x7_val=$$(printf "%03d" $$(echo "$$x7_val + 0.5" | bc | cut -d. -f1)); \
 		stats_X_filename="stats_X_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
 		stats_C_filename="stats_C_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
+		ad_stats_filename="ad_stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
+		combi_stats_filename="combi_stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
 		./$(BUILD_DIR)/$(TEST) $$params -w $$WORKER_ID > /dev/null 2>&1; \
 		if [ -f "outputs_$${WORKER_ID}/stats_X.txt" ]; then \
 			mv "outputs_$${WORKER_ID}/stats_X.txt" "$(BATCH_DIR)/$$stats_X_filename"; \
@@ -313,6 +324,16 @@ parallel-batch-test:
 			mv "outputs_$${WORKER_ID}/stats_C.txt" "$(BATCH_DIR)/$$stats_C_filename"; \
 		else \
 			echo "   ⚠️ stats_C.txt not found for $$params"; \
+		fi; \
+		if [ -f "outputs_$${WORKER_ID}/ad_stats.txt" ]; then \
+			mv "outputs_$${WORKER_ID}/ad_stats.txt" "$(BATCH_DIR)/$$ad_stats_filename"; \
+		else \
+			echo "   ⚠️ ad_stats.txt not found for $$params"; \
+		fi; \
+		if [ -f "outputs_$${WORKER_ID}/combi_stats.txt" ]; then \
+			mv "outputs_$${WORKER_ID}/combi_stats.txt" "$(BATCH_DIR)/$$combi_stats_filename"; \
+		else \
+			echo "   ⚠️ combi_stats.txt not found for $$params"; \
 		fi; \
 		rm -rf outputs_$${WORKER_ID} inputs_$${WORKER_ID} archive_$${WORKER_ID} logs_$${WORKER_ID} 2>/dev/null; \
 		' \
@@ -328,7 +349,7 @@ parallel-batch-test:
 	echo "📁 Results saved in: $(BATCH_DIR)"
 
 # Adaptive parallel batch test with multiple cores (GNU Parallel)
-# Also moves ad_stats.txt files from outputs folder to batch directory
+# Also moves ad_stats.txt and combi_stats.txt files from outputs folder to batch directory
 # Usage: make adaptive-parallel-batch-test TEST=test_cl PARAM_FILE=params.txt CORES=8
 adaptive-parallel-batch-test:
 	@if [ -z "$(TEST)" ]; then \
@@ -351,7 +372,7 @@ adaptive-parallel-batch-test:
 	@mkdir -p "$(BATCH_DIR)"
 	@$(MAKE) --no-print-directory build-test TEST=$(TEST)
 	@echo "🚀 Running adaptive parallel batch tests from $(PARAM_FILE) on $(CORES) cores"
-	@echo "📊 This version also collects ad_stats.txt files"
+	@echo "📊 This version also collects ad_stats.txt and combi_stats.txt files"
 	@echo "========================================"
 	@total=$$(grep -v '^#' $(PARAM_FILE) | grep -v '^$$' | wc -l | tr -d ' '); \
 	echo "Total tests to run: $$total"; \
@@ -378,6 +399,7 @@ adaptive-parallel-batch-test:
 		stats_X_filename="stats_X_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
 		stats_C_filename="stats_C_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
 		ad_stats_filename="ad_stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
+		combi_stats_filename="combi_stats_x1_$${x1_val}_x2_$${x2_val}_x3_$${x3_val}_x4_$${x4_val}_x5_$${x5_val}_x6_$${x6_val}_x7_$${x7_val}.txt"; \
 		./$(BUILD_DIR)/$(TEST) $$params -w $$WORKER_ID > /dev/null 2>&1; \
 		if [ -f "outputs_$${WORKER_ID}/stats_X.txt" ]; then \
 			mv "outputs_$${WORKER_ID}/stats_X.txt" "$(BATCH_DIR)/$$stats_X_filename"; \
@@ -394,6 +416,11 @@ adaptive-parallel-batch-test:
 		else \
 			echo "   ⚠️ ad_stats.txt not found for $$params"; \
 		fi; \
+		if [ -f "outputs_$${WORKER_ID}/combi_stats.txt" ]; then \
+			mv "outputs_$${WORKER_ID}/combi_stats.txt" "$(BATCH_DIR)/$$combi_stats_filename"; \
+		else \
+			echo "   ⚠️ combi_stats.txt not found for $$params"; \
+		fi; \
 		rm -rf outputs_$${WORKER_ID} inputs_$${WORKER_ID} archive_$${WORKER_ID} logs_$${WORKER_ID} 2>/dev/null; \
 		' \
 	; \
@@ -404,7 +431,7 @@ adaptive-parallel-batch-test:
 	echo ""; \
 	echo "========================================"; \
 	echo "✅ Adaptive parallel batch testing completed"; \
-	echo "📊 Collected stats_X.txt, stats_C.txt and ad_stats.txt files"; \
+	echo "📊 Collected stats_X.txt, stats_C.txt, ad_stats.txt and combi_stats.txt files"; \
 	echo "⏱️  Total time: $$total_min minutes $$total_sec seconds"; \
 	echo "📁 Results saved in: $(BATCH_DIR)"
 
@@ -444,7 +471,7 @@ help:
 	@echo "=== Batch Testing ==="
 	@echo "  make batch-test TEST=test_cl PARAM_FILE=file.txt - Run from parameter file (serial)"
 	@echo "  make parallel-batch-test TEST=test_cl PARAM_FILE=file.txt CORES=8 - Run in parallel"
-	@echo "  make adaptive-parallel-batch-test TEST=test_cl PARAM_FILE=file.txt CORES=8 - Run in parallel and also collect ad_stats.txt"
+	@echo "  make adaptive-parallel-batch-test TEST=test_cl PARAM_FILE=file.txt CORES=8 - Run in parallel and also collect ad_stats.txt/combi_stats.txt"
 	@echo "  make generate-params OUTPUT=file.txt - Generate parameter combinations"
 	@echo "  make debug-params               - Test parameter extraction"
 	@echo ""
@@ -458,9 +485,10 @@ help:
 	@echo "  -g = x7 = storm duration (minutes)                [20, 35, 50]"
 	@echo ""
 	@echo "Files collected per run:"
-	@echo "  outputs/stats_X.txt  -> batch_dir/stats_X_x1_..._x7_....txt"
-	@echo "  outputs/stats_C.txt  -> batch_dir/stats_C_x1_..._x7_....txt"
-	@echo "  outputs/ad_stats.txt -> batch_dir/ad_stats_x1_..._x7_....txt  (adaptive target only)"
+	@echo "  outputs/stats_X.txt      -> batch_dir/stats_X_x1_..._x7_....txt"
+	@echo "  outputs/stats_C.txt      -> batch_dir/stats_C_x1_..._x7_....txt"
+	@echo "  outputs/ad_stats.txt     -> batch_dir/ad_stats_x1_..._x7_....txt"
+	@echo "  outputs/combi_stats.txt  -> batch_dir/combi_stats_x1_..._x7_....txt"
 	@echo ""
 	@echo "Filename encoding:"
 	@echo "  x1, x2, x3, x6, x7 : integer (%03d)"
@@ -481,6 +509,7 @@ help:
 	@echo ""
 	@echo "Batch test output:"
 	@echo "  Results saved in: batch_test_YYYYMMDD_HHMMSS/"
-	@echo "  stats_X format: stats_X_x1_XXX_x2_XXX_x3_XXX_x4_XXXX_x5_XXXX_x6_XXX_x7_XXX.txt"
-	@echo "  stats_C format: stats_C_x1_XXX_x2_XXX_x3_XXX_x4_XXXX_x5_XXXX_x6_XXX_x7_XXX.txt"
-	@echo "  ad_stats format: ad_stats_x1_XXX_x2_XXX_x3_XXX_x4_XXXX_x5_XXXX_x6_XXX_x7_XXX.txt"
+	@echo "  stats_X format:      stats_X_x1_XXX_x2_XXX_x3_XXX_x4_XXXX_x5_XXXX_x6_XXX_x7_XXX.txt"
+	@echo "  stats_C format:      stats_C_x1_XXX_x2_XXX_x3_XXX_x4_XXXX_x5_XXXX_x6_XXX_x7_XXX.txt"
+	@echo "  ad_stats format:     ad_stats_x1_XXX_x2_XXX_x3_XXX_x4_XXXX_x5_XXXX_x6_XXX_x7_XXX.txt"
+	@echo "  combi_stats format:  combi_stats_x1_XXX_x2_XXX_x3_XXX_x4_XXXX_x5_XXXX_x6_XXX_x7_XXX.txt"

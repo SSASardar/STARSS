@@ -311,6 +311,7 @@ int main(int argc, char *argv[]) {
 RainfallStats *stats_array = malloc(NUM_SCANS * sizeof(RainfallStats));
 RainfallStats *stats_array_X = malloc(NUM_SCANS * sizeof(RainfallStats));
 RainfallStats *ad_stats_array = malloc(NUM_SCANS * sizeof(RainfallStats));
+RainfallStats *combi_stats_array = malloc(NUM_SCANS * sizeof(RainfallStats));
 if (!ad_stats_array) {
     fprintf(stderr, "ERROR: Failed to allocate stats_array for %d scans\n", NUM_SCANS);
     return 1;
@@ -323,6 +324,7 @@ if (!stats_array) {
     init_stats_array(stats_array, NUM_SCANS);
     init_stats_array(stats_array_X, NUM_SCANS);
     init_stats_array(ad_stats_array, NUM_SCANS);
+    init_stats_array(combi_stats_array, NUM_SCANS);
 
 double vpr_emp_strat[120] = {0};
 double vpr_emp_conv[120] = {0};
@@ -333,14 +335,17 @@ int print_or_not = 0;
     char stats_path[256];
     char stats_path_X[256];
     char ad_stats_path[256];
+    char combi_stats_path[256];
     if (cmd_params.worker_id[0] != '\0') {
         snprintf(stats_path, sizeof(stats_path), "outputs_%s/stats_C.txt", cmd_params.worker_id);
         snprintf(stats_path_X, sizeof(stats_path), "outputs_%s/stats_X.txt", cmd_params.worker_id);
         snprintf(ad_stats_path, sizeof(ad_stats_path), "outputs_%s/ad_stats.txt", cmd_params.worker_id);
+        snprintf(combi_stats_path, sizeof(combi_stats_path), "outputs_%s/combi_stats.txt", cmd_params.worker_id);
     } else {
         snprintf(stats_path, sizeof(stats_path), "outputs/stats_C.txt");
         snprintf(stats_path_X, sizeof(stats_path_X), "outputs/stats_X.txt");
         snprintf(ad_stats_path, sizeof(ad_stats_path), "outputs/ad_stats.txt");
+        snprintf(combi_stats_path, sizeof(combi_stats_path), "outputs/combi_stats.txt");
     }
     
     for (int scan_idx = 0; scan_idx < NUM_SCANS; scan_idx++) {
@@ -541,7 +546,7 @@ write_VPR_to_file(VPR_conv,  "conv",  scan_idx);
 
 
 
-
+Vol_scan vol_4 = copy_vol_scan(vol);
 
 //}    
 	    
@@ -549,7 +554,7 @@ write_VPR_to_file(VPR_conv,  "conv",  scan_idx);
 //	    memcpy(vol->emp_vpr_conv, vpr_emp_conv, 120 * sizeof(double));
 
 combine_vpr_M1(vol, vpr_emp_strat, vpr_emp_conv);
-
+combine_vpr_M1(&vol_4, vol_1->emp_vpr_strat, vol_1->emp_vpr_conv);
 
 if(print_or_not == 1) {
 print_vpr_detailed_with_std(vol, "outputs/vpr_emp_strat_rhi.txt", 1, 1);  // Append stratiform with std dev
@@ -561,6 +566,7 @@ print_vpr_interpolated(VPR_conv, "outputs/vpr_true_conv.txt", 1);
 
  
                         compute_display_grid_KNMI_empirical(vol, 5.0, 0.5, 0);
+                        compute_display_grid_KNMI_empirical(&vol_4, 5.0, 0.5, 0);
 /*
 if(print_or_not == 1) {
 // --- Write display_grid to file ---
@@ -576,6 +582,13 @@ if (write_display_grid_to_file(vol, disp_filename) != 0) {
             if (compute_and_store_stats(vol, -5.0, cart_grid_res, volume_duration, ad_stats_array, scan_idx,  raincell_list[0]) == 0) {
                 append_stats_to_file(ad_stats_array, scan_idx, ad_stats_path);
             }
+
+	      		// Compute and store adaptive statistics
+            if (compute_and_store_stats(&vol_4, -5.0, cart_grid_res, volume_duration, combi_stats_array, scan_idx,  raincell_list[0]) == 0) {
+                append_stats_to_file(combi_stats_array, scan_idx, combi_stats_path);
+            }
+
+
         for (int i = 0; i < cg_count; i++)
             free_cart_grid(cart_grids[i]);
         free(cart_grids);
@@ -588,6 +601,7 @@ if (write_display_grid_to_file(vol, disp_filename) != 0) {
     free(stats_array);
     free(stats_array_X);
     free(ad_stats_array);
+    free(combi_stats_array);
 
     cleanup_test_environment(
         VPR_strat, VPR_conv, VPR_A_clima, VPR_A_gmd, VPR_A_d, VPR_dummy,

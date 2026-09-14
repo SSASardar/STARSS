@@ -228,7 +228,7 @@ void process_polar_box_for_std_dev(Polar_box *box, double vpr_array[120]);
 void compute_polar_vpr_std_dev_inplace(double vpr_array[120]);
 
 Vol_scan* create_adaptive_vol_scan(Vol_scan *original_vol, double *emp_vpr_strat, double *emp_vpr_conv);
- 
+Vol_scan copy_vol_scan(const Vol_scan *src);  
 
 void combine_vpr_M0(Vol_scan *vol, double vpr_strat[120], double vpr_conv[120]);
 void combine_vpr_M1(Vol_scan *vol, double vpr_strat[120], double vpr_conv[120]);
