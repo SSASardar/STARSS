@@ -206,3 +206,11 @@ gcc -Wall -Wextra -std=c11 -o build/sum_stats_both data_vis/compute_sums_for_x_a
 python data_vis/cs_anova_initial.py 
 
 For the initial analysis. 
+
+
+
+Commands used Sept 14: 
+
+data_vis/visualise_rainfall_discrepancy.py 
+data_vis/3D_responces_surface.py
+ANOVA quadratic??? Idk.... 

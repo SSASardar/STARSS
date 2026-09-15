@@ -192,7 +192,7 @@ batch-test:
 			\
 			if [ -z "$$x1_val" ]; then x1_val="000"; else x1_val=$$(printf "%03d" $$(echo "$$x1_val + 0.5" | bc | cut -d. -f1)); fi; \
 			if [ -z "$$x2_val" ]; then x2_val="000"; else x2_val=$$(printf "%03d" $$(echo "$$x2_val + 0.5" | bc | cut -d. -f1)); fi; \
-			if [ -z "$$x3_val" ]; then x3_val="000"; else x3_val=$$(printf "%03d" $$(echo "$$x3_val + 0.5" | bc | cut -d. -f1)); fi; \
+			if [ -z "$$x3_val" ]; then x3_val="000"; else x3_val=$$(printf "%04d" $$(echo "$$x3_val *100 + 0.5" | bc | cut -d. -f1)); fi; \
 			if [ -z "$$x4_val" ]; then x4_val="0000"; else x4_val=$$(printf "%04d" $$(echo "$$x4_val * 100 + 0.5" | bc | cut -d. -f1)); fi; \
 			if [ -z "$$x5_val" ]; then x5_val="0000"; else x5_val=$$(printf "%04d" $$(echo "($$x5_val)*100 + 0.5" | bc | cut -d. -f1)); fi; \
 			if [ -z "$$x6_val" ]; then x6_val="000"; else x6_val=$$(printf "%03d" $$(echo "$$x6_val + 0.5" | bc | cut -d. -f1)); fi; \
@@ -305,7 +305,7 @@ parallel-batch-test:
 		x7_val=$$(echo $$params | sed -n "s/.*-g \([0-9.]*\).*/\1/p"); \
 		[ -z "$$x1_val" ] && x1_val="000" || x1_val=$$(printf "%03d" $$(echo "$$x1_val + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x2_val" ] && x2_val="000" || x2_val=$$(printf "%03d" $$(echo "$$x2_val + 0.5" | bc | cut -d. -f1)); \
-		[ -z "$$x3_val" ] && x3_val="000" || x3_val=$$(printf "%03d" $$(echo "$$x3_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x3_val" ] && x3_val="000" || x3_val=$$(printf "%04d" $$(echo "$$x3_val *100 + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x4_val" ] && x4_val="0000" || x4_val=$$(printf "%04d" $$(echo "$$x4_val * 100 + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x5_val" ] && x5_val="0000" || x5_val=$$(printf "%04d" $$(echo "($$x5_val) * 100 + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x6_val" ] && x6_val="000" || x6_val=$$(printf "%03d" $$(echo "$$x6_val + 0.5" | bc | cut -d. -f1)); \
@@ -391,7 +391,7 @@ adaptive-parallel-batch-test:
 		x7_val=$$(echo $$params | sed -n "s/.*-g \([0-9.]*\).*/\1/p"); \
 		[ -z "$$x1_val" ] && x1_val="000" || x1_val=$$(printf "%03d" $$(echo "$$x1_val + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x2_val" ] && x2_val="000" || x2_val=$$(printf "%03d" $$(echo "$$x2_val + 0.5" | bc | cut -d. -f1)); \
-		[ -z "$$x3_val" ] && x3_val="000" || x3_val=$$(printf "%03d" $$(echo "$$x3_val + 0.5" | bc | cut -d. -f1)); \
+		[ -z "$$x3_val" ] && x3_val="000" || x3_val=$$(printf "%04d" $$(echo "$$x3_val *100 + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x4_val" ] && x4_val="0000" || x4_val=$$(printf "%04d" $$(echo "$$x4_val * 100 + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x5_val" ] && x5_val="0000" || x5_val=$$(printf "%04d" $$(echo "($$x5_val) * 100 + 0.5" | bc | cut -d. -f1)); \
 		[ -z "$$x6_val" ] && x6_val="000" || x6_val=$$(printf "%03d" $$(echo "$$x6_val + 0.5" | bc | cut -d. -f1)); \
@@ -450,7 +450,7 @@ $(PROGRESS_EXE): $(PROGRESS_SRC)
 
 # Clean everything
 clean:
-	rm -rf $(BUILD_DIR)/* $(TARGET) batch_test_*
+	rm -rf $(BUILD_DIR)/*
 
 .PHONY: all clean run tests test progress build-test run-test quick-test batch-test parallel-batch-test adaptive-parallel-batch-test generate-params debug-params
 
