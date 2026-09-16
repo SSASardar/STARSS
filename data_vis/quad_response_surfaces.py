@@ -105,15 +105,15 @@ X_plane, Y_plane = np.meshgrid(x_full, y_full)
 Z_plane = np.zeros_like(X_plane)
 
 ax.plot_surface(X_plane, Y_plane, Z_plane,
-                color='gray', alpha=0.12, linewidth=0, antialiased=True)
+                color='gray', alpha=0.2, linewidth=0, antialiased=True)
 ax.plot_wireframe(X_plane, Y_plane, Z_plane,
-                  color='gray', alpha=0.3, linewidth=0.5)
+                  color='gray', alpha=0.6, linewidth=0.5)
 
 # Labels
 ax.set_xlabel("Apparent Motion [m/s]", fontsize=11, labelpad=10)
 ax.set_ylabel("Sub-cloud Reflectivity Gradient [$\\times 10^{-4}$ dBZ/m]",
               fontsize=11, labelpad=10)
-ax.set_zlabel('Discrepancy in rainfall accumulation [mm/5min]',
+ax.set_zlabel('Discrepancy in rainfall accumulation [mm]',
               fontsize=11, labelpad=10)
 
 z_min = min(np.nanmin(z_x_grid), np.nanmin(z_c_grid),
@@ -158,6 +158,7 @@ def plot_abs_difference_heatmap(z_ref_grid, z_other_grid,
     fig_h.patch.set_facecolor('white')
 
     z_diff = np.abs(z_ref_grid) - np.abs(z_other_grid)
+    #z_diff = np.abs(z_ref_grid - z_other_grid)
 
     # Fill NaN edges (cubic/linear hull gaps) with nearest-neighbour
     if np.isnan(z_diff).any():
@@ -179,7 +180,7 @@ def plot_abs_difference_heatmap(z_ref_grid, z_other_grid,
                          cmap=cmap_diff, norm=norm, shading='auto')
 
     cbar = fig_h.colorbar(im, ax=ax_h, shrink=0.8, aspect=20)
-    cbar.set_label(f'|{ref_label}| - |{other_label}|  [mm/5min]', fontsize=11)
+    cbar.set_label(f'|{ref_label}| - |{other_label}|  [mm]', fontsize=11)
 
     ax_h.set_xlabel("Apparent Motion [m/s]", fontsize=12)
     ax_h.set_ylabel("Sub-cloud Reflectivity Gradient [$\\times 10^{-4}$ dBZ/m]", fontsize=12)
@@ -208,16 +209,16 @@ def plot_abs_difference_heatmap(z_ref_grid, z_other_grid,
 # 6. THREE ABSOLUTE-DIFFERENCE HEATMAPS (reference = C-band)
 # ============================================================
 
-plot_abs_difference_heatmap(z_c_grid, z_x_grid,
-                            'C-band', 'X-band',
-                            'cs_2d_absdiff_C_minus_X')
+#plot_abs_difference_heatmap(z_c_grid, z_x_grid,
+#                            'C-band', 'X-band',
+#                            'cs_2d_absdiff_C_minus_X')
 
-plot_abs_difference_heatmap(z_c_grid, z_combi_grid,
-                            'C-band', 'Combi',
-                            'cs_2d_absdiff_C_minus_Combi')
+#plot_abs_difference_heatmap(z_c_grid, z_combi_grid,
+#                            'C-band', 'Combi',
+#                            'cs_2d_absdiff_C_minus_Combi')
 
-plot_abs_difference_heatmap(z_c_grid, z_ad_grid,
-                            'C-band', 'Adaptive',
-                            'cs_2d_absdiff_C_minus_AD')
+#plot_abs_difference_heatmap(z_c_grid, z_ad_grid,
+#                            'C-band', 'Adaptive',
+#                            'cs_2d_absdiff_C_minus_AD')
 
 print("\nAll figures generated successfully!")
