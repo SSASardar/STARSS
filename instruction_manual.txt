@@ -121,96 +121,34 @@ COMPUTATIONAL STUDY:
 		- alter the generate_params.sh script.
 
 
-STEPS TO BE DESCRIBED: 
-	How to change the filenaming so you can do higher resolution testing: 
+	STEP 4: CHANGING THE MAKEFILE TO TEST HIGHER RESOLUTION DATA:
+		- you go to the definitions of batch-test, batch-test-parallel, and adaptive-batch-test-parallel,
+		- For each parameter, you change the number of digits for the integer, and you add a multiplier to avoid decimals. you add a fractional number as a way to round. 
 
-			changing the files in the makefiles to increase the number of digits displayed for the integer.
-			batch-test, batch-test-parallel, and adaptive-batch-test-paralell
-
+	STEP 5: GENERATE PARAMETERS:
+		- compile the generate_params.sh script using chmod +x generate_params.sh
+		- go through the programme to generate the parameters of your chosing.
+		OR
+		- use a params.txt file in a batch_test... folder, and move it to the base directory. then proceed to STEP 6.  
 	
-	Generate parameters: using the generate params.sh thing (chmod +x [name of executable] [path to file])
+	STEP 6: RUN THE TEST USING THE COMMAND:
+		- make adaptive-parallel-batch-test TEST=test_multi_radar_pcl PARAM_FILE=params.txt CORES=4 [or however many cores you have]
+		- this generates a timestamped folder with statistics files for a lone C-band radar, a lone X-band radar, a combined C-X radar processing, and an adaptive C-X scanning strategy. 
 
-	Run the test using the command: 
-	
-			make adaptive-parallel-batch-test TEST=test_multi_radar_pcl PARAM_FILE=params.txt CORES=10
+	STEP 7: PROCESS THE STATS FILES INTO DISCREPANCY IN TOTAL RAINFALL DEPTH
+		- chmod the files data_vis/compte_sums_for_x_and_c.c, /compute_ad_sums.c, /quatro_compute_sums.c
+		- run them depending on what you want to see, for the behaviour of either individual radars do compute_sums_for_x_and_c.c, for adaptive compared to C-band you have to run the compute_ad_sums, for the full analysis as in the second-to-last section in the paper, do quatro_compute_sums.c. 
 
-	Run the data_vis/double_compute_sums.c file (compile using gcc -lm path_to_file -O) and running ./a.out "batch_test_folder" (WITHOUT THE LAST SLASH)
+	STEP 8: RUN AN ANOVA
+		- depending on whether you are doign the initial or a revised anova, run either "python data_vis/cs_anova_initial.py" or "python data_vis/cs_anova_quadratic_model.py"
+		- the anova's are saved in the figures/ folder. 
 
-	then run the initial anova(python data_vis/anova_initial.py), revised anova (python data_vis/anova_revised.py), or checking assumptions for further analysis (python data_vis/single_factor_tests.py)
-
-			The outputs are stored in the figures/ folder. 
-
-
-
-
-
-
-
-
-
+	STEP 9: ONCE YOU HAVE DECIDED YOUR RESPONSE SURFACE TO TEST AND RUN
+		- go do STEPs 5 and 6 and 7 again. 
+		- then you run the python script "python data_vis/3D_responces_surface.py" for the 3D response surface for all four combinations
+		- then you run quad_2d_discr_maps.py in the same directory for the 2D response surfaces for the products involving the C-band.
+		- then you run the discrepancy_histogram_scatter.py in the same directory for the histogram of the discrepancies for products involvign the C-band
+		- all figures are stored in the figure/ directory. 
 
 
 
-
-
-
-
-
-
-
-
-
-	I suspect that in the writing statistics file, there is a mistake somewhere.... why are the rainfall intensities so big.... 
-
-(base) TUD501825:Repo ssasardar$ ./generate_params.sh 
-(base) TUD501825:Repo ssasardar$ make batch-test TEST=test_multi_radar_pcl PARAM_FILE=params.txt
-
-are the last two commands used. 
-
-
-19 aug 2026: last commands used: 
-
-make adaptive-parallel-batch-test TEST=test_multi_radar_pcl PARAM_FILE=params.txt CORES=8
-
-
-20 aug 2026 last commands used: 
-
-./generate_params.sh 
-make adaptive-parallel-batch-test TEST=test_multi_radar_pcl PARAM_FILE=params.txt CORES=10
-chmod +x compute_ave_mse data_vis/compute_avg_mse.c
-./compute_ave_mse batch_test_20260820_142437
-vi data_vis/initial_analysis.py 
-				CHANGE THE PATH NAME
-
-python data_vis/initial_analysis.py
-
-
-25 aug: commands used: 
-
-you made the compute_emd.c file (gcc into a.out), then run a.out with the batch folder without the last forward slash.
-python data_vis/anova_sum_of_squares.py 
-then the analysis. 
-
-
-
-
-Sept 11: commands used:
-
-
-./generate_params.sh
-make parallel-batch-test TEST=test_multi_radar_pcl PARAM_FILE=params.txt CORES=10
-gcc -Wall -Wextra -std=c11 -o build/sum_stats_both data_vis/compute_sums_for_x_and_c.c -lm
-./build/sum_stats_both batch_test_20260911_151338
-
-**** CHANGE the filename to the right one. 
-python data_vis/cs_anova_initial.py 
-
-For the initial analysis. 
-
-
-
-Commands used Sept 14: 
-
-data_vis/visualise_rainfall_discrepancy.py 
-data_vis/3D_responces_surface.py
-ANOVA quadratic??? Idk.... 

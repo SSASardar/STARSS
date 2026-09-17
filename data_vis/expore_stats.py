@@ -22,7 +22,7 @@ def find_stats_file(folder_path, params):
     - path to the matching stats file, or None if not found
     """
     # Build the filename pattern
-    filename_pattern = f"stats_x1_{params['x1']:03d}_x2_{params['x2']:03d}_x3_{params['x3']:03d}_x4_{params['x4']:02d}_x5_{params['x5']:02d}_x6_{params['x6']:03d}_x7_{params['x7']:03d}.txt"
+    filename_pattern = f"combi_stats_x1_{params['x1']:03d}_x2_{params['x2']:03d}_x3_{params['x3']:04d}_x4_{params['x4']:04d}_x5_{params['x5']:04d}_x6_{params['x6']:03d}_x7_{params['x7']:03d}.txt"
     
     # Search for the file
     search_pattern = os.path.join(folder_path, filename_pattern)
