@@ -45,7 +45,11 @@ STEPS
 		follow the KNMI example as inspiration. 
 		if necessary, implement helper functions.
 		Do not forget to also define any new function prototypes in the include/processing.h file as above.
-		
+
+
+===================
+CASE STUDY 1
+==================		
 	
 	STEP 4: RUN THE SIMULATION TO GENERATE RADAR DATA AND THE PRODUCT DATA
 		run the following code to make an executable bash script: 
@@ -92,4 +96,19 @@ STEPS
 
 			for f in data_vis/*.py; do ["$f"="stylesheet.py"] && continue; python "$f"; done
 
-	
+
+==================
+CASE STUDY 2
+=================
+
+	STEP 6: TURNING OFF ATTENUATION AND MOVING RADAR AND RAINCELL BACK BY 150km.
+		in radars.c comment out lines 830, 832, 850, 852, 901, 903, 920, 922.
+		in analysis.c change lines 102 and 103. Change the 5th argument (50000.0) to 200000.0
+		in tests/test_multi_radar_pcl.c change line 64 from 25000.0 to 180000.0
+
+	STEP 7: RUNNING THE CODE: 
+		do chmod +x combi_test.sh
+		then run the script using: ./combi_test.sh
+
+	STEP 8: RUN DATA VISUALISATION:
+		run python data_vis/attenuation_free_figures.py

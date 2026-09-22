@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+from matplotlib.ticker import LogLocator, ScalarFormatter
 import stylesheet  # centralised stylesheet
 
 # ===========================
@@ -49,6 +50,7 @@ vmin = min(np.nanmin(disp_C), np.nanmin(disp_X), np.nanmin(true_g))
 vmax = max(np.nanmax(disp_C), np.nanmax(disp_X), np.nanmax(true_g))
 
 norm = LogNorm(vmin=vmin, vmax=vmax)
+
 # ===========================
 # 2. COMPUTE TARGET SHAPE DYNAMICALLY
 # ===========================
@@ -78,72 +80,53 @@ print(f"  disp_X: {disp_X_padded.shape}")
 print(f"  true_g: {true_g_padded.shape}")
 
 
-
 # ===========================
-# 3. CREATE FIGURE WITH 3 SUBPLOTS
-# ===========================
-
-fig, axes = plt.subplots(1, 3, figsize=(15, 5), sharey=True)
-
-# ===========================
-# 4. PLOT EACH GRID
+# 4. FUNCTION TO CREATE INDIVIDUAL FIGURE
 # ===========================
 
-# Plot C-band measurement
-im1 = axes[1].imshow(disp_C_padded.T, 
-                     cmap=stylesheet.COLORMAPS['sequential'],
-                     norm = norm,
-                     origin='lower')
-axes[1].set_title("C-band intermediate product", fontsize=10)
-axes[1].set_xlabel("x [km]")
-#axes[1].set_ylabel("y [km]")
-
-# Plot X-band measurement
-im2 = axes[2].imshow(disp_X_padded.T, 
-                     cmap=stylesheet.COLORMAPS['sequential'], 
-                     norm = norm,
-                     origin='lower')
-axes[2].set_title("X-band intermediate product", fontsize=10)
-axes[2].set_xlabel("x [km]")
-#axes[2].set_ylabel("y [km]")
-
-# Plot True reflectivity
-im3 = axes[0].imshow(true_g_padded.T, 
-                     cmap=stylesheet.COLORMAPS['sequential'], 
-                     norm = norm,
-                     origin='lower')
-axes[0].set_title("True Reflectivity", fontsize=10)
-axes[0].set_xlabel("x [km]")
-axes[0].set_ylabel("y [km]")
-
-# ===========================
-# 5. ADD SINGLE COLORBAR
-# ===========================
-
-# Create colorbar that spans all three subplots
-cbar = fig.colorbar(im1, ax=axes, orientation='horizontal', 
-                    pad=0.15, aspect=40, shrink=0.8)
-cbar.set_label("Reflectivity [dBZ]", fontsize=10)
-
-# ===========================
-# 6. APPLY STYLESHEET SETTINGS
-# ===========================
-
-# Remove spines for cleaner look (optional)
-for ax in axes:
+def create_single_figure(data, filename, vmin, vmax):
+    """Create a single figure with the given data and save it."""
+    fig, ax = plt.subplots(figsize=(6, 5))
+    
+    norm = LogNorm(vmin=vmin, vmax=vmax)
+    
+    im = ax.imshow(data.T,
+                   cmap=stylesheet.COLORMAPS['sequential'],
+                   norm=norm,
+                   origin='lower')
+    
+    ax.set_xlabel("x [km]")
+    ax.set_ylabel("y [km]")
+    
+    # Remove spines for cleaner look
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
+    
+    # Create colorbar with custom ticks
+    cbar = fig.colorbar(im, ax=ax, orientation='vertical', pad=0.05)
+    cbar.set_label("Reflectivity [dBZ]", fontsize=10)
+    
+    # Set custom ticks on the colorbar
+    cbar.locator = LogLocator(base=10.0, subs=(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0), numticks=20)
+    cbar.formatter = ScalarFormatter()
+    cbar.update_ticks()
+    
+    plt.savefig(f"{filename}.pdf", bbox_inches='tight')
+    plt.savefig(f"{filename}.png", dpi=300, bbox_inches='tight')
+    plt.show()
+    plt.close(fig)
+
 
 # ===========================
-# 7. SAVE FIGURE
+# 5. CREATE THREE INDIVIDUAL FIGURES
 # ===========================
 
-#plt.tight_layout()
-plt.savefig("md_grid_comparison.pdf", bbox_inches='tight')
-plt.savefig("md_grid_comparison.png", dpi=300, bbox_inches='tight')
-plt.show()
+create_single_figure(true_g_padded, "figures/md_grid_true", vmin, vmax)
+create_single_figure(disp_X_padded, "figures/md_grid_x", vmin, vmax)
+create_single_figure(disp_C_padded, "figures/md_grid_c", vmin, vmax)
+
 
 # Print some stats about the grids
 print(f"Grid shapes:")

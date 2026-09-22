@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+from matplotlib.ticker import FixedLocator, ScalarFormatter
 import stylesheet  # centralised stylesheet
 
 # ===========================
@@ -45,9 +46,10 @@ true_g = load_grid("outputs/cg_true_reflect_0039.txt")
 
 # Determine common color scale limits
 vmin = min(np.nanmin(disp_X), np.nanmin(disp_IP), np.nanmin(true_g))
-vmax = max(np.nanmax(disp_X),np.nanmax(disp_IP), np.nanmax(true_g))
+vmax = max(np.nanmax(disp_X), np.nanmax(disp_IP), np.nanmax(true_g))
 
-norm = LogNorm(vmin=vmin,vmax=vmax)
+norm = LogNorm(vmin=vmin, vmax=vmax)
+
 # ===========================
 # 2. COMPUTE TARGET SHAPE DYNAMICALLY
 # ===========================
@@ -59,7 +61,7 @@ target_shape = (
 
 print(f"Original shapes:")
 print(f"  disp_X: {disp_X.shape}")
-print(f"  disp_Intermediate_Product: {true_g.shape}")
+print(f"  disp_Intermediate_Product: {disp_IP.shape}")
 print(f"  true_g: {true_g.shape}")
 print(f"Target shape: {target_shape}")
 
@@ -76,73 +78,52 @@ print(f"  disp_X: {disp_X_padded.shape}")
 print(f"  disp_IP: {disp_IP_padded.shape}")
 print(f"  true_g: {true_g_padded.shape}")
 
-
-
 # ===========================
-# 3. CREATE FIGURE WITH 3 SUBPLOTS
+# 4. HELPER FUNCTION TO CREATE INDIVIDUAL FIGURE
 # ===========================
 
-fig, axes = plt.subplots(1, 2, figsize=(15, 10), sharey=True)
-#fig, axes = plt.subplots(1, 3, figsize=(21, 10), sharey=True)
+def create_single_rhi_figure(data, filename, vmin, vmax):
+    """Create a single RHI figure with its own x/y labels and horizontal colorbar underneath."""
+    fig, ax = plt.subplots(figsize=(6, 6))
+
+    norm = LogNorm(vmin=vmin, vmax=vmax)
+
+    im = ax.imshow(data.T[:, :-5],
+                   cmap=stylesheet.COLORMAPS['sequential'],
+                   norm=norm,
+                   origin='lower')
+
+    ax.set_xlabel("surface [km]")
+    ax.set_ylabel("height [km]")
+
+    # Style cleanup: hide spines
+    for s in ['top', 'right', 'left', 'bottom']:
+        ax.spines[s].set_visible(False)
+
+    # Add horizontal colorbar underneath the plot
+    cbar = fig.colorbar(im, ax=ax, orientation='horizontal', pad=0.12, aspect=35, shrink=0.85)
+    cbar.set_label("Reflectivity [dBZ]", fontsize=10)
+
+    # Force dBZ ticks at 10, 20, 30, ... on the log colorbar
+    tick_values = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    tick_values = [t for t in tick_values if vmin <= t <= vmax]
+    if tick_values:
+        cbar.locator = FixedLocator(tick_values)
+        cbar.formatter = ScalarFormatter()
+        cbar.update_ticks()
+
+    # Save high-res outputs
+    plt.savefig(f"{filename}.png", dpi=300, bbox_inches='tight')
+    plt.savefig(f"{filename}.pdf", bbox_inches='tight')
+    plt.show()
+    plt.close(fig)
 
 # ===========================
-# 4. PLOT EACH GRID
+# 5. CREATE THE TWO INDIVIDUAL FIGURES
 # ===========================
 
-# Plot X-band measurement
-im2 = axes[1].imshow(disp_X_padded.T[:,:-5], 
-                     cmap=stylesheet.COLORMAPS['sequential'], 
-                     norm = norm,
-                     origin='lower')
-axes[1].set_title("X-band intermediate product", fontsize=10)
-axes[1].set_xlabel("surface [km]")
-#axes[1].set_ylabel("height [km]")
-
-# Plot X-band wihtout attenuation correction
-#im2 = axes[1].imshow(disp_IP_padded.T[:,:-5], 
-#                     cmap=stylesheet.COLORMAPS['sequential'], 
-#                     norm = norm,
-#                     origin='lower')
-#axes[1].set_title("X-band without attenuation correction", fontsize=10)
-#axes[1].set_xlabel("surface [km]")
-
-# Plot True reflectivity
-im3 = axes[0].imshow(true_g_padded.T[:,:-5], 
-                     cmap=stylesheet.COLORMAPS['sequential'], 
-                     norm = norm,
-                     origin='lower')
-axes[0].set_title("True Reflectivity", fontsize=10)
-axes[0].set_xlabel("surface [km]")
-axes[0].set_ylabel("height [km]")
-
-# ===========================
-# 5. ADD SINGLE COLORBAR
-# ===========================
-
-# Create colorbar that spans all three subplots
-cbar = fig.colorbar(im2, ax=axes, orientation='horizontal', 
-                    pad=0.15, aspect=40, shrink=0.8)
-cbar.set_label("Reflectivity [dBZ]", fontsize=10)
-
-# ===========================
-# 6. APPLY STYLESHEET SETTINGS
-# ===========================
-
-# Remove spines for cleaner look (optional)
-for ax in axes:
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
-
-# ===========================
-# 7. SAVE FIGURE
-# ===========================
-
-#plt.tight_layout()
-plt.savefig("md_rhi_comparison.pdf", bbox_inches='tight')
-plt.savefig("md_rhi_comparison.png", dpi=300, bbox_inches='tight')
-plt.show()
+create_single_rhi_figure(true_g_padded, "figures/md_rhi_true", vmin, vmax)
+create_single_rhi_figure(disp_X_padded, "figures/md_rhi_x", vmin, vmax)
 
 # Print some stats about the grids
 print(f"Grid shapes:")

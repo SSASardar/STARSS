@@ -847,7 +847,7 @@ if(sample_height < vpr_strat->BB_m.height) {
 
 refl_dBZ = add_noise_VPR(refl_dBZ);
 if(sample_height < vpr_conv->BB_m.height) { 
-        att = compute_specific_attenuation(refl_dBZ, radar); 
+       att = compute_specific_attenuation(refl_dBZ, radar); 
         //	noisy_att = add_noise_SA(radar,att);
 	noisy_att = compute_specific_attenuation_noisy(refl_dBZ,radar);
 }

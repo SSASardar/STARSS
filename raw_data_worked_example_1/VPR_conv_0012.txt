@@ -1,0 +1,8 @@
+# VPR data (conv) for scan 0012
+# Format: PointName Reflectivity Height
+ET   7.000 7154.500
+BB_u 39.268 3811.907
+BB_m 45.084 3508.350
+BB_l 35.732 3020.157
+CB   26.750 512.525
+GT   27.006 0.000

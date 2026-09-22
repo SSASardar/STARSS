@@ -46,7 +46,7 @@ ax.plot(time_C, total_true_mm2_C,
 ax.plot(time_C, total_measured_mm2_C, 
         marker='^', 
         color=stylesheet.COLORS['black'], 
-        label='Measured (C-band)',
+        label='C-band QPE',
         linewidth=1,
         markersize=3,
         linestyle = '-.')
@@ -55,7 +55,7 @@ ax.plot(time_C, total_measured_mm2_C,
 ax.plot(time_X, total_measured_mm2_X, 
         marker='o', 
         color=stylesheet.COLORS['black'], 
-        label='Measured (X-band)',
+        label='X-band QPE',
         linewidth=1,
         markersize=3,
         linestyle='-.')
@@ -139,6 +139,6 @@ ax.grid(True, linestyle=':', alpha=0.5, linewidth=0.5)
 # ===========================
 
 plt.tight_layout()
-plt.savefig("md_stats_comparison.pdf", bbox_inches='tight')
-plt.savefig("md_stats_comparison.png", dpi=300, bbox_inches='tight')
+plt.savefig("figures/md_stats_comparison.pdf", bbox_inches='tight')
+plt.savefig("figures/md_stats_comparison.png", dpi=300, bbox_inches='tight')
 plt.show()

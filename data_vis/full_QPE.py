@@ -216,11 +216,10 @@ else:
 norm = Normalize(vmin=vmin, vmax=vmax)
 
 # ===========================
-# 5. RENDER PLOT PANELS
+# 5. RENDER INDIVIDUAL PLOT PANELS
 # ===========================
 
-print("Rendering plot panels...")
-fig, axes = plt.subplots(1, 3, figsize=(15, 6), sharey=True)
+print("Rendering individual plot panels...")
 
 try:
     import stylesheet
@@ -230,35 +229,37 @@ except ImportError:
 
 extent = [global_min_x, global_max_x, global_min_y, global_max_y]
 
-# Subplot 0: True Accumulation
-axes[0].imshow(global_true_qpe.T, cmap=cmap, norm=norm, origin='lower', extent=extent)
-axes[0].set_title("True Rainfall Accumulation", fontsize=11)
-axes[0].set_xlabel("x [km]")
-axes[0].set_ylabel("y [km]")
 
-# Subplot 1: C-band Accumulation
-axes[1].imshow(global_c_qpe.T, cmap=cmap, norm=norm, origin='lower', extent=extent)
-axes[1].set_title("C-band product", fontsize=11)
-axes[1].set_xlabel("x [km]")
+def create_single_figure(data, filename, vmin, vmax, cmap, extent):
+    """Create a single figure with its own x/y labels and horizontal colorbar underneath."""
+    fig, ax = plt.subplots(figsize=(6, 6))
 
-# Subplot 2: X-band Accumulation
-im2 = axes[2].imshow(global_x_qpe.T, cmap=cmap, norm=norm, origin='lower', extent=extent)
-axes[2].set_title("X-band product", fontsize=11)
-axes[2].set_xlabel("x [km]")
+    norm = Normalize(vmin=vmin, vmax=vmax)
 
-# Style cleanup: hide spines
-for ax in axes:
+    im = ax.imshow(data.T, cmap=cmap, norm=norm, origin='lower', extent=extent)
+
+    ax.set_xlabel("x [km]")
+    ax.set_ylabel("y [km]")
+
+    # Style cleanup: hide spines
     for s in ['top', 'right', 'left', 'bottom']:
         ax.spines[s].set_visible(False)
 
-# Add synchronized horizontal colorbar at bottom
-cbar = fig.colorbar(im2, ax=axes, orientation='horizontal', pad=0.18, aspect=45, shrink=0.75)
-cbar.set_label("Total Rainfall Accumulation [mm]", fontsize=10)
+    # Add horizontal colorbar underneath the plot
+    cbar = fig.colorbar(im, ax=ax, orientation='horizontal', pad=0.12, aspect=35, shrink=0.85)
+    cbar.set_label("Total Rainfall Accumulation [mm]", fontsize=10)
 
-# Save high-res outputs
-plt.savefig("figures/md_QPE_comparison.png", dpi=300, bbox_inches='tight')
-plt.savefig("figures/md_QPE_comparison.pdf", bbox_inches='tight')
-plt.close(fig)
+    # Save high-res outputs
+    plt.savefig(f"{filename}.png", dpi=300, bbox_inches='tight')
+    plt.savefig(f"{filename}.pdf", bbox_inches='tight')
+    plt.show()
+    plt.close(fig)
 
-print("Success! Process finished. Stitched map saved at 'figures/QPE_comparison.png'")
 
+# Create the three individual figures
+create_single_figure(global_true_qpe, "figures/md_QPE_true", vmin, vmax, cmap, extent)
+create_single_figure(global_c_qpe, "figures/md_QPE_c", vmin, vmax, cmap, extent)
+create_single_figure(global_x_qpe, "figures/md_QPE_x", vmin, vmax, cmap, extent)
+
+print("Success! Process finished. Individual maps saved at 'figures/md_QPE_true.*', "
+      "'figures/md_QPE_c.*', and 'figures/md_QPE_x.*'")

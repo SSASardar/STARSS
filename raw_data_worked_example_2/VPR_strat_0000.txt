@@ -1,0 +1,8 @@
+# VPR data (strat) for scan 0000
+# Format: PointName Reflectivity Height
+ET   7.000 6987.500
+BB_u 39.750 3987.500
+BB_m 45.000 3500.000
+BB_l 35.250 3237.500
+CB   27.000 500.000
+GT   27.250 0.000
