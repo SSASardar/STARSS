@@ -40,7 +40,6 @@ Cart_grid* Cart_grid_init(double resolution, int num_x, int num_y, Point ref_poi
     cg->true_attenuation_grid = (double *)malloc(sizeof(double) * cg->num_elements);
     cg->estimated_attenuation_grid = (double *)malloc(sizeof(double) * cg->num_elements);
     cg->rain_type_grid= (int *)malloc(sizeof(int) * cg->num_elements);
-    //if(cg->rain_type_grid)printf("allocating integer pointer (for an array of integers) is successful\n");
     
     if (!cg->grid) {
         free(cg);
@@ -1125,7 +1124,6 @@ double compute_ground_to_altitude_diff(const VPR *vpr, double height){
 	double Z_ground = get_reflectivity_at_height(vpr, vpr->GT.height);
 	double Z_altitude = get_reflectivity_at_height(vpr, height);
 	return Z_ground - Z_altitude;
-	//return Z_altitude - Z_ground;
 }
 
 
@@ -1411,7 +1409,7 @@ int compute_rainfall_statistics(const Vol_scan *vol,
                                 double *total_true_mm2,
                                 double *total_true_unmasked,
                                 double *total_true_mm2_unmasked,
-				double *total_unmasked_area_km2) // <-- Add this parameter)
+				double *total_unmasked_area_km2)
 {
     if (!vol || !vol->display_grid || !vol->refl_ALA) return -1;
 
@@ -1424,7 +1422,7 @@ int compute_rainfall_statistics(const Vol_scan *vol,
     int count = 0, count_all = 0;
 
     double cell_area_km2 = cart_grid_res*0.001 * cart_grid_res*0.001;
-    double unmasked_area_accum = 0.0; // <-- Track active area
+    double unmasked_area_accum = 0.0;
     for (int i = 0; i < (int)vol->num_elements; ++i) {
         double dBZ_disp = vol->display_grid[i];
         double dBZ_true = vol->refl_ALA[i];
@@ -1435,7 +1433,7 @@ int compute_rainfall_statistics(const Vol_scan *vol,
             sum_true_all += Rtrue;
             sum_true_mm2_all += Rtrue * cell_area_km2;
             count_all++;
-	    unmasked_area_accum += cell_area_km2; // <-- Accumulate area
+	    unmasked_area_accum += cell_area_km2;
         }
 
         // --- Masked stats for error metrics ---
@@ -1473,7 +1471,7 @@ int compute_rainfall_statistics(const Vol_scan *vol,
 
     *total_true_unmasked = sum_true_all;
     *total_true_mm2_unmasked = sum_true_mm2_all;
-*total_unmasked_area_km2 = unmasked_area_accum; // <-- Pass it out
+*total_unmasked_area_km2 = unmasked_area_accum;
     return 0;
 }
 
@@ -1676,7 +1674,6 @@ void compute_average_empVPR(Vol_scan *vs) {
             vs->emp_vpr_strat[NUM_BINS + bin] /= point_count;
         }
         // If point_count is 0, leave the cumulative reflectivity as 0
-        // (you could also set to NaN if desired: vs->emp_vpr_strat[NUM_BINS + bin] = NAN;)
     }
     
     // Process convective VPR (type 2)
@@ -2165,7 +2162,6 @@ double compute_ground_to_altitude_diff_empirical(const Vol_scan *vol, double hei
       // printf("%.3e",Z_altitude); 
         if (!isnan(Z_ground) && !isnan(Z_altitude)) {
             return Z_ground - Z_altitude;
-            //return Z_altitude-Z_ground;
         }
     }
     
@@ -2273,22 +2269,13 @@ int n_unc_remaining = 0;
                      
 	 double stdev = compute_VPR_stdev_at_height_empirical(vol, height, 
                                                                                     vol->grid_rain_type[idx],
-                                                                                    bin_size_km, ground_height_km);
-     
-				
-				
-				
-				
-                        
+                                                                                    bin_size_km, ground_height_km);                 
                         // Cap VPR correction
                         if (vpr_correction > 6.0) vpr_correction = 6.0;
                         if (vpr_correction < -6.0) vpr_correction = -6.0;
                         
                         // Quality based on absolute correction
                         Q_VPR = quality_reduction_KNMI(fabs(vpr_correction), 3);
-      
-
-
 		
 			Q_VPR_unc = quality_reduction_KNMI(fabs(3*stdev),3); 
 		//	printf("%.3e",Q_VPR_unc);

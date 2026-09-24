@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 #include <string.h>
-//#include "processing.h"  // For Vol_scan and other structures
 
 
 // Forward declarations instead of full includes
@@ -30,21 +29,6 @@ typedef struct {
 
 
 
-/*
-void initialize_test_environment(
-    VPR **VPR_strat,
-    VPR **VPR_conv,
-    VPR **VPR_A_clima,
-    VPR **VPR_A_gmd,
-    VPR **VPR_A_d,
-    VPR **VPR_dummy,
-    VPR_params **params,
-    Raincell **raincell,
-    Spatial_raincell **s_raincell,
-    double *cart_grid_res,
-    double *sim_time
-);
-*/
 void initialize_test_environment(
     VPR **VPR_strat,
     VPR **VPR_conv,

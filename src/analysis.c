@@ -189,10 +189,6 @@ int compute_and_store_stats_temp_interp(Vol_scan *vol, double rain_threshold, do
         stats[scan_idx].total_measured = total_measured;
         stats[scan_idx].total_true = total_true_unmasked;
         
-        // do not Divide by the actual volume duration
-       //stats[scan_idx].total_measured_mm2 = total_measured_mm2;
-        //stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked;
-        
 	// Divide multiply by the time to get to the accumulation in the timeperiod.
         stats[scan_idx].total_measured_mm2 = total_measured_mm2* (volume_duration_seconds/3600);
         stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked*( volume_duration_seconds/3600);
@@ -221,8 +217,6 @@ double total_unmasked_area_km2; // <-- Variable to hold the area
                                     &total_measured, &total_true_masked,
                                     &total_measured_mm2, &total_true_mm2,
                                     &total_true_unmasked, &total_true_mm2_unmasked,&total_unmasked_area_km2) == 0) {
-	    //double area = vol->num_x*vol->resolution*vol->num_y*vol->resolution*1e-3;
-	    //double area = M_PI*raincell->radius_stratiform*raincell->radius_stratiform*1e-6;
         // Store computed statistics
         stats[scan_idx].mse = mse;
         stats[scan_idx].mae = mae;
@@ -230,13 +224,6 @@ double total_unmasked_area_km2; // <-- Variable to hold the area
         stats[scan_idx].total_measured = total_measured;
         stats[scan_idx].total_true = total_true_unmasked;
         
-        // do not Divide by the actual volume duration
-       //stats[scan_idx].total_measured_mm2 = total_measured_mm2;
-        //stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked;
-        
-	// Divide multiply by the time to get to the accumulation in the timeperiod.
-        //stats[scan_idx].total_measured_mm2 = total_measured_mm2* (volume_duration_seconds/3600);
-        //stats[scan_idx].total_true_mm2 = total_true_mm2_unmasked*( volume_duration_seconds/3600);
         
         // --- OPTION A IMPLEMENTATION ---
         // Calculate the raw volumetric accumulations over the time interval

@@ -26,7 +26,6 @@ void set_worker_id(const char *id);
 
 // Logging
 FILE *open_log_file_with_timestamp(void);
-//void log_message(const char *format, ...);
 
 
 

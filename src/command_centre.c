@@ -408,7 +408,7 @@ bool read_command_file_once_multi_radar(const char *filename, const VPR *vpr_str
             continue;
         }
 
-        // FIXED: Correct filename format
+        // filename format
         char filenameA[256];
         snprintf(filenameA, sizeof(filenameA), "outputs%s/radar_%02d_scan_%04d.txt", 
                  g_worker_id, cmd.radar_id, cmd.command_id);

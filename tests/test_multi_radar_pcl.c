@@ -174,7 +174,6 @@ int write_heights_for_point(Vol_scan *vol, int xi, int yi, const char *filename)
     FILE *fp = fopen(filename, "w");
     if (!fp) return -1;
 
-//    size_t idx = xi * vol->num_y + yi;
 
     fprintf(fp, "# Heights for point (%d, %d) across %d PPIs\n", xi, yi, vol->num_PPIs);
     fprintf(fp, "# Format: PPI_index Reflectivity Height\n");
@@ -286,7 +285,6 @@ int main(int argc, char *argv[]) {
     // =========================================
     
    #define NUM_SCANS 54
-   //RainfallStats stats_array[NUM_SCANS];
   
   // Allocate on heap instead of stack
 RainfallStats *stats_array = malloc(NUM_SCANS * sizeof(RainfallStats));
@@ -330,11 +328,9 @@ int print_or_not = 1;
         Vol_scan *vol_1 = NULL;  // Declare vol here
         Cart_grid **cart_grids = NULL;  // Declare cart_grids here
         int cg_count = 0;  // Declare cg_count here
-			   //
-			   //
-			   //
-
-		    // Reset arrays explicitly
+		    
+	
+	// Reset arrays explicitly
     memset(vpr_emp_strat, 0, sizeof(vpr_emp_strat));
     memset(vpr_emp_conv, 0, sizeof(vpr_emp_conv));
 	

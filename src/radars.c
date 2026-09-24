@@ -27,7 +27,7 @@ Radar* radar_list[MAX_RADARS];
 int radar_count = 0;
 
 // Scan collection
-RadarScan radar_scans[MAX_SCANS];//ONLY STORE ONE SCAN!! PLEASE! 
+RadarScan radar_scans[MAX_SCANS];//ONLY STORE ONE SCAN at a time!! PLEASE! i do not know how this will behave with multiple scans...
 int scan_count = 0;
 
 
@@ -361,8 +361,6 @@ int num_angles = (int)ceil(span);
     Point* centre = get_position_raincell(time, s_raincell);//time in seconds.
     Point* radar_point = get_position_radar(radar);
 
-   //double offset_core_in_absolute = raincell->offset_centre_core * raincell->radius_stratiform;
-    //double diff_x = centre->x + offset_core_in_absolute - radar_point->x; 
     
     double diff_x = centre->x - raincell->offset_centre_core - radar_point->x;
     double diff_x_PPI = centre->x - radar_point->x;
@@ -370,7 +368,6 @@ int num_angles = (int)ceil(span);
     double diff_y = centre->y - radar_point->y;
     double dist_s = sqrt(diff_x_PPI * diff_x_PPI + diff_y * diff_y);
     double dist = sin(dist_s / kea_and_radar) * kea_and_radar / cos(polar_box->other_angle*DEG2RAD);
-    //double radius_stratiform = raincell->radius_stratiform;
 
     polar_box->range_resolution = get_range_res_radar(radar);
     polar_box->angular_resolution = get_angular_res_radar(radar);
@@ -737,7 +734,7 @@ double calculate_height_of_beam_at_range(double range, double elevation, double 
 	//double corrected_elevation = elevation*DEG2RAD + atan2(range*cos(elevation*DEG2RAD), KEA+range*sin(elevation*DEG2RAD));
 	
 	double corrected_elevation = elevation*DEG2RAD;
-	// Something is wrong here... is this return equation (4) or equation (5c) in A Comparison of the radar ray path euqations and approximations for use in radar data assimilation, bu Jidong Gao, Keith brewster and Ming Xue. I changed this to equation 4.... so then the corrected elevation angle makes no sense anymore. Just regular elevation angle is fine. 
+	// Something is wrong here... is this return equation (4) or equation (5c) in A Comparison of the radar ray path euqations and approximations for use in radar data assimilation, by Jidong Gao, Keith brewster and Ming Xue. I changed this to equation 4.... so then the corrected elevation angle makes no sense anymore. Just regular elevation angle is fine. 
 	return sqrt(range*range + height_from_earth_centre*height_from_earth_centre + 2*range*height_from_earth_centre*sin(corrected_elevation))-height_from_earth_centre;
 }
 
@@ -887,7 +884,7 @@ for (int ri = 0; ri <num_ranges;ri++){
 
 
 
-		if (sample == 0) { //raincell shape is always convex, so no strange things need to happen.
+		if (sample == 0) { //as the raincell shape is always convex, so no strange things need to happen.
 	box->rain_type[idp] = 0;       
         box->grid[idp] = 0.0;
         box->attenuation_grid[idp] = 0.0;
@@ -1278,10 +1275,6 @@ void read_radar_scans(const char* filename) {
 	}
 
 	// before loop: allocate a scratch buffer of decent size
-	//
-	//
-
-
 	
 char scratch[512];  // can be larger; used for incremental reads
 

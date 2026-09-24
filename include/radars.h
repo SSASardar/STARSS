@@ -422,7 +422,6 @@ int read_n_ints_from_stream(FILE *file, const char *prefix, int n, int *out);
 
 
 int read_n_doubles_from_stream(FILE *file,const char *prefix,int n,double *out);
-//int read_n_doubles_from_stream(FILE *file,char *first_line,const char *prefix,int n,double *out,char *scratch,size_t scratch_sz);
 void read_radar_scans(const char* filename);
 
 Bounding_box* bounding_box_from_textfile(const Polar_box* p_box, const Radar* radar);
