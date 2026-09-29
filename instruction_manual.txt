@@ -67,7 +67,7 @@ CASE STUDY 1
 			- the statistics on the predicted rainfall rates are stored (stats_[C,X].txt)
 			- the parametrisations of the VPR's (both stratiform and convective) are stored (VPR_conv*.txt, VPR_strat*.txt)
 			- the empirically determined binned VPR's are stored (vpr_emp_[conv,strat]_[C,X,rhi].txt)
-			- the true binned VPR's are stored (vor_true_[conv,strat].txt)
+			- the true binned VPR's are stored (vpr_true_[conv,strat].txt)
 
 
 
@@ -102,7 +102,7 @@ CASE STUDY 2
 =================
 
 	STEP 6: TURNING OFF ATTENUATION AND MOVING RADAR AND RAINCELL BACK BY 150km.
-		in radars.c comment out lines 830, 832, 850, 852, 901, 903, 920, 922.
+		in radars.c comment out lines 827, 829, 847, 849, 898, 900, 917, 919.
 		in analysis.c change lines 102 and 103. Change the 5th argument (50000.0) to 200000.0
 		in tests/test_multi_radar_pcl.c change line 64 from 25000.0 to 180000.0
 

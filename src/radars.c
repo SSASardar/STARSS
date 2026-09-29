@@ -1644,10 +1644,11 @@ double add_noise(const Radar* radar, double reflectivity) {
     double noise_db = 0.0;
 
     if (strcmp(radar->frequency, "X") == 0) {
-        noise_db = 3.0;
-       //noise_db = 1.5;
+       // noise_db = 3.0;
+       noise_db = 1.5;
     } else if (strcmp(radar->frequency, "C") == 0) {
-        noise_db = 1.0;
+        //noise_db = 1.0;
+        noise_db = 0.750;
     } else {
         // Unknown frequency, no noise added
         return reflectivity;
@@ -1663,7 +1664,7 @@ double add_noise_VPR(double reflectivity) {
     // Add Gaussian noise with 0 mean and noise_db as standard deviation
     return reflectivity + gaussian_noise(0.0, noise_db);
 }
-// Function to add noise based on frequency
+// Function to add noise based on frequency specific attenuation
 double add_noise_SA(const Radar* radar, double attenuation) {
     double noise_db_p_km = 0.0;
 
@@ -1682,7 +1683,7 @@ double add_noise_SA(const Radar* radar, double attenuation) {
     return attenuation + gaussian_noise(0.0, noise_db_p_km/3);
 }
 
-// Function to add noise based on frequency
+// Function to add noise based on frequency specific attenuation prefactor
 double add_noise_SA_alpha(const Radar* radar, double attenuation) {
     double noise_db_p_km = 0.0;
 
@@ -1701,7 +1702,7 @@ double add_noise_SA_alpha(const Radar* radar, double attenuation) {
     return attenuation + gaussian_noise(0.0, noise_db_p_km/3);
 }
 
-// Function to add noise based on frequency
+// Function to add noise based on frequency specific attenuation exponent
 double add_noise_SA_beta(const Radar* radar, double attenuation) {
     double noise_db_p_km = 0.0;
 
