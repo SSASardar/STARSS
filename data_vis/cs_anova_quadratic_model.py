@@ -19,7 +19,7 @@ from itertools import combinations
 # ====================================================
 # CONFIGURATION
 # ====================================================
-BATCH_FOLDER = "batch_test_20260914_110306"
+BATCH_FOLDER = "batch_test_better_filter"
 
 FILES = {
     "X": f"{BATCH_FOLDER}/results_sums_X.txt",

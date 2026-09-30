@@ -136,6 +136,7 @@ COMPUTATIONAL STUDY:
 		- this generates a timestamped folder with statistics files for a lone C-band radar, a lone X-band radar, a combined C-X radar processing, and an adaptive C-X scanning strategy. 
 
 	STEP 7: PROCESS THE STATS FILES INTO DISCREPANCY IN TOTAL RAINFALL DEPTH
+		- Edit the folder path name for in the relevant compute_sums C files
 		- chmod the files data_vis/compte_sums_for_x_and_c.c, /compute_ad_sums.c, /quatro_compute_sums.c
 		- run them depending on what you want to see, for the behaviour of either individual radars do compute_sums_for_x_and_c.c, for adaptive compared to C-band you have to run the compute_ad_sums, for the full analysis as in the second-to-last section in the paper, do quatro_compute_sums.c. 
 
@@ -151,4 +152,5 @@ COMPUTATIONAL STUDY:
 		- all figures are stored in the figure/ directory. 
 
 
-
+	EXTENSION: LOOKING AT A NEW NETWORK CONFIGURATION....
+		Translate raincell by +50k in x, move X-band to (0,200k), tested ranges within range of X-band... 

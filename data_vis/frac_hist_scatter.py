@@ -70,21 +70,33 @@ hist_ad,    _     = np.histogram(z_ad,    bins=bins)
 
 centres = 0.5 * (edges[:-1] + edges[1:])
 
+# Pre-compute mean and std for the legend labels.
+mean_c, std_c         = np.mean(z_c),     np.std(z_c)
+mean_combi, std_combi = np.mean(z_combi), np.std(z_combi)
+mean_ad, std_ad       = np.mean(z_ad),    np.std(z_ad)
+
+label_c     = (f'C-band PPI\n'
+               rf'$\mu={mean_c:+.3f}$, $\sigma={std_c:.3f}$')
+label_combi = (f'C-band PPI + X-band PPI (combined)\n'
+               rf'$\mu={mean_combi:+.3f}$, $\sigma={std_combi:.3f}$')
+label_ad    = (f'C-band PPI + X-band RHI (adaptive)\n'
+               rf'$\mu={mean_ad:+.3f}$, $\sigma={std_ad:.3f}$')
+
 ax.step(centres, hist_c,
         where='mid', color=col_c, linewidth=1.6,
-        label='C-band PPI')
+        label=label_c)
 ax.fill_between(centres, hist_c, step='mid',
                 color=col_c, alpha=0.25)
 
 ax.step(centres, hist_combi,
         where='mid', color=col_combi, linewidth=1.6,
-        label='C-band PPI + X-band PPI (combined)')
+        label=label_combi)
 ax.fill_between(centres, hist_combi, step='mid',
                 color=col_combi, alpha=0.25)
 
 ax.step(centres, hist_ad,
         where='mid', color=col_ad, linewidth=1.6,
-        label='C-band PPI + X-band RHI (adaptive)')
+        label=label_ad)
 ax.fill_between(centres, hist_ad, step='mid',
                 color=col_ad, alpha=0.25)
 
@@ -98,7 +110,7 @@ ax.set_title('Distribution of percentage error', pad=10)
 
 ax.set_axisbelow(True)
 ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
-ax.legend(loc='best', framealpha=0.9)
+ax.legend(loc='upper left', framealpha=0.9)
 
 plt.tight_layout()
 plt.savefig('figures/cs_perc_error_histogram.png',
@@ -116,9 +128,9 @@ plt.show()
 def summarise(name, arr):
     print(f"\n{name}")
     print(f"  N        : {len(arr)}")
-    print(f"  Mean     : {np.mean(arr):+.4f} mm")
-    print(f"  Median   : {np.median(arr):+.4f} mm")
-    print(f"  Std dev  : {np.std(arr):.4f} mm")
+    print(f"  Mean     : {np.mean(arr):+.4f} %")
+    print(f"  Median   : {np.median(arr):+.4f} %")
+    print(f"  Std dev  : {np.std(arr):.4f} %")
     print(f"  Min/Max  : {arr.min():+.4f} / {arr.max():+.4f}")
 
 print("\n=============================================")
