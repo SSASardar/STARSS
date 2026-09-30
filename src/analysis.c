@@ -71,7 +71,7 @@ void initialize_test_environment(
         0.65, -0.4, -0.15, -0.1,
         27, -3.0, 2.0, floor(10*log10((200*pow(x3,1.6))))-27+3-2, //how the reflectivity at cloud-base changes (initial, change during growth, change during mature, change for peak)
         x4*1000, 150.0, 25.0,//x5 is cloud base height.
-        -(x5-50)*1e-4
+        (x5-50)*1e-4
     );
     
     // Create VPR profiles

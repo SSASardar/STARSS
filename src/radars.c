@@ -1651,10 +1651,11 @@ double add_noise(const Radar* radar, double reflectivity) {
     double noise_db = 0.0;
 
     if (strcmp(radar->frequency, "X") == 0) {
-        noise_db = 3.0;
-       //noise_db = 1.5;
+       // noise_db = 3.0;
+       noise_db = 1.5;
     } else if (strcmp(radar->frequency, "C") == 0) {
-        noise_db = 1.0;
+        //noise_db = 1.0;
+        noise_db = 0.750;
     } else {
         // Unknown frequency, no noise added
         return reflectivity;
