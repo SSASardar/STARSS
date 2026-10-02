@@ -137,8 +137,10 @@ COMPUTATIONAL STUDY:
 
 	STEP 7: PROCESS THE STATS FILES INTO DISCREPANCY IN TOTAL RAINFALL DEPTH
 		- Edit the folder path name for in the relevant compute_sums C files
-		- chmod the files data_vis/compte_sums_for_x_and_c.c, /compute_ad_sums.c, /quatro_compute_sums.c
-		- run them depending on what you want to see, for the behaviour of either individual radars do compute_sums_for_x_and_c.c, for adaptive compared to C-band you have to run the compute_ad_sums, for the full analysis as in the second-to-last section in the paper, do quatro_compute_sums.c. 
+		- chmod the files data_vis/compte_sums_for_x_and_c.c, /compute_ad_sums.c, /quatro_compute_sums.c, /quatro_compute_frac.c
+		- run them depending on what you want to see, for the behaviour of either individual radars do compute_sums_for_x_and_c.c, for adaptive compared to C-band you have to run the compute_ad_sums, for the full analysis as in the second-to-last section in the paper, do quatro_compute_sums.c and quatro_compute_frac.c
+		- ./a.out <raw_data_folder>
+
 
 	STEP 8: RUN AN ANOVA
 		- depending on whether you are doign the initial or a revised anova, run either "python data_vis/cs_anova_initial.py" or "python data_vis/cs_anova_quadratic_model.py"
@@ -146,11 +148,75 @@ COMPUTATIONAL STUDY:
 
 	STEP 9: ONCE YOU HAVE DECIDED YOUR RESPONSE SURFACE TO TEST AND RUN
 		- go do STEPs 5 and 6 and 7 again. 
-		- then you run the python script "python data_vis/3D_responces_surface.py" for the 3D response surface for all four combinations
+		- then you run the python script "python data_vis/quad_response_surfaces.py" for the 3D response surface for all four combinations
 		- then you run quad_2d_discr_maps.py in the same directory for the 2D response surfaces for the products involving the C-band.
-		- then you run the discrepancy_histogram_scatter.py in the same directory for the histogram of the discrepancies for products involvign the C-band
+		- then you run the frac_hist_scatter.py in the same directory for the histogram of the discrepancies for products involvign the C-band
 		- all figures are stored in the figure/ directory. 
 
 
-	EXTENSION: LOOKING AT A NEW NETWORK CONFIGURATION....
-		Translate raincell by +50k in x, move X-band to (0,200k), tested ranges within range of X-band... 
+	EXTENSION: Timeliness of the VPR... what happens if the RHI-based volume scan occurs halfway through the KNMI volume scan.
+		in src/command_centre.c add a "-2" to line 119, then copy the params.txt file from the batch_test_response_surface folder into the main repository again, after which you run the command:
+			- make adaptive-parallel-batch-test TEST=test_multi_radar_pcl PARAM_FILE=params.txt CORES=4 [or however many cores you have]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

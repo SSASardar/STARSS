@@ -88,7 +88,7 @@ def show_available_parameters(folder_path):
     """
     Show the available parameter values in the folder.
     """
-    files = glob.glob(os.path.join(folder_path, "stats_x1_*.txt"))
+    files = glob.glob(os.path.join(folder_path, "ad_stats_x1_*.txt"))
     
     if not files:
         print("❌ No stats files found in the folder!")

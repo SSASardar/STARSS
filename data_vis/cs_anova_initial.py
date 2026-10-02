@@ -6,7 +6,7 @@ import os
 # ====================================================
 # CONFIGURATION
 # ====================================================
-BATCH_FOLDER = "batch_test_an_initial_filter"
+BATCH_FOLDER = "raw_data_an_initial_filter"
 
 FILES = {
     "X": f"{BATCH_FOLDER}/results_sums_X.txt",

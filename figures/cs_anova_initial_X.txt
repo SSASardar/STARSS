@@ -2,7 +2,7 @@
   MAIN EFFECTS ANOVA — X-BAND
 ================================================================================
 
-Input file: batch_test_an_initial_filter/results_sums_X.txt
+Input file: raw_data_an_initial_filter/results_sums_X.txt
 Total runs: 2187
 Total Sum of Squares (SS_Total): 76.850285
 

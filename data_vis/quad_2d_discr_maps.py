@@ -19,7 +19,7 @@ from scipy.interpolate import griddata
 # 1. LOAD DATA
 # ============================================================
 
-df = pd.read_csv('batch_test_response_surface/results_sums.txt',
+df = pd.read_csv('raw_data_response_surface/results_sums.txt',
                  comment='#', sep=r'\s+', header=None,
                  names=['x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7',
                         'X-band PPI',
